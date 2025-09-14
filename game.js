@@ -274,9 +274,18 @@ async function sendChatMessage() {
         };
         
         // 使用新的AI NPC系统
+        console.log('检查AI系统:', {
+            MainNPCs: typeof MainNPCs,
+            aiNPCSystem: typeof aiNPCSystem,
+            currentNPC: currentNPC
+        });
+        
         if (typeof MainNPCs !== 'undefined' && typeof aiNPCSystem !== 'undefined') {
             const npcId = Object.keys(MainNPCs).find(id => MainNPCs[id].name === currentNPC);
+            console.log('找到NPC ID:', npcId);
+            
             if (npcId) {
+                console.log('使用新AI系统生成回应');
                 const response = await aiNPCSystem.generateNPCResponse(npcId, message, context);
                 // 移除"正在思考"消息，显示实际回应
                 thinkingMsg.remove();
@@ -284,6 +293,8 @@ async function sendChatMessage() {
                 return;
             }
         }
+        
+        console.log('回退到旧AI系统');
         
         // 回退到旧系统
         const response = await aiConversation.generateResponse(currentNPC, message, context);
@@ -901,6 +912,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof AIConfig !== 'undefined') {
         AIConfig.currentProvider = 'openai_proxy'; // 默认使用OpenAI代理
     }
+    
+    // 检查AI系统初始化状态
+    console.log('AI系统初始化状态:', {
+        AIConfig: typeof AIConfig,
+        AIServices: typeof AIServices,
+        MainNPCs: typeof MainNPCs,
+        aiNPCSystem: typeof aiNPCSystem,
+        aiConversation: typeof aiConversation
+    });
     
     // 确保默认显示OpenAI兼容代理配置
     changeAIProvider();
