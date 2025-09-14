@@ -378,6 +378,31 @@ body {
     display: block;
 }
 
+/* 获取模型按钮 */
+.fetch-models-btn {
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.fetch-models-btn:hover {
+    background: linear-gradient(45deg, #0984e3, #74b9ff);
+    transform: translateY(-1px);
+}
+
+.fetch-models-btn:disabled {
+    background: #b2bec3;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* 代理配置样式 */
 .proxy-config {
     background: #f8f9fa;

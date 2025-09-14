@@ -391,6 +391,11 @@ function saveAISettings() {
             return;
         }
         
+        if (!model) {
+            updateStatus('请选择或输入模型名称', 'error');
+            return;
+        }
+        
         settings.proxyUrl = proxyUrl;
         settings.proxyKey = proxyKey;
         settings.model = model;
@@ -443,6 +448,123 @@ function saveAISettings() {
     }, 1500);
 }
 
+// 获取可用模型列表
+async function fetchAvailableModels() {
+    const provider = document.getElementById('ai-provider-select').value;
+    
+    if (provider !== 'openai_proxy') {
+        updateStatus('只有OpenAI兼容代理支持获取模型列表', 'warning');
+        return;
+    }
+    
+    const proxyUrl = document.getElementById('proxy-url-input').value;
+    const proxyKey = document.getElementById('proxy-key-input').value;
+    
+    if (!proxyUrl || !proxyKey) {
+        updateStatus('请先填写代理地址和API密钥', 'error');
+        return;
+    }
+    
+    const button = document.getElementById('fetch-models-btn');
+    const originalText = button.textContent;
+    button.textContent = '获取中...';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch(proxyUrl.replace('/v1', '') + '/v1/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${proxyKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.data && Array.isArray(data.data)) {
+            const models = data.data.map(model => model.id).filter(id => id);
+            updateModelList(models);
+            updateStatus(`成功获取到 ${models.length} 个可用模型`, 'success');
+        } else {
+            throw new Error('返回数据格式不正确');
+        }
+        
+    } catch (error) {
+        console.error('获取模型列表失败:', error);
+        updateStatus('获取模型列表失败: ' + error.message, 'error');
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
+// 更新模型列表
+function updateModelList(models) {
+    const select = document.getElementById('proxy-model-select');
+    const currentValue = select.value;
+    
+    // 保存当前选择
+    const currentCustomValue = document.getElementById('custom-model-input').value;
+    
+    // 清空现有选项（保留自定义选项）
+    select.innerHTML = '';
+    
+    // 添加常用模型
+    const commonModels = [
+        'gpt-3.5-turbo',
+        'gpt-4',
+        'gpt-4-turbo', 
+        'gpt-4o',
+        'gpt-4o-mini'
+    ];
+    
+    commonModels.forEach(model => {
+        if (models.includes(model)) {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            select.appendChild(option);
+        }
+    });
+    
+    // 添加分隔线
+    const separator = document.createElement('option');
+    separator.disabled = true;
+    separator.textContent = '--- 可用模型 ---';
+    select.appendChild(separator);
+    
+    // 添加所有可用模型
+    models.forEach(model => {
+        if (!commonModels.includes(model)) {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            select.appendChild(option);
+        }
+    });
+    
+    // 添加自定义选项
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = '自定义模型...';
+    select.appendChild(customOption);
+    
+    // 恢复选择
+    if (currentValue === 'custom') {
+        select.value = 'custom';
+        document.getElementById('custom-model-input').value = currentCustomValue;
+        document.getElementById('custom-model-input').classList.add('show');
+    } else if (models.includes(currentValue)) {
+        select.value = currentValue;
+    } else {
+        select.value = 'gpt-3.5-turbo';
+    }
+}
+
 async function testAIConnection() {
     const button = event.target;
     const originalText = button.textContent;
@@ -450,16 +572,52 @@ async function testAIConnection() {
     button.disabled = true;
     
     try {
-        const response = await aiConversation.generateResponse('student', '你好', {
-            location: '测试地点',
-            health: 100,
-            mood: 50,
-            money: 100
-        });
+        // 先测试连接，然后获取模型列表
+        const provider = document.getElementById('ai-provider-select').value;
         
-        alert('AI连接测试成功！\nAI回应：' + response);
+        if (provider === 'openai_proxy') {
+            const model = getSelectedModel();
+            if (!model) return;
+            
+            // 测试API连接
+            const proxyUrl = document.getElementById('proxy-url-input').value;
+            const proxyKey = document.getElementById('proxy-key-input').value;
+            
+            const testResponse = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${proxyKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [{ role: 'user', content: '你好' }],
+                    max_tokens: 10
+                })
+            });
+            
+            if (testResponse.ok) {
+                updateStatus('AI连接测试成功！', 'success');
+                // 自动获取模型列表
+                setTimeout(fetchAvailableModels, 1000);
+            } else {
+                throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
+            }
+        } else {
+            // 其他API的测试逻辑
+            const response = await aiConversation.generateResponse('student', '你好', {
+                location: '测试地点',
+                health: 100,
+                mood: 50,
+                money: 100
+            });
+            
+            updateStatus('AI连接测试成功！', 'success');
+        }
+        
     } catch (error) {
-        alert('AI连接测试失败：' + error.message);
+        console.error('测试连接失败:', error);
+        updateStatus('AI连接测试失败: ' + error.message, 'error');
     } finally {
         button.textContent = originalText;
         button.disabled = false;
@@ -574,7 +732,12 @@ function getSelectedModel() {
     const customInput = document.getElementById('custom-model-input');
     
     if (select.value === 'custom') {
-        return customInput.value.trim() || 'gpt-3.5-turbo';
+        const customModel = customInput.value.trim();
+        if (!customModel) {
+            updateStatus('请输入自定义模型名称', 'error');
+            return null;
+        }
+        return customModel;
     }
     return select.value;
 }
