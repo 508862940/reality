@@ -192,6 +192,10 @@ body {
     flex-direction: column;
     /* 防止滚动穿透 */
     overscroll-behavior: contain;
+    /* 移动端滚动优化 */
+    scroll-behavior: smooth;
+    /* 确保滚动优先级 */
+    touch-action: pan-y;
 }
 
 .modal-header {
@@ -229,6 +233,10 @@ body {
     background: #f8f9fa;
     /* 防止滚动穿透 */
     overscroll-behavior: contain;
+    /* 移动端滚动优化 */
+    scroll-behavior: smooth;
+    /* 确保滚动优先级 */
+    touch-action: pan-y;
 }
 
 .chat-message {
@@ -303,6 +311,10 @@ body {
     overflow-y: auto;
     /* 防止滚动穿透 */
     overscroll-behavior: contain;
+    /* 移动端滚动优化 */
+    scroll-behavior: smooth;
+    /* 确保滚动优先级 */
+    touch-action: pan-y;
 }
 
 .settings-panel h3 {

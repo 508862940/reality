@@ -195,14 +195,34 @@
             });
         }
         
-        // 移动端触摸优化 - 智能处理滚动
+        // 移动端触摸优化 - 模态框滚动优先级管理
         let isModalOpen = false;
         
         // 检测模态框状态
         function updateModalState() {
             const settingsPanel = document.getElementById('ai-settings-panel');
             const chatModal = document.getElementById('ai-chat-modal');
-            isModalOpen = settingsPanel.style.display === 'block' || chatModal.style.display === 'block';
+            const modalBackdrop = document.querySelector('.modal');
+            isModalOpen = settingsPanel.style.display === 'block' || 
+                         chatModal.style.display === 'block' ||
+                         (modalBackdrop && modalBackdrop.style.display === 'block');
+            
+            // 动态控制body滚动
+            if (isModalOpen) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+                document.body.style.top = `-${window.pageYOffset}px`;
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+                const scrollTop = document.body.style.top;
+                document.body.style.top = '';
+                if (scrollTop) {
+                    window.scrollTo(0, parseInt(scrollTop || '0') * -1);
+                }
+            }
         }
         
         // 监听模态框显示/隐藏
@@ -210,31 +230,65 @@
         observer.observe(document.getElementById('ai-settings-panel'), { attributes: true, attributeFilter: ['style'] });
         observer.observe(document.getElementById('ai-chat-modal'), { attributes: true, attributeFilter: ['style'] });
         
-        // 只处理页面边缘的过度滚动，不影响正常交互
+        // 监听模态框背景点击
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                updateModalState();
+            }
+        });
+        
+        // 触摸事件处理 - 模态框内滚动优先
         let startY = 0;
+        let startX = 0;
+        
         document.addEventListener('touchstart', function(e) {
             startY = e.touches[0].pageY;
+            startX = e.touches[0].pageX;
             updateModalState();
         }, { passive: true });
         
         document.addEventListener('touchmove', function(e) {
             updateModalState();
             
-            // 如果模态框打开，阻止主屏幕滚动
+            // 如果模态框打开，检查是否在模态框内滚动
             if (isModalOpen) {
-                e.preventDefault();
-                return;
-            }
-            
-            const currentY = e.touches[0].pageY;
-            const deltaY = currentY - startY;
-            
-            // 只在页面顶部向上滑动或底部向下滑动时阻止
-            const isAtTop = window.pageYOffset <= 0;
-            const isAtBottom = window.pageYOffset + window.innerHeight >= document.body.scrollHeight;
-            
-            if ((isAtTop && deltaY > 0) || (isAtBottom && deltaY < 0)) {
-                e.preventDefault();
+                const target = e.target;
+                const isInModal = target.closest('.modal-content') || 
+                                 target.closest('.settings-panel') ||
+                                 target.closest('.chat-messages');
+                
+                if (!isInModal) {
+                    // 不在模态框内，阻止滚动
+                    e.preventDefault();
+                    return;
+                }
+                
+                // 在模态框内，检查滚动容器
+                const scrollContainer = target.closest('.settings-panel, .chat-messages, .modal-content');
+                if (scrollContainer) {
+                    const scrollTop = scrollContainer.scrollTop;
+                    const scrollHeight = scrollContainer.scrollHeight;
+                    const clientHeight = scrollContainer.clientHeight;
+                    const deltaY = e.touches[0].pageY - startY;
+                    
+                    // 如果已经到顶部或底部，阻止过度滚动
+                    if ((scrollTop <= 0 && deltaY > 0) || 
+                        (scrollTop >= scrollHeight - clientHeight && deltaY < 0)) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            } else {
+                // 模态框未打开，处理主页面的边缘滚动
+                const currentY = e.touches[0].pageY;
+                const deltaY = currentY - startY;
+                
+                const isAtTop = window.pageYOffset <= 0;
+                const isAtBottom = window.pageYOffset + window.innerHeight >= document.body.scrollHeight;
+                
+                if ((isAtTop && deltaY > 0) || (isAtBottom && deltaY < 0)) {
+                    e.preventDefault();
+                }
             }
         }, { passive: false });
     </script>
