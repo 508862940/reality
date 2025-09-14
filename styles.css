@@ -400,7 +400,7 @@ body {
 .fetch-models-btn {
     width: 100%;
     padding: 8px 12px;
-    margin-top: 8px;
+    margin: 10px 0;
     background: linear-gradient(45deg, #74b9ff, #0984e3);
     color: white;
     border: none;
@@ -408,6 +408,7 @@ body {
     cursor: pointer;
     font-size: 0.9em;
     transition: all 0.3s ease;
+    display: block; /* 确保按钮始终可见 */
 }
 
 .fetch-models-btn:hover {

@@ -391,28 +391,21 @@ function changeAIProvider() {
     const proxyConfig = document.getElementById('openai-proxy-config');
     const otherConfig = document.getElementById('other-api-config');
     
-    // 获取模型按钮控制
-    const fetchModelsBtn = document.getElementById('fetch-models-btn');
-    const supportedProviders = ['openai_proxy', 'openai'];
-    
     if (selectedProvider === 'openai_proxy') {
         proxyConfig.style.display = 'block';
         otherConfig.style.display = 'none';
-        fetchModelsBtn.style.display = 'block'; // 在代理配置中显示
     } else if (selectedProvider === 'openai') {
         proxyConfig.style.display = 'none';
         otherConfig.style.display = 'block';
-        fetchModelsBtn.style.display = 'block'; // 在其他配置中显示
     } else if (selectedProvider === 'local') {
         proxyConfig.style.display = 'none';
         otherConfig.style.display = 'none';
-        fetchModelsBtn.style.display = 'none';
     } else {
         proxyConfig.style.display = 'none';
         otherConfig.style.display = 'block';
-        // 对于其他AI服务，暂时隐藏按钮
-        fetchModelsBtn.style.display = supportedProviders.includes(selectedProvider) ? 'block' : 'none';
     }
+    
+    // 获取模型按钮始终显示，不需要控制
     
     updateStatus('配置已更改', 'info');
 }
@@ -505,8 +498,8 @@ async function fetchAvailableModels() {
     // 检查是否支持模型列表获取
     const supportedProviders = ['openai_proxy', 'openai'];
     if (!supportedProviders.includes(provider)) {
-        updateStatus(`${provider} 暂不支持获取模型列表`, 'warning');
-        return;
+        updateStatus(`正在尝试获取 ${provider} 的模型列表...`, 'info');
+        // 不返回，继续尝试
     }
     
     let apiUrl, apiKey;
