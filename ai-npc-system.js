@@ -190,7 +190,19 @@ class AINPCDialogManager {
             
         } catch (error) {
             console.error('AI对话失败:', error);
-            return '抱歉，我现在无法回应。请稍后再试。';
+            
+            // 根据错误类型提供更具体的反馈
+            if (error.message.includes('503')) {
+                return '服务器暂时不可用，请稍后重试。';
+            } else if (error.message.includes('429')) {
+                return '请求过于频繁，请稍后重试。';
+            } else if (error.message.includes('401') || error.message.includes('403')) {
+                return 'API密钥可能有问题，请检查设置。';
+            } else if (error.message.includes('Failed to fetch')) {
+                return '网络连接失败，请检查网络或代理设置。';
+            } else {
+                return '抱歉，我现在无法回应。请稍后再试。';
+            }
         } finally {
             this.isProcessing = false;
         }
@@ -373,7 +385,19 @@ class AINPCDialogManager {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('API响应错误:', errorText);
-                throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+                
+                // 特殊处理503错误
+                if (response.status === 503) {
+                    throw new Error('服务器暂时不可用 (503)，请稍后重试。这通常是因为服务器过载或维护中。');
+                } else if (response.status === 429) {
+                    throw new Error('请求过于频繁 (429)，请稍后重试。');
+                } else if (response.status === 401) {
+                    throw new Error('API密钥无效 (401)，请检查密钥是否正确。');
+                } else if (response.status === 403) {
+                    throw new Error('访问被拒绝 (403)，请检查API密钥权限。');
+                } else {
+                    throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+                }
             }
             
             const data = await response.json();
