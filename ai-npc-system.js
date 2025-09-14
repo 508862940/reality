@@ -61,8 +61,8 @@ const MainNPCs = {
             lastInteraction: null
         },
         aiConfig: {
-            provider: 'gemini', // 默认使用Gemini
-            model: 'gemini-pro',
+            provider: 'openai_proxy', // 默认使用OpenAI代理
+            model: 'gpt-3.5-turbo',
             temperature: 0.8,
             maxTokens: 200
         },
@@ -84,7 +84,7 @@ const MainNPCs = {
             lastInteraction: null
         },
         aiConfig: {
-            provider: 'openai',
+            provider: 'openai_proxy',
             model: 'gpt-3.5-turbo',
             temperature: 0.9,
             maxTokens: 200
@@ -107,8 +107,8 @@ const MainNPCs = {
             lastInteraction: null
         },
         aiConfig: {
-            provider: 'claude',
-            model: 'claude-3-sonnet-20240229',
+            provider: 'openai_proxy',
+            model: 'gpt-4',
             temperature: 0.7,
             maxTokens: 200
         },
@@ -226,10 +226,20 @@ class AINPCDialogManager {
     
     // 调用AI API
     async callAI(aiConfig, prompt) {
+        console.log('调用AI服务:', aiConfig.provider, aiConfig);
         const service = AIServices[aiConfig.provider];
-        if (!service || !service.enabled) {
+        
+        if (!service) {
+            console.error('AI服务未找到:', aiConfig.provider);
             return this.getFallbackResponse(prompt.user);
         }
+        
+        if (!service.enabled) {
+            console.error('AI服务未启用:', aiConfig.provider, service);
+            return this.getFallbackResponse(prompt.user);
+        }
+        
+        console.log('使用AI服务:', service.name, '模型:', aiConfig.model);
         
         switch (aiConfig.provider) {
             case 'gemini':
@@ -330,6 +340,17 @@ class AINPCDialogManager {
     // OpenAI兼容代理调用
     async callOpenAIProxy(service, config, prompt) {
         try {
+            console.log('发送请求到代理:', service.baseURL);
+            console.log('请求体:', {
+                model: config.model,
+                messages: [
+                    { role: 'system', content: prompt.system },
+                    { role: 'user', content: prompt.user }
+                ],
+                max_tokens: config.maxTokens,
+                temperature: config.temperature
+            });
+            
             const response = await fetch(service.baseURL, {
                 method: 'POST',
                 headers: {
@@ -347,8 +368,23 @@ class AINPCDialogManager {
                 })
             });
             
+            console.log('响应状态:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API响应错误:', errorText);
+                throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+            
             const data = await response.json();
-            return data.choices[0].message.content || '抱歉，我现在无法回应。';
+            console.log('API响应数据:', data);
+            
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content || '抱歉，我现在无法回应。';
+            } else {
+                console.error('响应格式不正确:', data);
+                return '抱歉，响应格式不正确。';
+            }
         } catch (error) {
             console.error('OpenAI代理API调用失败:', error);
             return this.getFallbackResponse(prompt.user);

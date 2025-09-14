@@ -439,6 +439,7 @@ function saveAISettings() {
             AIServices.openai_proxy.baseURL = proxyUrl;
             AIServices.openai_proxy.apiKey = proxyKey;
             AIServices.openai_proxy.enabled = true;
+            console.log('AI服务配置已更新:', AIServices.openai_proxy);
         }
         
         // 更新NPC的AI配置
@@ -505,7 +506,18 @@ async function fetchAvailableModels() {
     button.disabled = true;
     
     try {
-        const response = await fetch(proxyUrl.replace('/v1', '') + '/v1/models', {
+        // 确保URL格式正确
+        let modelsUrl = proxyUrl;
+        if (!modelsUrl.endsWith('/')) {
+            modelsUrl += '/';
+        }
+        if (!modelsUrl.endsWith('/v1/models')) {
+            modelsUrl += 'v1/models';
+        }
+        
+        console.log('请求模型列表URL:', modelsUrl);
+        
+        const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${proxyKey}`,
