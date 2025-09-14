@@ -428,6 +428,7 @@ body {
     border-radius: 8px;
     margin: 10px 0;
     border-left: 4px solid #00b894;
+    display: block; /* 默认显示 */
 }
 
 .other-config {

@@ -882,6 +882,9 @@ document.addEventListener('DOMContentLoaded', function() {
         AIConfig.currentProvider = 'openai_proxy'; // 默认使用OpenAI代理
     }
     
+    // 确保默认显示OpenAI兼容代理配置
+    changeAIProvider();
+    
     loadAISettings();
 });
 
