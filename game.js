@@ -391,15 +391,27 @@ function changeAIProvider() {
     const proxyConfig = document.getElementById('openai-proxy-config');
     const otherConfig = document.getElementById('other-api-config');
     
+    // 获取模型按钮控制
+    const fetchModelsBtn = document.getElementById('fetch-models-btn');
+    const supportedProviders = ['openai_proxy', 'openai'];
+    
     if (selectedProvider === 'openai_proxy') {
         proxyConfig.style.display = 'block';
         otherConfig.style.display = 'none';
+        fetchModelsBtn.style.display = 'block'; // 在代理配置中显示
+    } else if (selectedProvider === 'openai') {
+        proxyConfig.style.display = 'none';
+        otherConfig.style.display = 'block';
+        fetchModelsBtn.style.display = 'block'; // 在其他配置中显示
     } else if (selectedProvider === 'local') {
         proxyConfig.style.display = 'none';
         otherConfig.style.display = 'none';
+        fetchModelsBtn.style.display = 'none';
     } else {
         proxyConfig.style.display = 'none';
         otherConfig.style.display = 'block';
+        // 对于其他AI服务，暂时隐藏按钮
+        fetchModelsBtn.style.display = supportedProviders.includes(selectedProvider) ? 'block' : 'none';
     }
     
     updateStatus('配置已更改', 'info');
@@ -490,19 +502,28 @@ async function fetchAvailableModels() {
     const provider = document.getElementById('ai-provider-select').value;
     console.log('当前提供商:', provider);
     
-    if (provider !== 'openai_proxy') {
-        updateStatus('只有OpenAI兼容代理支持获取模型列表', 'warning');
+    // 检查是否支持模型列表获取
+    const supportedProviders = ['openai_proxy', 'openai'];
+    if (!supportedProviders.includes(provider)) {
+        updateStatus(`${provider} 暂不支持获取模型列表`, 'warning');
         return;
     }
     
-    const proxyUrl = document.getElementById('proxy-url-input').value;
-    const proxyKey = document.getElementById('proxy-key-input').value;
+    let apiUrl, apiKey;
     
-    console.log('代理URL:', proxyUrl);
-    console.log('API密钥长度:', proxyKey.length);
+    if (provider === 'openai_proxy') {
+        apiUrl = document.getElementById('proxy-url-input').value;
+        apiKey = document.getElementById('proxy-key-input').value;
+    } else if (provider === 'openai') {
+        apiUrl = 'https://api.openai.com/v1';
+        apiKey = document.getElementById('api-key-input').value;
+    }
     
-    if (!proxyUrl || !proxyKey) {
-        updateStatus('请先填写代理地址和API密钥', 'error');
+    console.log('API URL:', apiUrl);
+    console.log('API密钥长度:', apiKey ? apiKey.length : 0);
+    
+    if (!apiUrl || !apiKey) {
+        updateStatus('请先填写API地址和密钥', 'error');
         return;
     }
     
@@ -512,26 +533,32 @@ async function fetchAvailableModels() {
     button.disabled = true;
     
     try {
-        // 确保URL格式正确 - 支持多种URL格式
-        let modelsUrl = proxyUrl.trim();
+        // 构建模型列表URL
+        let modelsUrl = apiUrl.trim();
         
-        // 如果URL包含chat/completions，替换为models
-        if (modelsUrl.includes('/chat/completions')) {
-            modelsUrl = modelsUrl.replace('/chat/completions', '/models');
-        } else if (modelsUrl.includes('/v1')) {
-            // 如果URL以/v1结尾，直接添加/models
+        if (provider === 'openai_proxy') {
+            // OpenAI兼容代理 - 支持多种URL格式
+            if (modelsUrl.includes('/chat/completions')) {
+                modelsUrl = modelsUrl.replace('/chat/completions', '/models');
+            } else if (modelsUrl.includes('/v1')) {
+                if (!modelsUrl.endsWith('/')) {
+                    modelsUrl += '/';
+                }
+                if (!modelsUrl.endsWith('/models')) {
+                    modelsUrl += 'models';
+                }
+            } else {
+                if (!modelsUrl.endsWith('/')) {
+                    modelsUrl += '/';
+                }
+                modelsUrl += 'v1/models';
+            }
+        } else if (provider === 'openai') {
+            // 官方OpenAI API
             if (!modelsUrl.endsWith('/')) {
                 modelsUrl += '/';
             }
-            if (!modelsUrl.endsWith('/models')) {
-                modelsUrl += 'models';
-            }
-        } else {
-            // 如果URL不包含/v1，添加/v1/models
-            if (!modelsUrl.endsWith('/')) {
-                modelsUrl += '/';
-            }
-            modelsUrl += 'v1/models';
+            modelsUrl += 'models';
         }
         
         console.log('最终请求URL:', modelsUrl);
@@ -539,7 +566,7 @@ async function fetchAvailableModels() {
         const response = await fetch(modelsUrl, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${proxyKey}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             }
         });

@@ -138,12 +138,13 @@
                     <input type="text" id="custom-model-input" placeholder="输入自定义模型名称" class="custom-model-input">
                 </div>
                 <small>选择要使用的模型，或输入自定义模型名称</small>
-                <button id="fetch-models-btn" onclick="fetchAvailableModels()" class="fetch-models-btn">获取可用模型</button>
             </div>
         </div>
-        
+
         <!-- 其他API配置 -->
         <div id="other-api-config" class="other-config">
+            <!-- 获取模型按钮 - 对所有支持的AI服务显示 -->
+            <button id="fetch-models-btn" onclick="fetchAvailableModels()" class="fetch-models-btn">获取可用模型</button>
             <div class="setting-item">
                 <label for="api-key-input">API密钥:</label>
                 <input type="password" id="api-key-input" placeholder="输入API密钥">
