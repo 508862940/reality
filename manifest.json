@@ -1,0 +1,22 @@
+{
+  "name": "我的互动小说游戏",
+  "short_name": "互动小说",
+  "description": "乙女向互动小说游戏，AI驱动的NPC对话",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#764ba2",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "zh-CN",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23667eea'/%3E%3Ctext x='96' y='100' text-anchor='middle' fill='white' font-size='24' font-family='Arial'%3E互动%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "prefer_related_applications": false
+}

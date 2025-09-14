@@ -293,8 +293,10 @@ body {
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     z-index: 1001;
-    max-width: 400px;
+    max-width: 500px;
     width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .settings-panel h3 {
@@ -314,21 +316,68 @@ body {
     color: #636e72;
 }
 
-.setting-item select,
-.setting-item input {
+.setting-item input,
+.setting-item select {
     width: 100%;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 1em;
+    transition: border-color 0.3s ease;
 }
 
-.settings-panel button {
-    width: 100%;
+.setting-item input:focus,
+.setting-item select:focus {
+    outline: none;
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.2);
+}
+
+.setting-item small {
+    display: block;
+    margin-top: 5px;
+    color: #74b9ff;
+    font-size: 0.9em;
+}
+
+/* 代理配置样式 */
+.proxy-config {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    border-left: 4px solid #00b894;
+}
+
+.other-config {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    display: none;
+}
+
+/* 滑块样式 */
+.setting-item input[type="range"] {
+    width: 70%;
+    margin-right: 10px;
+}
+
+#temperature-value {
+    font-weight: bold;
+    color: #6c5ce7;
+}
+
+/* 按钮组 */
+.setting-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.setting-buttons button {
+    flex: 1;
     padding: 12px;
-    margin: 5px 0;
-    background: linear-gradient(45deg, #6c5ce7, #a29bfe);
-    color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -336,45 +385,261 @@ body {
     transition: all 0.3s ease;
 }
 
-.settings-panel button:hover {
-    background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+.save-btn {
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+}
+
+.save-btn:hover {
+    background: linear-gradient(45deg, #00a085, #00b894);
     transform: translateY(-1px);
 }
 
-/* 响应式设计 */
+.test-btn {
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    color: white;
+}
+
+.test-btn:hover {
+    background: linear-gradient(45deg, #0984e3, #74b9ff);
+    transform: translateY(-1px);
+}
+
+.reset-btn {
+    background: linear-gradient(45deg, #fd79a8, #e84393);
+    color: white;
+}
+
+.reset-btn:hover {
+    background: linear-gradient(45deg, #e84393, #fd79a8);
+    transform: translateY(-1px);
+}
+
+/* 状态显示 */
+.ai-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.ai-status.success {
+    background: #d1f2eb;
+    color: #00b894;
+    border: 1px solid #00b894;
+}
+
+.ai-status.error {
+    background: #fadbd8;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+.ai-status.warning {
+    background: #fef9e7;
+    color: #f39c12;
+    border: 1px solid #f39c12;
+}
+
+.ai-status.info {
+    background: #ebf3fd;
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+/* iPhone 15 和移动端适配 */
+/* iPhone 15 Pro Max: 430px × 932px */
+/* iPhone 15 Pro: 393px × 852px */
+/* iPhone 15 Plus: 428px × 926px */
+/* iPhone 15: 393px × 852px */
+
+/* 通用移动端适配 */
 @media (max-width: 600px) {
+    body {
+        /* 防止iOS双击缩放 */
+        touch-action: manipulation;
+        /* 平滑滚动 */
+        scroll-behavior: smooth;
+    }
+    
     #game-container {
         padding: 10px;
+        /* iPhone 15适配 - 考虑安全区域 */
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        padding-left: max(10px, env(safe-area-inset-left));
+        padding-right: max(10px, env(safe-area-inset-right));
     }
     
     #game-header h1 {
         font-size: 2em;
+        /* iPhone 15状态栏适配 */
+        margin-top: env(safe-area-inset-top);
     }
     
     #character-panel {
         flex-direction: column;
         gap: 10px;
+        /* iPhone 15横屏适配 */
+        flex-wrap: wrap;
     }
     
     .stat {
         min-width: auto;
+        flex: 1;
+        min-width: 100px;
     }
     
     #interaction-options {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
     
     #ai-interaction-area {
         flex-direction: column;
+        gap: 10px;
     }
     
     .modal-content {
         width: 95%;
-        margin: 10% auto;
+        margin: 5% auto;
+        max-height: 90vh;
+        /* iPhone 15安全区域适配 */
+        margin-top: max(5%, env(safe-area-inset-top));
     }
     
     .chat-message {
         max-width: 90%;
+    }
+    
+    /* 按钮优化 - 适合手指点击 */
+    .option-btn, .ai-btn {
+        min-height: 44px; /* iOS推荐的最小触摸目标 */
+        font-size: 1.1em;
+        padding: 15px 20px;
+    }
+    
+    /* AI设置面板移动端优化 */
+    .settings-panel {
+        width: 95%;
+        max-height: 85vh;
+        margin: 2.5% auto;
+        padding: 20px;
+        /* iPhone 15安全区域 */
+        margin-top: max(2.5%, env(safe-area-inset-top));
+    }
+    
+    .setting-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .setting-buttons button {
+        min-height: 44px;
+        font-size: 1.1em;
+    }
+}
+
+/* iPhone 15 特定适配 */
+@media (max-width: 430px) and (max-height: 932px) {
+    /* iPhone 15 Pro Max */
+    #game-container {
+        padding: 8px;
+        padding-top: max(8px, env(safe-area-inset-top));
+    }
+    
+    #game-header h1 {
+        font-size: 1.8em;
+    }
+    
+    .stat {
+        padding: 8px;
+        min-width: 90px;
+    }
+}
+
+@media (max-width: 393px) and (max-height: 852px) {
+    /* iPhone 15 Pro 和 iPhone 15 */
+    #game-container {
+        padding: 6px;
+    }
+    
+    #game-header h1 {
+        font-size: 1.6em;
+    }
+    
+    .stat {
+        padding: 6px;
+        min-width: 80px;
+    }
+    
+    /* 更紧凑的布局 */
+    #character-panel {
+        gap: 8px;
+    }
+    
+    .option-btn, .ai-btn {
+        padding: 12px 16px;
+        font-size: 1em;
+    }
+}
+
+/* 横屏适配 */
+@media (max-height: 600px) and (orientation: landscape) {
+    #game-container {
+        padding: 5px;
+    }
+    
+    #character-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .stat {
+        min-width: 70px;
+        padding: 5px;
+    }
+    
+    #game-header h1 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+    
+    .modal-content {
+        margin: 2% auto;
+        max-height: 95vh;
+    }
+    
+    .settings-panel {
+        margin: 1% auto;
+        max-height: 98vh;
+        padding: 15px;
+    }
+}
+
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+    /* 触摸设备优化 */
+    .option-btn:hover, .ai-btn:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .option-btn:active, .ai-btn:active {
+        transform: scale(0.98);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* 聊天输入框优化 */
+    .chat-input-area input {
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+    
+    .setting-item input,
+    .setting-item select {
+        font-size: 16px; /* 防止iOS缩放 */
     }
 }
 

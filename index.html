@@ -2,8 +2,26 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>我的互动小说游戏</title>
+    
+    <!-- iPhone 15 适配 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="互动小说">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- 防止iOS缩放 -->
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- PWA配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#764ba2">
+    <meta name="msapplication-TileColor" content="#667eea">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23667eea'/%3E%3Ctext x='90' y='95' text-anchor='middle' fill='white' font-size='20' font-family='Arial'%3E互动%3C/text%3E%3C/svg%3E">
+    
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -78,25 +96,110 @@
     <!-- AI设置面板 -->
     <div id="ai-settings-panel" class="settings-panel">
         <h3>AI设置</h3>
+        
+        <!-- AI服务选择 -->
         <div class="setting-item">
             <label for="ai-provider-select">AI服务:</label>
             <select id="ai-provider-select" onchange="changeAIProvider()">
-                <option value="local">本地AI (Ollama)</option>
+                <option value="openai_proxy">OpenAI兼容代理 (推荐)</option>
                 <option value="openai">OpenAI GPT</option>
                 <option value="gemini">Google Gemini</option>
-                <option value="qwen">通义千问</option>
+                <option value="claude">Anthropic Claude</option>
+                <option value="local">本地AI (Ollama)</option>
             </select>
         </div>
-        <div class="setting-item">
-            <label for="api-key-input">API密钥:</label>
-            <input type="password" id="api-key-input" placeholder="输入API密钥">
+        
+        <!-- OpenAI兼容代理配置 -->
+        <div id="openai-proxy-config" class="proxy-config">
+            <div class="setting-item">
+                <label for="proxy-url-input">代理地址:</label>
+                <input type="url" id="proxy-url-input" placeholder="https://your-proxy.com/v1">
+                <small>输入你的OpenAI兼容代理的完整URL</small>
+            </div>
+            <div class="setting-item">
+                <label for="proxy-key-input">API密钥:</label>
+                <input type="password" id="proxy-key-input" placeholder="输入API密钥">
+                <small>你的代理服务提供的API密钥</small>
+            </div>
+            <div class="setting-item">
+                <label for="proxy-model-select">模型:</label>
+                <select id="proxy-model-select">
+                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                    <option value="gpt-4">gpt-4</option>
+                    <option value="gpt-4-turbo">gpt-4-turbo</option>
+                    <option value="claude-3-sonnet">claude-3-sonnet</option>
+                    <option value="claude-3-opus">claude-3-opus</option>
+                </select>
+                <small>选择要使用的模型</small>
+            </div>
         </div>
-        <button onclick="saveAISettings()">保存设置</button>
-        <button onclick="testAIConnection()">测试连接</button>
+        
+        <!-- 其他API配置 -->
+        <div id="other-api-config" class="other-config">
+            <div class="setting-item">
+                <label for="api-key-input">API密钥:</label>
+                <input type="password" id="api-key-input" placeholder="输入API密钥">
+            </div>
+        </div>
+        
+        <!-- 高级设置 -->
+        <div class="setting-item">
+            <label for="temperature-slider">创造性 (0-1):</label>
+            <input type="range" id="temperature-slider" min="0" max="1" step="0.1" value="0.8">
+            <span id="temperature-value">0.8</span>
+            <small>数值越高，AI回应越有创造性</small>
+        </div>
+        
+        <div class="setting-item">
+            <label for="max-tokens-input">最大回复长度:</label>
+            <input type="number" id="max-tokens-input" min="50" max="500" value="200">
+            <small>控制AI回复的长度</small>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="setting-buttons">
+            <button onclick="saveAISettings()" class="save-btn">保存设置</button>
+            <button onclick="testAIConnection()" class="test-btn">测试连接</button>
+            <button onclick="resetAISettings()" class="reset-btn">重置设置</button>
+        </div>
+        
+        <!-- 状态显示 -->
+        <div id="ai-status" class="ai-status">
+            <span id="status-text">未配置</span>
+        </div>
     </div>
 
     <script src="ai-config.js"></script>
+    <script src="ai-npc-system.js"></script>
     <script src="game.js"></script>
+    
+    <!-- PWA Service Worker注册 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // iPhone 15 触摸优化
+        document.addEventListener('touchstart', function() {}, true);
+        
+        // 防止iOS Safari的橡皮筋效果
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.modal, .settings-panel')) {
+                // 允许模态框内滚动
+                return;
+            }
+            // 防止页面滚动
+            e.preventDefault();
+        }, { passive: false });
+    </script>
 </body>
 </html>
 

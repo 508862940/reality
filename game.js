@@ -353,36 +353,90 @@ function changeAIProvider() {
     // 更新当前使用的AI提供商
     AIConfig.currentProvider = selectedProvider;
     
-    // 显示/隐藏API密钥输入框
-    const apiKeyInput = document.getElementById('api-key-input');
-    if (selectedProvider === 'local') {
-        apiKeyInput.style.display = 'none';
+    // 显示/隐藏相应的配置区域
+    const proxyConfig = document.getElementById('openai-proxy-config');
+    const otherConfig = document.getElementById('other-api-config');
+    
+    if (selectedProvider === 'openai_proxy') {
+        proxyConfig.style.display = 'block';
+        otherConfig.style.display = 'none';
+    } else if (selectedProvider === 'local') {
+        proxyConfig.style.display = 'none';
+        otherConfig.style.display = 'none';
     } else {
-        apiKeyInput.style.display = 'block';
+        proxyConfig.style.display = 'none';
+        otherConfig.style.display = 'block';
     }
+    
+    updateStatus('配置已更改', 'info');
 }
 
 function saveAISettings() {
     const provider = document.getElementById('ai-provider-select').value;
-    const apiKey = document.getElementById('api-key-input').value;
     
-    // 保存设置到本地存储
-    const settings = {
+    let settings = {
         provider: provider,
-        apiKey: apiKey
+        temperature: parseFloat(document.getElementById('temperature-slider').value),
+        maxTokens: parseInt(document.getElementById('max-tokens-input').value)
     };
     
-    localStorage.setItem('aiSettings', JSON.stringify(settings));
-    
-    // 更新配置
-    AIConfig.currentProvider = provider;
-    if (apiKey) {
-        AIConfig.api[provider].apiKey = apiKey;
-        AIConfig.api[provider].enabled = true;
+    if (provider === 'openai_proxy') {
+        // OpenAI兼容代理配置
+        const proxyUrl = document.getElementById('proxy-url-input').value;
+        const proxyKey = document.getElementById('proxy-key-input').value;
+        const model = document.getElementById('proxy-model-select').value;
+        
+        if (!proxyUrl || !proxyKey) {
+            updateStatus('请填写完整的代理配置', 'error');
+            return;
+        }
+        
+        settings.proxyUrl = proxyUrl;
+        settings.proxyKey = proxyKey;
+        settings.model = model;
+        
+        // 更新AI服务配置
+        AIServices.openai_proxy.baseURL = proxyUrl;
+        AIServices.openai_proxy.apiKey = proxyKey;
+        AIServices.openai_proxy.enabled = true;
+        
+        // 更新NPC的AI配置
+        Object.keys(MainNPCs).forEach(npcId => {
+            if (MainNPCs[npcId].aiConfig.provider === 'openai_proxy') {
+                MainNPCs[npcId].aiConfig.model = model;
+                MainNPCs[npcId].aiConfig.temperature = settings.temperature;
+                MainNPCs[npcId].aiConfig.maxTokens = settings.maxTokens;
+            }
+        });
+        
+    } else if (provider !== 'local') {
+        // 其他API配置
+        const apiKey = document.getElementById('api-key-input').value;
+        
+        if (!apiKey) {
+            updateStatus('请填写API密钥', 'error');
+            return;
+        }
+        
+        settings.apiKey = apiKey;
+        
+        // 更新AI服务配置
+        AIServices[provider].apiKey = apiKey;
+        AIServices[provider].enabled = true;
     }
     
-    alert('AI设置已保存！');
-    toggleAISettings();
+    // 保存设置到本地存储
+    localStorage.setItem('aiSettings', JSON.stringify(settings));
+    
+    // 更新全局配置
+    AIConfig.currentProvider = provider;
+    
+    updateStatus('AI设置已保存！', 'success');
+    
+    // 3秒后关闭设置面板
+    setTimeout(() => {
+        toggleAISettings();
+    }, 1500);
 }
 
 async function testAIConnection() {
@@ -408,23 +462,87 @@ async function testAIConnection() {
     }
 }
 
+// 更新状态显示
+function updateStatus(message, type = 'info') {
+    const statusElement = document.getElementById('ai-status');
+    const statusText = document.getElementById('status-text');
+    
+    statusText.textContent = message;
+    statusElement.className = `ai-status ${type}`;
+}
+
+// 重置AI设置
+function resetAISettings() {
+    if (confirm('确定要重置所有AI设置吗？')) {
+        localStorage.removeItem('aiSettings');
+        
+        // 重置表单
+        document.getElementById('ai-provider-select').value = 'openai_proxy';
+        document.getElementById('proxy-url-input').value = '';
+        document.getElementById('proxy-key-input').value = '';
+        document.getElementById('proxy-model-select').value = 'gpt-3.5-turbo';
+        document.getElementById('api-key-input').value = '';
+        document.getElementById('temperature-slider').value = '0.8';
+        document.getElementById('max-tokens-input').value = '200';
+        
+        // 更新显示
+        document.getElementById('temperature-value').textContent = '0.8';
+        changeAIProvider();
+        
+        updateStatus('设置已重置', 'warning');
+    }
+}
+
 // 加载保存的AI设置
 function loadAISettings() {
     const saved = localStorage.getItem('aiSettings');
     if (saved) {
         const settings = JSON.parse(saved);
-        document.getElementById('ai-provider-select').value = settings.provider;
-        document.getElementById('api-key-input').value = settings.apiKey || '';
         
-        AIConfig.currentProvider = settings.provider;
-        if (settings.apiKey) {
-            AIConfig.api[settings.provider].apiKey = settings.apiKey;
-            AIConfig.api[settings.provider].enabled = true;
+        // 加载基础设置
+        document.getElementById('ai-provider-select').value = settings.provider || 'openai_proxy';
+        document.getElementById('temperature-slider').value = settings.temperature || 0.8;
+        document.getElementById('max-tokens-input').value = settings.maxTokens || 200;
+        document.getElementById('temperature-value').textContent = settings.temperature || 0.8;
+        
+        // 加载代理配置
+        if (settings.provider === 'openai_proxy') {
+            document.getElementById('proxy-url-input').value = settings.proxyUrl || '';
+            document.getElementById('proxy-key-input').value = settings.proxyKey || '';
+            document.getElementById('proxy-model-select').value = settings.model || 'gpt-3.5-turbo';
+            
+            // 更新AI服务配置
+            if (settings.proxyUrl && settings.proxyKey) {
+                AIServices.openai_proxy.baseURL = settings.proxyUrl;
+                AIServices.openai_proxy.apiKey = settings.proxyKey;
+                AIServices.openai_proxy.enabled = true;
+            }
+        } else if (settings.apiKey) {
+            document.getElementById('api-key-input').value = settings.apiKey;
+            AIServices[settings.provider].apiKey = settings.apiKey;
+            AIServices[settings.provider].enabled = true;
         }
         
+        AIConfig.currentProvider = settings.provider || 'openai_proxy';
         changeAIProvider();
+        
+        updateStatus('设置已加载', 'success');
+    } else {
+        updateStatus('未配置', 'warning');
     }
 }
+
+// 滑块值更新
+document.addEventListener('DOMContentLoaded', function() {
+    const temperatureSlider = document.getElementById('temperature-slider');
+    const temperatureValue = document.getElementById('temperature-value');
+    
+    if (temperatureSlider && temperatureValue) {
+        temperatureSlider.addEventListener('input', function() {
+            temperatureValue.textContent = this.value;
+        });
+    }
+});
 
 // 点击模态框外部关闭
 window.onclick = function(event) {
@@ -445,4 +563,5 @@ document.addEventListener('DOMContentLoaded', function() {
     initGame();
     loadAISettings();
 });
+
 
