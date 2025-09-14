@@ -31,11 +31,19 @@ const AIConfig = {
             enabled: true, // 默认启用本地模式
             baseURL: 'http://localhost:11434/api/generate', // Ollama默认地址
             model: 'llama2'
+        },
+        
+        // OpenAI兼容代理配置
+        openai_proxy: {
+            enabled: false,
+            apiKey: '', // 用户配置
+            model: 'gpt-3.5-turbo',
+            baseURL: '' // 用户配置代理地址
         }
     },
     
     // 当前使用的AI服务
-    currentProvider: 'local',
+    currentProvider: 'openai_proxy',
     
     // AI角色设定
     npcPersonalities: {
