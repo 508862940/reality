@@ -905,6 +905,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // 确保默认显示OpenAI兼容代理配置
     changeAIProvider();
     
+    // Edge浏览器兼容性修复
+    if (navigator.userAgent.includes('Edg/')) {
+        console.log('检测到Edge浏览器，应用兼容性修复');
+        
+        // 延迟执行，确保DOM完全加载
+        setTimeout(() => {
+            // 强制显示获取模型按钮
+            const fetchBtn = document.getElementById('fetch-models-btn');
+            if (fetchBtn) {
+                fetchBtn.style.display = 'block';
+                fetchBtn.style.visibility = 'visible';
+                fetchBtn.style.opacity = '1';
+                console.log('Edge: 强制显示获取模型按钮');
+            }
+            
+            // 确保模型选择下拉框正常工作
+            const modelSelect = document.getElementById('proxy-model-select');
+            if (modelSelect) {
+                // 添加事件监听器
+                modelSelect.addEventListener('change', function() {
+                    console.log('Edge: 模型选择变化:', this.value);
+                    handleModelSelect();
+                });
+                console.log('Edge: 模型选择事件监听器已添加');
+            }
+        }, 500);
+    }
+    
     loadAISettings();
 });
 

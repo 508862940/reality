@@ -396,30 +396,30 @@ body {
     display: block;
 }
 
-/* 获取模型按钮 */
+/* 获取模型按钮 - Edge兼容性修复 */
 .fetch-models-btn {
     width: 100%;
     padding: 8px 12px;
     margin: 10px 0;
-    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    background: #0984e3; /* 移除渐变，使用纯色 */
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9em;
-    transition: all 0.3s ease;
-    display: block; /* 确保按钮始终可见 */
+    transition: background-color 0.3s ease; /* 简化transition */
+    display: block !important; /* 强制显示，Edge兼容 */
+    visibility: visible !important; /* Edge兼容性 */
+    opacity: 1 !important; /* Edge兼容性 */
 }
 
 .fetch-models-btn:hover {
-    background: linear-gradient(45deg, #0984e3, #74b9ff);
-    transform: translateY(-1px);
+    background: #74b9ff; /* 简化为纯色hover */
 }
 
 .fetch-models-btn:disabled {
     background: #b2bec3;
     cursor: not-allowed;
-    transform: none;
 }
 
 /* 代理配置样式 */
