@@ -485,7 +485,10 @@ function saveAISettings() {
 
 // 获取可用模型列表
 async function fetchAvailableModels() {
+    console.log('开始获取模型列表...');
+    
     const provider = document.getElementById('ai-provider-select').value;
+    console.log('当前提供商:', provider);
     
     if (provider !== 'openai_proxy') {
         updateStatus('只有OpenAI兼容代理支持获取模型列表', 'warning');
@@ -494,6 +497,9 @@ async function fetchAvailableModels() {
     
     const proxyUrl = document.getElementById('proxy-url-input').value;
     const proxyKey = document.getElementById('proxy-key-input').value;
+    
+    console.log('代理URL:', proxyUrl);
+    console.log('API密钥长度:', proxyKey.length);
     
     if (!proxyUrl || !proxyKey) {
         updateStatus('请先填写代理地址和API密钥', 'error');
@@ -506,16 +512,29 @@ async function fetchAvailableModels() {
     button.disabled = true;
     
     try {
-        // 确保URL格式正确
-        let modelsUrl = proxyUrl;
-        if (!modelsUrl.endsWith('/')) {
-            modelsUrl += '/';
-        }
-        if (!modelsUrl.endsWith('/v1/models')) {
+        // 确保URL格式正确 - 支持多种URL格式
+        let modelsUrl = proxyUrl.trim();
+        
+        // 如果URL包含chat/completions，替换为models
+        if (modelsUrl.includes('/chat/completions')) {
+            modelsUrl = modelsUrl.replace('/chat/completions', '/models');
+        } else if (modelsUrl.includes('/v1')) {
+            // 如果URL以/v1结尾，直接添加/models
+            if (!modelsUrl.endsWith('/')) {
+                modelsUrl += '/';
+            }
+            if (!modelsUrl.endsWith('/models')) {
+                modelsUrl += 'models';
+            }
+        } else {
+            // 如果URL不包含/v1，添加/v1/models
+            if (!modelsUrl.endsWith('/')) {
+                modelsUrl += '/';
+            }
             modelsUrl += 'v1/models';
         }
         
-        console.log('请求模型列表URL:', modelsUrl);
+        console.log('最终请求URL:', modelsUrl);
         
         const response = await fetch(modelsUrl, {
             method: 'GET',
@@ -525,18 +544,25 @@ async function fetchAvailableModels() {
             }
         });
         
+        console.log('响应状态:', response.status, response.statusText);
+        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('API错误响应:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
         }
         
         const data = await response.json();
+        console.log('API响应数据:', data);
         
         if (data.data && Array.isArray(data.data)) {
             const models = data.data.map(model => model.id).filter(id => id);
+            console.log('提取的模型列表:', models);
             updateModelList(models);
             updateStatus(`成功获取到 ${models.length} 个可用模型`, 'success');
         } else {
-            throw new Error('返回数据格式不正确');
+            console.error('数据格式不正确:', data);
+            throw new Error('返回数据格式不正确，请检查API响应格式');
         }
         
     } catch (error) {
@@ -550,48 +576,57 @@ async function fetchAvailableModels() {
 
 // 更新模型列表
 function updateModelList(models) {
+    console.log('updateModelList 被调用，模型列表:', models);
+    
     const select = document.getElementById('proxy-model-select');
     const currentValue = select.value;
     
     // 保存当前选择
     const currentCustomValue = document.getElementById('custom-model-input').value;
     
-    // 清空现有选项（保留自定义选项）
+    console.log('当前选择的值:', currentValue, '自定义值:', currentCustomValue);
+    
+    // 清空现有选项
     select.innerHTML = '';
     
-    // 添加常用模型
-    const commonModels = [
-        'gpt-3.5-turbo',
-        'gpt-4',
-        'gpt-4-turbo', 
-        'gpt-4o',
-        'gpt-4o-mini'
-    ];
-    
-    commonModels.forEach(model => {
-        if (models.includes(model)) {
+    if (models && models.length > 0) {
+        // 如果有从API获取的模型，直接显示它们
+        console.log('添加API获取的模型，共', models.length, '个');
+        models.forEach(model => {
             const option = document.createElement('option');
             option.value = model;
             option.textContent = model;
             select.appendChild(option);
+        });
+        
+        // 恢复选择
+        if (models.includes(currentValue)) {
+            select.value = currentValue;
+            console.log('恢复API模型选择:', currentValue);
+        } else {
+            select.value = models[0]; // 选择第一个模型
+            console.log('选择第一个API模型:', models[0]);
         }
-    });
-    
-    // 添加分隔线
-    const separator = document.createElement('option');
-    separator.disabled = true;
-    separator.textContent = '--- 可用模型 ---';
-    select.appendChild(separator);
-    
-    // 添加所有可用模型
-    models.forEach(model => {
-        if (!commonModels.includes(model)) {
+    } else {
+        // 如果没有API模型，使用默认模型
+        console.log('使用默认模型列表');
+        const defaultModels = [
+            'gpt-3.5-turbo',
+            'gpt-4',
+            'gpt-4-turbo', 
+            'gpt-4o',
+            'gpt-4o-mini'
+        ];
+        
+        defaultModels.forEach(model => {
             const option = document.createElement('option');
             option.value = model;
             option.textContent = model;
             select.appendChild(option);
-        }
-    });
+        });
+        
+        select.value = 'gpt-3.5-turbo';
+    }
     
     // 添加自定义选项
     const customOption = document.createElement('option');
@@ -599,15 +634,12 @@ function updateModelList(models) {
     customOption.textContent = '自定义模型...';
     select.appendChild(customOption);
     
-    // 恢复选择
+    // 如果之前选择的是自定义，恢复自定义选择
     if (currentValue === 'custom') {
         select.value = 'custom';
         document.getElementById('custom-model-input').value = currentCustomValue;
         document.getElementById('custom-model-input').classList.add('show');
-    } else if (models.includes(currentValue)) {
-        select.value = currentValue;
-    } else {
-        select.value = 'gpt-3.5-turbo';
+        console.log('恢复自定义模型选择');
     }
 }
 
