@@ -123,14 +123,21 @@
             </div>
             <div class="setting-item">
                 <label for="proxy-model-select">模型:</label>
-                <select id="proxy-model-select">
-                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                    <option value="gpt-4">gpt-4</option>
-                    <option value="gpt-4-turbo">gpt-4-turbo</option>
-                    <option value="claude-3-sonnet">claude-3-sonnet</option>
-                    <option value="claude-3-opus">claude-3-opus</option>
-                </select>
-                <small>选择要使用的模型</small>
+                <div class="model-select-container">
+                    <select id="proxy-model-select" onchange="handleModelSelect()">
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="gpt-4-turbo">gpt-4-turbo</option>
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
+                        <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                        <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
+                        <option value="custom">自定义模型...</option>
+                    </select>
+                    <input type="text" id="custom-model-input" placeholder="输入自定义模型名称" class="custom-model-input">
+                </div>
+                <small>选择要使用的模型，或输入自定义模型名称</small>
             </div>
         </div>
         

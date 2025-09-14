@@ -384,7 +384,7 @@ function saveAISettings() {
         // OpenAI兼容代理配置
         const proxyUrl = document.getElementById('proxy-url-input').value;
         const proxyKey = document.getElementById('proxy-key-input').value;
-        const model = document.getElementById('proxy-model-select').value;
+        const model = getSelectedModel();
         
         if (!proxyUrl || !proxyKey) {
             updateStatus('请填写完整的代理配置', 'error');
@@ -513,7 +513,25 @@ function loadAISettings() {
         if (settings.provider === 'openai_proxy') {
             document.getElementById('proxy-url-input').value = settings.proxyUrl || '';
             document.getElementById('proxy-key-input').value = settings.proxyKey || '';
-            document.getElementById('proxy-model-select').value = settings.model || 'gpt-3.5-turbo';
+            
+            // 处理模型设置
+            const model = settings.model || 'gpt-3.5-turbo';
+            const select = document.getElementById('proxy-model-select');
+            const customInput = document.getElementById('custom-model-input');
+            
+            // 检查是否是预设模型
+            const presetModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 
+                                 'claude-3-sonnet-20240229', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'];
+            
+            if (presetModels.includes(model)) {
+                select.value = model;
+                customInput.classList.remove('show');
+            } else {
+                // 自定义模型
+                select.value = 'custom';
+                customInput.value = model;
+                customInput.classList.add('show');
+            }
             
             // 更新AI服务配置
             if (settings.proxyUrl && settings.proxyKey) {
@@ -534,6 +552,31 @@ function loadAISettings() {
     } else {
         updateStatus('未配置', 'warning');
     }
+}
+
+// 处理模型选择
+function handleModelSelect() {
+    const select = document.getElementById('proxy-model-select');
+    const customInput = document.getElementById('custom-model-input');
+    
+    if (select.value === 'custom') {
+        customInput.classList.add('show');
+        customInput.focus();
+    } else {
+        customInput.classList.remove('show');
+        customInput.value = '';
+    }
+}
+
+// 获取当前选择的模型
+function getSelectedModel() {
+    const select = document.getElementById('proxy-model-select');
+    const customInput = document.getElementById('custom-model-input');
+    
+    if (select.value === 'custom') {
+        return customInput.value.trim() || 'gpt-3.5-turbo';
+    }
+    return select.value;
 }
 
 // 滑块值更新

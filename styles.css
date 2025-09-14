@@ -340,6 +340,44 @@ body {
     font-size: 0.9em;
 }
 
+/* 模型选择容器 */
+.model-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.model-select-container select,
+.model-select-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.model-select-container input {
+    margin-top: 8px;
+    background: #f8f9fa;
+    border-color: #74b9ff;
+}
+
+.model-select-container input:focus {
+    outline: none;
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.2);
+    background: white;
+}
+
+/* 自定义模型输入框 */
+.custom-model-input {
+    display: none;
+}
+
+.custom-model-input.show {
+    display: block;
+}
+
 /* 代理配置样式 */
 .proxy-config {
     background: #f8f9fa;
