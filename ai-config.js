@@ -137,7 +137,13 @@ class AIConversation {
     async callAI(prompt) {
         const config = AIConfig.api[AIConfig.currentProvider];
         
+        if (!config) {
+            console.error('AI配置未找到:', AIConfig.currentProvider);
+            return this.getFallbackResponse(prompt.user);
+        }
+        
         if (!config.enabled) {
+            console.log('AI服务未启用:', AIConfig.currentProvider);
             return this.getFallbackResponse(prompt.user);
         }
         

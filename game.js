@@ -650,15 +650,33 @@ async function testAIConnection() {
                 throw new Error(`HTTP ${testResponse.status}: ${testResponse.statusText}`);
             }
         } else {
-            // 其他API的测试逻辑
-            const response = await aiConversation.generateResponse('student', '你好', {
-                location: '测试地点',
-                health: 100,
-                mood: 50,
-                money: 100
-            });
-            
-            updateStatus('AI连接测试成功！', 'success');
+            // 其他API的测试逻辑 - 使用新的AI系统
+            if (typeof aiNPCSystem !== 'undefined') {
+                // 使用新的AI系统测试
+                const testNPC = Object.keys(MainNPCs)[0]; // 使用第一个NPC测试
+                const response = await aiNPCSystem.generateNPCResponse(testNPC, '你好', {
+                    location: '测试地点',
+                    health: 100,
+                    mood: 50,
+                    money: 100
+                });
+                
+                updateStatus('AI连接测试成功！', 'success');
+                // 自动获取模型列表（如果是OpenAI兼容）
+                if (provider === 'openai' || provider === 'openai_proxy') {
+                    setTimeout(fetchAvailableModels, 1000);
+                }
+            } else {
+                // 回退到旧系统
+                const response = await aiConversation.generateResponse('student', '你好', {
+                    location: '测试地点',
+                    health: 100,
+                    mood: 50,
+                    money: 100
+                });
+                
+                updateStatus('AI连接测试成功！', 'success');
+            }
         }
         
     } catch (error) {
@@ -817,6 +835,12 @@ window.onclick = function(event) {
 // 页面加载完成后初始化游戏
 document.addEventListener('DOMContentLoaded', function() {
     initGame();
+    
+    // 初始化AI配置
+    if (typeof AIConfig !== 'undefined') {
+        AIConfig.currentProvider = 'openai_proxy'; // 默认使用OpenAI代理
+    }
+    
     loadAISettings();
 });
 
