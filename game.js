@@ -778,13 +778,18 @@ function loadAISettings() {
 
 // 处理模型选择
 function handleModelSelect() {
+    console.log('handleModelSelect 被调用');
     const select = document.getElementById('proxy-model-select');
     const customInput = document.getElementById('custom-model-input');
     
+    console.log('选择的值:', select.value);
+    
     if (select.value === 'custom') {
+        console.log('显示自定义输入框');
         customInput.classList.add('show');
         customInput.focus();
     } else {
+        console.log('隐藏自定义输入框');
         customInput.classList.remove('show');
         customInput.value = '';
     }
@@ -795,14 +800,18 @@ function getSelectedModel() {
     const select = document.getElementById('proxy-model-select');
     const customInput = document.getElementById('custom-model-input');
     
+    console.log('getSelectedModel - 选择的值:', select.value);
+    
     if (select.value === 'custom') {
         const customModel = customInput.value.trim();
+        console.log('自定义模型名称:', customModel);
         if (!customModel) {
             updateStatus('请输入自定义模型名称', 'error');
             return null;
         }
         return customModel;
     }
+    console.log('返回预设模型:', select.value);
     return select.value;
 }
 
