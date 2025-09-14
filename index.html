@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的互动小说游戏</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 游戏标题 -->
+        <header id="game-header">
+            <h1>我的互动小说游戏</h1>
+        </header>
+
+        <!-- 角色状态面板 -->
+        <div id="character-panel">
+            <div class="stat">
+                <span class="stat-name">体力:</span>
+                <span id="health" class="stat-value">100</span>
+            </div>
+            <div class="stat">
+                <span class="stat-name">心情:</span>
+                <span id="mood" class="stat-value">50</span>
+            </div>
+            <div class="stat">
+                <span class="stat-name">金钱:</span>
+                <span id="money" class="stat-value">100</span>
+            </div>
+        </div>
+
+        <!-- 游戏主界面 -->
+        <main id="game-main">
+            <!-- 地点显示 -->
+            <div id="location-display">
+                <h2 id="current-location">学校</h2>
+                <p id="location-description">你站在学校的大门前，可以看到教学楼和操场。</p>
+            </div>
+
+            <!-- 互动选项 -->
+            <div id="interaction-options">
+                <button class="option-btn" onclick="goToLocation('classroom')">进入教室</button>
+                <button class="option-btn" onclick="goToLocation('playground')">去操场</button>
+                <button class="option-btn" onclick="goToLocation('cafeteria')">去食堂</button>
+            </div>
+
+            <!-- AI互动按钮 -->
+            <div id="ai-interaction-area">
+                <button class="ai-btn" onclick="openAIChat()">与AI对话</button>
+                <button class="ai-btn" onclick="generateAIEvent()">AI生成事件</button>
+                <button class="ai-btn" onclick="toggleAISettings()">AI设置</button>
+            </div>
+
+            <!-- 对话/事件显示 -->
+            <div id="event-display">
+                <p id="event-text">欢迎来到游戏！选择一个地点开始探索吧。</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI聊天界面 -->
+    <div id="ai-chat-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="ai-npc-name">AI助手</h3>
+                <span class="close" onclick="closeAIChat()">&times;</span>
+            </div>
+            <div id="ai-chat-messages" class="chat-messages">
+                <!-- AI对话消息将显示在这里 -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="ai-chat-input" placeholder="输入消息..." onkeypress="handleChatKeyPress(event)">
+                <button onclick="sendChatMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI设置面板 -->
+    <div id="ai-settings-panel" class="settings-panel">
+        <h3>AI设置</h3>
+        <div class="setting-item">
+            <label for="ai-provider-select">AI服务:</label>
+            <select id="ai-provider-select" onchange="changeAIProvider()">
+                <option value="local">本地AI (Ollama)</option>
+                <option value="openai">OpenAI GPT</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="qwen">通义千问</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label for="api-key-input">API密钥:</label>
+            <input type="password" id="api-key-input" placeholder="输入API密钥">
+        </div>
+        <button onclick="saveAISettings()">保存设置</button>
+        <button onclick="testAIConnection()">测试连接</button>
+    </div>
+
+    <script src="ai-config.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
+

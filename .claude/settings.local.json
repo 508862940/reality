@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(env)",
+      "Bash(echo:*)",
+      "Read(//e//**)",
+      "Read(//e/systemDir/Documents/GitHub/yoyo/**)",
+      "Read(//e/柚子机/yoyo/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

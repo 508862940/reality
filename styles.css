@@ -1,0 +1,542 @@
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+#game-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    min-height: 100vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 游戏标题 */
+#game-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#game-header h1 {
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 角色状态面板 */
+#character-panel {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.stat {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    min-width: 120px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.stat-name {
+    display: block;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* 地点显示 */
+#location-display {
+    margin-bottom: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    border-radius: 15px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#current-location {
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#location-description {
+    font-size: 1.2em;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* 互动选项 */
+#interaction-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.option-btn {
+    padding: 15px 20px;
+    font-size: 1.1em;
+    font-weight: bold;
+    background: linear-gradient(45deg, #fd79a8, #e84393);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.option-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(45deg, #e84393, #fd79a8);
+}
+
+.option-btn:active {
+    transform: translateY(0);
+}
+
+/* 事件显示 */
+#event-display {
+    padding: 25px;
+    background: #fff;
+    border-radius: 15px;
+    border-left: 5px solid #00b894;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+#event-text {
+    font-size: 1.2em;
+    line-height: 1.8;
+    color: #2d3436;
+}
+
+/* AI互动区域 */
+#ai-interaction-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.ai-btn {
+    padding: 10px 15px;
+    font-size: 1em;
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ai-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(45deg, #00a085, #00b894);
+}
+
+/* AI聊天模态框 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f8f9fa;
+}
+
+.chat-message {
+    margin-bottom: 15px;
+    padding: 12px 16px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.chat-message.user {
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.chat-message.ai {
+    background: white;
+    color: #2d3436;
+    border: 1px solid #ddd;
+    margin-right: auto;
+}
+
+.chat-input-area {
+    padding: 20px;
+    background: white;
+    border-radius: 0 0 15px 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input-area input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+}
+
+.chat-input-area button {
+    padding: 12px 20px;
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.chat-input-area button:hover {
+    background: linear-gradient(45deg, #00a085, #00b894);
+    transform: translateY(-1px);
+}
+
+/* AI设置面板 */
+.settings-panel {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    max-width: 400px;
+    width: 90%;
+}
+
+.settings-panel h3 {
+    margin-bottom: 20px;
+    color: #2d3436;
+    text-align: center;
+}
+
+.setting-item {
+    margin-bottom: 15px;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #636e72;
+}
+
+.setting-item select,
+.setting-item input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+}
+
+.settings-panel button {
+    width: 100%;
+    padding: 12px;
+    margin: 5px 0;
+    background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.settings-panel button:hover {
+    background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+    transform: translateY(-1px);
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+    #game-container {
+        padding: 10px;
+    }
+    
+    #game-header h1 {
+        font-size: 2em;
+    }
+    
+    #character-panel {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .stat {
+        min-width: auto;
+    }
+    
+    #interaction-options {
+        grid-template-columns: 1fr;
+    }
+    
+    #ai-interaction-area {
+        flex-direction: column;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .chat-message {
+        max-width: 90%;
+    }
+}
+
+/* 高级游戏系统样式 */
+.event-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.event-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.event-content h3 {
+    color: #2d3436;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.event-content p {
+    color: #636e72;
+    margin-bottom: 25px;
+    line-height: 1.6;
+    font-size: 1.1em;
+}
+
+.event-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.event-choice {
+    padding: 12px 20px;
+    background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.event-choice:hover {
+    background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+    transform: translateY(-2px);
+}
+
+/* 时间显示 */
+#time-display {
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+#time-display h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+}
+
+#time-display p {
+    margin: 0;
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+/* 技能条 */
+.skill-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.skill-name {
+    width: 80px;
+    font-weight: bold;
+    color: #2d3436;
+}
+
+.skill-progress {
+    flex: 1;
+    height: 20px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 10px;
+}
+
+.skill-fill {
+    height: 100%;
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    transition: width 0.3s ease;
+}
+
+.skill-value {
+    width: 40px;
+    text-align: right;
+    font-weight: bold;
+    color: #2d3436;
+}
+
+/* 物品栏 */
+#inventory-panel {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#inventory-panel h3 {
+    margin: 0 0 15px 0;
+    color: #2d3436;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.inventory-item {
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.inventory-item-name {
+    font-weight: bold;
+    color: #2d3436;
+    margin-bottom: 5px;
+}
+
+.inventory-item-count {
+    color: #636e72;
+    font-size: 0.9em;
+}
+
