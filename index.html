@@ -195,16 +195,37 @@
             });
         }
         
-        // 移动端触摸优化 - 最小化干预
-        document.addEventListener('touchstart', function() {}, true);
+        // 移动端触摸优化 - 智能处理滚动
+        let isModalOpen = false;
+        
+        // 检测模态框状态
+        function updateModalState() {
+            const settingsPanel = document.getElementById('ai-settings-panel');
+            const chatModal = document.getElementById('ai-chat-modal');
+            isModalOpen = settingsPanel.style.display === 'block' || chatModal.style.display === 'block';
+        }
+        
+        // 监听模态框显示/隐藏
+        const observer = new MutationObserver(updateModalState);
+        observer.observe(document.getElementById('ai-settings-panel'), { attributes: true, attributeFilter: ['style'] });
+        observer.observe(document.getElementById('ai-chat-modal'), { attributes: true, attributeFilter: ['style'] });
         
         // 只处理页面边缘的过度滚动，不影响正常交互
         let startY = 0;
         document.addEventListener('touchstart', function(e) {
             startY = e.touches[0].pageY;
+            updateModalState();
         }, { passive: true });
         
         document.addEventListener('touchmove', function(e) {
+            updateModalState();
+            
+            // 如果模态框打开，阻止主屏幕滚动
+            if (isModalOpen) {
+                e.preventDefault();
+                return;
+            }
+            
             const currentY = e.touches[0].pageY;
             const deltaY = currentY - startY;
             

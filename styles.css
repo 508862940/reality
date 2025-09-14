@@ -190,6 +190,8 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
 }
 
 .modal-header {
@@ -225,6 +227,8 @@ body {
     max-height: 400px;
     overflow-y: auto;
     background: #f8f9fa;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
 }
 
 .chat-message {
@@ -297,6 +301,8 @@ body {
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
 }
 
 .settings-panel h3 {

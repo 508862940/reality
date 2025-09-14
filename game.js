@@ -273,6 +273,19 @@ async function sendChatMessage() {
             money: gameData.character.money
         };
         
+        // 使用新的AI NPC系统
+        if (typeof MainNPCs !== 'undefined' && typeof aiNPCSystem !== 'undefined') {
+            const npcId = Object.keys(MainNPCs).find(id => MainNPCs[id].name === currentNPC);
+            if (npcId) {
+                const response = await aiNPCSystem.generateNPCResponse(npcId, message, context);
+                // 移除"正在思考"消息，显示实际回应
+                thinkingMsg.remove();
+                addChatMessage('ai', response);
+                return;
+            }
+        }
+        
+        // 回退到旧系统
         const response = await aiConversation.generateResponse(currentNPC, message, context);
         
         // 移除"正在思考"消息，显示实际回应
@@ -302,40 +315,61 @@ async function generateAIEvent() {
     showEventText('AI正在生成一个有趣的事件...');
     
     try {
-        // 这里可以调用AI生成随机事件
-        const events = [
-            '你发现了一个隐藏的小径，通向一个神秘的花园。',
-            '一只友好的猫咪向你走来，似乎在寻找什么。',
-            '你注意到地上有一张纸条，上面写着一些奇怪的字。',
-            '突然下起了雨，你需要在附近找个地方避雨。',
-            '你遇到了一个迷路的小孩子，需要帮助他找到回家的路。'
-        ];
-        
-        const randomEvent = events[Math.floor(Math.random() * events.length)];
-        
-        // 模拟AI生成延迟
-        setTimeout(() => {
-            showEventText(randomEvent);
+        // 使用新的AI事件生成系统
+        if (typeof aiEventGenerator !== 'undefined') {
+            const context = {
+                location: gameData.locations[gameData.character.location].name,
+                health: gameData.character.health,
+                mood: gameData.character.mood,
+                money: gameData.character.money,
+                time: gameData.time
+            };
             
-            // 随机影响角色属性
-            const effects = [
-                { health: +5, mood: +10 },
-                { mood: +15 },
-                { health: +8, mood: +5 },
-                { health: -3, mood: +5 },
-                { mood: +20, money: -10 }
+            const event = await aiEventGenerator.generateRandomEvent(context);
+            showEventText(event.description || event.title || '发生了一个有趣的事件！');
+            
+            // 如果有选择项，显示它们
+            if (event.choices && event.choices.length > 0) {
+                // 这里可以添加选择项的处理逻辑
+                console.log('事件选择项:', event.choices);
+            }
+        } else {
+            // 回退到随机事件
+            const events = [
+                '你发现了一个隐藏的小径，通向一个神秘的花园。',
+                '一只友好的猫咪向你走来，似乎在寻找什么。',
+                '你注意到地上有一张纸条，上面写着一些奇怪的字。',
+                '突然下起了雨，你需要在附近找个地方避雨。',
+                '你遇到了一个迷路的小孩子，需要帮助他找到回家的路。'
             ];
             
-            const effect = effects[Math.floor(Math.random() * effects.length)];
-            Object.keys(effect).forEach(stat => {
-                gameData.character[stat] += effect[stat];
-                gameData.character[stat] = Math.max(0, Math.min(100, gameData.character[stat]));
-            });
+            const randomEvent = events[Math.floor(Math.random() * events.length)];
             
-            updateCharacterPanel();
-        }, 1500);
+            // 模拟AI生成延迟
+            setTimeout(() => {
+                showEventText(randomEvent);
+                
+                // 随机影响角色属性
+                const effects = [
+                    { health: +5, mood: +10 },
+                    { mood: +15 },
+                    { health: +8, mood: +5 },
+                    { health: -3, mood: +5 },
+                    { mood: +20, money: -10 }
+                ];
+                
+                const effect = effects[Math.floor(Math.random() * effects.length)];
+                Object.keys(effect).forEach(stat => {
+                    gameData.character[stat] += effect[stat];
+                    gameData.character[stat] = Math.max(0, Math.min(100, gameData.character[stat]));
+                });
+                
+                updateCharacterPanel();
+            }, 1500);
+        }
         
     } catch (error) {
+        console.error('AI事件生成失败:', error);
         showEventText('AI事件生成失败，请稍后再试。');
     }
 }

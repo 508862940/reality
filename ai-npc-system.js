@@ -427,7 +427,14 @@ class AIRandomEventGenerator {
     async generateRandomEvent(context = {}) {
         try {
             const prompt = this.buildEventPrompt(context);
-            const response = await this.callAI('gemini', prompt);
+            // 使用默认的AI配置生成事件
+            const defaultAIConfig = {
+                provider: 'gemini',
+                model: 'gemini-pro',
+                temperature: 0.8,
+                maxTokens: 200
+            };
+            const response = await this.callAI(defaultAIConfig, prompt);
             
             // 解析AI生成的事件
             const event = this.parseEventResponse(response);
