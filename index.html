@@ -177,7 +177,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('./sw.js')
                     .then(registration => {
                         console.log('SW registered: ', registration);
                     })
@@ -187,17 +187,26 @@
             });
         }
         
-        // iPhone 15 触摸优化
+        // 移动端触摸优化 - 最小化干预
         document.addEventListener('touchstart', function() {}, true);
         
-        // 防止iOS Safari的橡皮筋效果
+        // 只处理页面边缘的过度滚动，不影响正常交互
+        let startY = 0;
+        document.addEventListener('touchstart', function(e) {
+            startY = e.touches[0].pageY;
+        }, { passive: true });
+        
         document.addEventListener('touchmove', function(e) {
-            if (e.target.closest('.modal, .settings-panel')) {
-                // 允许模态框内滚动
-                return;
+            const currentY = e.touches[0].pageY;
+            const deltaY = currentY - startY;
+            
+            // 只在页面顶部向上滑动或底部向下滑动时阻止
+            const isAtTop = window.pageYOffset <= 0;
+            const isAtBottom = window.pageYOffset + window.innerHeight >= document.body.scrollHeight;
+            
+            if ((isAtTop && deltaY > 0) || (isAtBottom && deltaY < 0)) {
+                e.preventDefault();
             }
-            // 防止页面滚动
-            e.preventDefault();
         }, { passive: false });
     </script>
 </body>

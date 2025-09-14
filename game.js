@@ -396,18 +396,22 @@ function saveAISettings() {
         settings.model = model;
         
         // 更新AI服务配置
-        AIServices.openai_proxy.baseURL = proxyUrl;
-        AIServices.openai_proxy.apiKey = proxyKey;
-        AIServices.openai_proxy.enabled = true;
+        if (typeof AIServices !== 'undefined') {
+            AIServices.openai_proxy.baseURL = proxyUrl;
+            AIServices.openai_proxy.apiKey = proxyKey;
+            AIServices.openai_proxy.enabled = true;
+        }
         
         // 更新NPC的AI配置
-        Object.keys(MainNPCs).forEach(npcId => {
-            if (MainNPCs[npcId].aiConfig.provider === 'openai_proxy') {
-                MainNPCs[npcId].aiConfig.model = model;
-                MainNPCs[npcId].aiConfig.temperature = settings.temperature;
-                MainNPCs[npcId].aiConfig.maxTokens = settings.maxTokens;
-            }
-        });
+        if (typeof MainNPCs !== 'undefined') {
+            Object.keys(MainNPCs).forEach(npcId => {
+                if (MainNPCs[npcId].aiConfig.provider === 'openai_proxy') {
+                    MainNPCs[npcId].aiConfig.model = model;
+                    MainNPCs[npcId].aiConfig.temperature = settings.temperature;
+                    MainNPCs[npcId].aiConfig.maxTokens = settings.maxTokens;
+                }
+            });
+        }
         
     } else if (provider !== 'local') {
         // 其他API配置

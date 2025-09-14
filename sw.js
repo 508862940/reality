@@ -1,14 +1,14 @@
 // Service Worker for PWA support
 const CACHE_NAME = 'interactive-novel-v1.0.0';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/game.js',
-  '/ai-config.js',
-  '/ai-npc-system.js',
-  '/advanced-game.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './styles.css',
+  './game.js',
+  './ai-config.js',
+  './ai-npc-system.js',
+  './advanced-game.js',
+  './manifest.json'
 ];
 
 // 安装事件
