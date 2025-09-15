@@ -39,6 +39,14 @@ const AIConfig = {
             apiKey: '', // 用户配置
             model: 'gpt-3.5-turbo',
             baseURL: '' // 用户配置代理地址
+        },
+        
+        // Anthropic Claude配置
+        claude: {
+            enabled: false,
+            apiKey: '', // 在这里填入你的API密钥
+            model: 'claude-3-sonnet-20240229',
+            baseURL: 'https://api.anthropic.com/v1/messages'
         }
     },
     
