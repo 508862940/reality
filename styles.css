@@ -519,6 +519,119 @@ body {
     border: 1px solid #e74c3c;
 }
 
+/* API设置界面样式 */
+.preset-btn {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.preset-btn:hover {
+    background: #e9ecef;
+}
+
+.preset-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.separator {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid #dee2e6;
+}
+
+#api-settings-panel .form-group {
+    margin: 15px 0;
+}
+
+#api-settings-panel label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+#api-settings-panel input,
+#api-settings-panel select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+#api-settings-panel input:focus,
+#api-settings-panel select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#api-settings-panel .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#api-settings-panel .btn-success,
+#api-settings-panel .btn-info {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+#api-settings-panel .btn-success {
+    background: #28a745;
+}
+
+#api-settings-panel .btn-success:hover {
+    background: #218838;
+}
+
+#api-settings-panel .btn-info {
+    background: #17a2b8;
+}
+
+#api-settings-panel .btn-info:hover {
+    background: #138496;
+}
+
+/* 模型选择器样式 */
+#api-model-select {
+    height: 100%;
+    background: transparent;
+    border: none;
+}
+
+#api-model-select option,
+#api-model-select optgroup {
+    background: white;
+    color: #333;
+}
+
+#api-model-select:hover ~ #api-model-input {
+    border-color: #667eea;
+}
+
+#api-settings-panel small {
+    display: block;
+    margin-top: 5px;
+    color: #6c757d;
+}
+
 .ai-status.warning {
     background: #fef9e7;
     color: #f39c12;

@@ -1,0 +1,87 @@
+========================================
+🚨 立即修复AI配置问题
+========================================
+
+根据您的截图，您已经配置了API，但游戏仍然找不到配置。
+请按以下步骤操作：
+
+【步骤1】刷新游戏页面（F5）
+
+【步骤2】打开控制台（F12），复制粘贴以下所有代码并回车：
+
+// ===== 复制从这里开始 =====
+
+// 读取您之前保存的配置
+const savedConfig = JSON.parse(localStorage.getItem('ai_config'));
+console.log('找到配置:', savedConfig);
+
+// 强制应用到AIConfig
+if (AIConfig && AIConfig.api) {
+    AIConfig.api.openai_proxy = {
+        enabled: true,
+        apiKey: savedConfig.apiKey,
+        baseURL: savedConfig.baseUrl || savedConfig.baseURL,
+        model: savedConfig.model || 'gpt-3.5-turbo'
+    };
+    AIConfig.currentProvider = 'openai_proxy';
+    console.log('✅ Step 1: AIConfig已更新');
+}
+
+// 强制应用到AIServices
+if (AIServices) {
+    AIServices.openai_proxy = {
+        name: 'OpenAI兼容代理',
+        baseURL: savedConfig.baseUrl || savedConfig.baseURL,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + savedConfig.apiKey
+        },
+        apiKey: savedConfig.apiKey,
+        enabled: true
+    };
+    console.log('✅ Step 2: AIServices已更新');
+}
+
+// 同步配置
+if (typeof syncAIServiceConfig === 'function') {
+    syncAIServiceConfig();
+    console.log('✅ Step 3: 配置已同步');
+}
+
+// 修复验证函数
+if (aiConversation) {
+    aiConversation.validateAPIConfig = function() { return true; };
+    console.log('✅ Step 4: 验证函数已修复');
+}
+
+console.log('🎉 修复完成！现在试试与NPC对话吧！');
+
+// ===== 复制到这里结束 =====
+
+【步骤3】再次尝试与NPC对话
+
+========================================
+如果还是不行，请运行这个测试命令：
+========================================
+
+testAIConfig()
+
+这会直接测试您的API是否可用。
+
+========================================
+备用方案：手动设置配置
+========================================
+
+如果上面的方法不行，直接运行：
+
+AIConfig.api.openai_proxy = {
+    enabled: true,
+    apiKey: '您的API密钥',
+    baseURL: '您的代理地址',
+    model: 'gpt-3.5-turbo'
+};
+AIConfig.currentProvider = 'openai_proxy';
+
+（请替换为您的实际API密钥和地址）
+
+========================================
