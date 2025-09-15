@@ -5,7 +5,10 @@
       "Bash(echo:*)",
       "Read(//e//**)",
       "Read(//e/systemDir/Documents/GitHub/yoyo/**)",
-      "Read(//e/柚子机/yoyo/**)"
+      "Read(//e/柚子机/yoyo/**)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "Bash(start python -m http.server 8080)"
     ],
     "deny": [],
     "ask": []

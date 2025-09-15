@@ -280,13 +280,18 @@ async function sendChatMessage() {
             currentNPC: currentNPC
         });
         
-        if (typeof MainNPCs !== 'undefined' && typeof aiNPCSystem !== 'undefined') {
+        // 先同步AI服务配置
+        if (typeof syncAIServiceConfig === 'function') {
+            syncAIServiceConfig();
+        }
+
+        if (typeof MainNPCs !== 'undefined' && typeof aiNPCDialogManager !== 'undefined') {
             const npcId = Object.keys(MainNPCs).find(id => MainNPCs[id].name === currentNPC);
             console.log('找到NPC ID:', npcId);
-            
+
             if (npcId) {
                 console.log('使用新AI系统生成回应');
-                const response = await aiNPCSystem.generateNPCResponse(npcId, message, context);
+                const response = await aiNPCDialogManager.generateNPCResponse(npcId, message, context);
                 // 移除"正在思考"消息，显示实际回应
                 thinkingMsg.remove();
                 addChatMessage('ai', response);
@@ -456,6 +461,16 @@ function saveAISettings() {
             AIServices.openai_proxy.apiKey = proxyKey;
             AIServices.openai_proxy.enabled = true;
             console.log('AI服务配置已更新:', AIServices.openai_proxy);
+        }
+        
+        // 同时更新AIConfig配置
+        if (typeof AIConfig !== 'undefined' && AIConfig.api.openai_proxy) {
+            AIConfig.api.openai_proxy.baseURL = proxyUrl;
+            AIConfig.api.openai_proxy.apiKey = proxyKey;
+            AIConfig.api.openai_proxy.model = model;
+            AIConfig.api.openai_proxy.enabled = true;
+            AIConfig.currentProvider = 'openai_proxy';
+            console.log('AIConfig配置已更新:', AIConfig.api.openai_proxy);
         }
         
         // 更新NPC的AI配置
@@ -907,10 +922,16 @@ window.onclick = function(event) {
 // 页面加载完成后初始化游戏
 document.addEventListener('DOMContentLoaded', function() {
     initGame();
-    
+
     // 初始化AI配置
     if (typeof AIConfig !== 'undefined') {
         AIConfig.currentProvider = 'openai_proxy'; // 默认使用OpenAI代理
+
+        // 同步AI服务配置
+        if (typeof syncAIServiceConfig === 'function') {
+            syncAIServiceConfig();
+            console.log('AI服务配置已同步');
+        }
     }
     
     // 检查AI系统初始化状态

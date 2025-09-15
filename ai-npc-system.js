@@ -349,70 +349,16 @@ class AINPCDialogManager {
         }
     }
     
-    // OpenAI兼容代理调用
+    // OpenAI兼容代理调用 - 使用统一的AI配置系统
     async callOpenAIProxy(service, config, prompt) {
-        try {
-            console.log('发送请求到代理:', service.baseURL);
-            console.log('请求体:', {
-                model: config.model,
-                messages: [
-                    { role: 'system', content: prompt.system },
-                    { role: 'user', content: prompt.user }
-                ],
-                max_tokens: config.maxTokens,
-                temperature: config.temperature
-            });
-            
-            const response = await fetch(service.baseURL, {
-                method: 'POST',
-                headers: {
-                    ...service.headers,
-                    'Authorization': `Bearer ${service.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: config.model,
-                    messages: [
-                        { role: 'system', content: prompt.system },
-                        { role: 'user', content: prompt.user }
-                    ],
-                    max_tokens: config.maxTokens,
-                    temperature: config.temperature
-                })
-            });
-            
-            console.log('响应状态:', response.status, response.statusText);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API响应错误:', errorText);
-                
-                // 特殊处理503错误
-                if (response.status === 503) {
-                    throw new Error('服务器暂时不可用 (503)，请稍后重试。这通常是因为服务器过载或维护中。');
-                } else if (response.status === 429) {
-                    throw new Error('请求过于频繁 (429)，请稍后重试。');
-                } else if (response.status === 401) {
-                    throw new Error('API密钥无效 (401)，请检查密钥是否正确。');
-                } else if (response.status === 403) {
-                    throw new Error('访问被拒绝 (403)，请检查API密钥权限。');
-                } else {
-                    throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
-                }
-            }
-            
-            const data = await response.json();
-            console.log('API响应数据:', data);
-            
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                return data.choices[0].message.content || '抱歉，我现在无法回应。';
-            } else {
-                console.error('响应格式不正确:', data);
-                return '抱歉，响应格式不正确。';
-            }
-        } catch (error) {
-            console.error('OpenAI代理API调用失败:', error);
-            return this.getFallbackResponse(prompt.user);
+        // 直接使用 AIConversation 类的实现，避免重复代码
+        if (typeof aiConversation !== 'undefined') {
+            return await aiConversation.callOpenAIProxy(prompt);
         }
+
+        // 如果没有全局的 aiConversation，则返回fallback
+        console.error('AI配置系统不可用，使用本地fallback');
+        return this.getFallbackResponse(prompt.user);
     }
     
     // 备用回应
@@ -618,8 +564,51 @@ class AIRandomEventGenerator {
 const aiNPCDialogManager = new AINPCDialogManager();
 const aiRandomEventGenerator = new AIRandomEventGenerator();
 
+// 初始化函数，从AIConfig同步配置
+function syncAIServiceConfig() {
+    // 检查AIConfig是否存在
+    if (typeof AIConfig !== 'undefined' && AIConfig.api) {
+        // 同步OpenAI代理配置
+        if (AIConfig.api.openai_proxy) {
+            AIServices.openai_proxy.apiKey = AIConfig.api.openai_proxy.apiKey;
+            AIServices.openai_proxy.baseURL = AIConfig.api.openai_proxy.baseURL;
+            AIServices.openai_proxy.enabled = AIConfig.api.openai_proxy.enabled;
+            AIServices.openai_proxy.headers['Authorization'] = 'Bearer ' + AIConfig.api.openai_proxy.apiKey;
+            console.log('同步OpenAI代理配置:', AIServices.openai_proxy);
+        }
+
+        // 同步其他服务配置
+        if (AIConfig.api.openai) {
+            AIServices.openai.apiKey = AIConfig.api.openai.apiKey;
+            AIServices.openai.enabled = AIConfig.api.openai.enabled;
+            AIServices.openai.headers['Authorization'] = 'Bearer ' + AIConfig.api.openai.apiKey;
+        }
+
+        if (AIConfig.api.gemini) {
+            AIServices.gemini.apiKey = AIConfig.api.gemini.apiKey;
+            AIServices.gemini.enabled = AIConfig.api.gemini.enabled;
+        }
+
+        if (AIConfig.api.claude) {
+            AIServices.claude.apiKey = AIConfig.api.claude.apiKey;
+            AIServices.claude.enabled = AIConfig.api.claude.enabled;
+            AIServices.claude.headers['x-api-key'] = AIConfig.api.claude.apiKey;
+        }
+
+        console.log('AI服务配置已同步');
+    }
+}
+
+// 页面加载后自动同步配置
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncAIServiceConfig);
+} else {
+    syncAIServiceConfig();
+}
+
 // 导出给全局使用
 window.aiNPCDialogManager = aiNPCDialogManager;
 window.aiRandomEventGenerator = aiRandomEventGenerator;
 window.MainNPCs = MainNPCs;
 window.AIServices = AIServices;
+window.syncAIServiceConfig = syncAIServiceConfig;

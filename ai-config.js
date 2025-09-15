@@ -35,7 +35,7 @@ const AIConfig = {
         
         // OpenAI兼容代理配置
         openai_proxy: {
-            enabled: false,
+            enabled: true, // 启用代理
             apiKey: '', // 用户配置
             model: 'gpt-3.5-turbo',
             baseURL: '' // 用户配置代理地址
@@ -51,7 +51,7 @@ const AIConfig = {
     },
     
     // 当前使用的AI服务
-    currentProvider: 'openai_proxy',
+    currentProvider: 'openai_proxy', // 使用OpenAI代理
     
     // AI角色设定
     npcPersonalities: {
@@ -91,6 +91,60 @@ class AIConversation {
     constructor() {
         this.conversationHistory = [];
         this.isProcessing = false;
+    }
+
+    // 验证API配置
+    validateAPIConfig(provider) {
+        const config = AIConfig.api[provider];
+        if (!config) {
+            console.error('AI服务配置不存在:', provider);
+            return false;
+        }
+
+        if (!config.enabled) {
+            console.error('AI服务未启用:', provider);
+            return false;
+        }
+
+        // 验证必需的配置项
+        switch (provider) {
+            case 'openai_proxy':
+            case 'openai':
+                if (!config.apiKey || !config.baseURL) {
+                    console.error('OpenAI配置缺失: apiKey或baseURL为空');
+                    return false;
+                }
+                break;
+            case 'gemini':
+                if (!config.apiKey) {
+                    console.error('Gemini配置缺失: apiKey为空');
+                    return false;
+                }
+                break;
+            case 'claude':
+                if (!config.apiKey) {
+                    console.error('Claude配置缺失: apiKey为空');
+                    return false;
+                }
+                break;
+            case 'qwen':
+                if (!config.apiKey) {
+                    console.error('通义千问配置缺失: apiKey为空');
+                    return false;
+                }
+                break;
+            case 'local':
+                if (!config.baseURL) {
+                    console.error('本地AI配置缺失: baseURL为空');
+                    return false;
+                }
+                break;
+            default:
+                console.error('未知的AI服务:', provider);
+                return false;
+        }
+
+        return true;
     }
     
     // 生成AI对话
@@ -151,6 +205,16 @@ class AIConversation {
     
     // 调用AI API
     async callAI(prompt) {
+        // 验证当前AI服务配置
+        if (!this.validateAPIConfig(AIConfig.currentProvider)) {
+            console.error('当前AI服务配置无效，尝试使用本地AI');
+            // 尝试使用本地AI作为备用
+            if (AIConfig.currentProvider !== 'local' && this.validateAPIConfig('local')) {
+                return await this.callLocal(prompt);
+            }
+            return this.getFallbackResponse(prompt.user);
+        }
+
         const config = AIConfig.api[AIConfig.currentProvider];
         
         if (!config) {
@@ -235,14 +299,23 @@ class AIConversation {
     // OpenAI兼容代理调用
     async callOpenAIProxy(prompt) {
         try {
-            const response = await fetch(AIConfig.api.openai_proxy.baseURL, {
+            // 验证配置
+            const config = AIConfig.api.openai_proxy;
+            if (!this.validateAPIConfig('openai_proxy')) {
+                console.error('OpenAI代理配置无效');
+                return this.getFallbackResponse(prompt.user);
+            }
+
+            console.log('调用OpenAI代理API:', config.baseURL);
+
+            const response = await fetch(config.baseURL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${AIConfig.api.openai_proxy.apiKey}`
+                    'Authorization': `Bearer ${config.apiKey}`
                 },
                 body: JSON.stringify({
-                    model: AIConfig.api.openai_proxy.model,
+                    model: config.model,
                     messages: [
                         { role: 'system', content: prompt.system },
                         { role: 'user', content: prompt.user }
@@ -251,9 +324,36 @@ class AIConversation {
                     temperature: 0.8
                 })
             });
-            
+
+            console.log('响应状态:', response.status, response.statusText);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API响应错误:', errorText);
+
+                // 详细的错误处理
+                if (response.status === 503) {
+                    throw new Error('服务器暂时不可用 (503)，请稍后重试。这通常是因为服务器过载或维护中。');
+                } else if (response.status === 429) {
+                    throw new Error('请求过于频繁 (429)，请稍后重试。');
+                } else if (response.status === 401) {
+                    throw new Error('API密钥无效 (401)，请检查密钥是否正确。');
+                } else if (response.status === 403) {
+                    throw new Error('访问被拒绝 (403)，请检查API密钥权限。');
+                } else {
+                    throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+            }
+
             const data = await response.json();
-            return data.choices[0].message.content || '抱歉，我现在无法回应。';
+            console.log('API响应数据:', data);
+
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content || '抱歉，我现在无法回应。';
+            } else {
+                console.error('响应格式不正确:', data);
+                return '抱歉，响应格式不正确。';
+            }
         } catch (error) {
             console.error('OpenAI代理调用失败:', error);
             return this.getFallbackResponse(prompt.user);
