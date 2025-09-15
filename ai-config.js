@@ -160,8 +160,12 @@ class AIConversation {
                 return await this.callLocalAI(prompt);
             case 'openai':
                 return await this.callOpenAI(prompt);
+            case 'openai_proxy':
+                return await this.callOpenAIProxy(prompt);
             case 'gemini':
                 return await this.callGemini(prompt);
+            case 'claude':
+                return await this.callClaude(prompt);
             case 'qwen':
                 return await this.callQwen(prompt);
             default:
@@ -216,6 +220,122 @@ class AIConversation {
             return data.choices[0].message.content || '抱歉，我现在无法回应。';
         } catch (error) {
             console.error('OpenAI调用失败:', error);
+            return this.getFallbackResponse(prompt.user);
+        }
+    }
+    
+    // OpenAI兼容代理调用
+    async callOpenAIProxy(prompt) {
+        try {
+            const response = await fetch(AIConfig.api.openai_proxy.baseURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AIConfig.api.openai_proxy.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: AIConfig.api.openai_proxy.model,
+                    messages: [
+                        { role: 'system', content: prompt.system },
+                        { role: 'user', content: prompt.user }
+                    ],
+                    max_tokens: 150,
+                    temperature: 0.8
+                })
+            });
+            
+            const data = await response.json();
+            return data.choices[0].message.content || '抱歉，我现在无法回应。';
+        } catch (error) {
+            console.error('OpenAI代理调用失败:', error);
+            return this.getFallbackResponse(prompt.user);
+        }
+    }
+    
+    // Gemini调用
+    async callGemini(prompt) {
+        try {
+            const response = await fetch(AIConfig.api.gemini.baseURL + `?key=${AIConfig.api.gemini.apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `${prompt.system}\n\n${prompt.user}`
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.8,
+                        maxOutputTokens: 150
+                    }
+                })
+            });
+            
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text || '抱歉，我现在无法回应。';
+        } catch (error) {
+            console.error('Gemini调用失败:', error);
+            return this.getFallbackResponse(prompt.user);
+        }
+    }
+    
+    // Claude调用
+    async callClaude(prompt) {
+        try {
+            const response = await fetch(AIConfig.api.claude.baseURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': AIConfig.api.claude.apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-sonnet-20240229',
+                    max_tokens: 150,
+                    messages: [
+                        { role: 'user', content: `${prompt.system}\n\n${prompt.user}` }
+                    ]
+                })
+            });
+            
+            const data = await response.json();
+            return data.content[0].text || '抱歉，我现在无法回应。';
+        } catch (error) {
+            console.error('Claude调用失败:', error);
+            return this.getFallbackResponse(prompt.user);
+        }
+    }
+    
+    // 通义千问调用
+    async callQwen(prompt) {
+        try {
+            const response = await fetch(AIConfig.api.qwen.baseURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AIConfig.api.qwen.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: AIConfig.api.qwen.model,
+                    input: {
+                        messages: [
+                            { role: 'system', content: prompt.system },
+                            { role: 'user', content: prompt.user }
+                        ]
+                    },
+                    parameters: {
+                        max_tokens: 150,
+                        temperature: 0.8
+                    }
+                })
+            });
+            
+            const data = await response.json();
+            return data.output.text || '抱歉，我现在无法回应。';
+        } catch (error) {
+            console.error('通义千问调用失败:', error);
             return this.getFallbackResponse(prompt.user);
         }
     }
