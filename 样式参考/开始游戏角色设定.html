@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>角色创建 - Reality</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 主容器 */
+        .creation-container {
+            width: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* 标题 */
+        .page-title {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+        }
+
+        /* 进度指示器 */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b92f6, #f093fb);
+            border-radius: 3px;
+            width: 25%;
+            transition: width 0.5s ease;
+        }
+
+        /* 卡片样式 */
+        .creation-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            color: #f093fb;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 角色预览 */
+        .character-preview {
+            width: 150px;
+            height: 200px;
+            margin: 0 auto 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .preview-avatar {
+            font-size: 80px;
+            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+        }
+
+        /* 表单元素 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            color: #e4e4e7;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(240, 147, 251, 0.6);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* 选项组 */
+        .option-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: #e4e4e7;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .option-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .option-btn.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+            border-color: rgba(240, 147, 251, 0.6);
+            color: white;
+        }
+
+        /* 滑块 */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            color: #f093fb;
+            font-size: 14px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        /* NPC设置 */
+        .npc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .npc-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .npc-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .npc-avatar {
+            font-size: 24px;
+        }
+
+        .npc-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .npc-name {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .npc-role {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .npc-toggle {
+            position: relative;
+            width: 45px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .npc-toggle.active {
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+        }
+
+        .npc-toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .npc-toggle.active .npc-toggle-slider {
+            transform: translateX(21px);
+        }
+
+        /* 添加自定义NPC按钮 */
+        .add-npc-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(240, 147, 251, 0.2));
+            border: 2px dashed rgba(240, 147, 251, 0.4);
+            border-radius: 10px;
+            color: #f093fb;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .add-npc-btn:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+        }
+
+        /* 自定义NPC表单 */
+        .custom-npc-form {
+            display: none;
+            background: rgba(139, 92, 246, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .custom-npc-form.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .form-textarea:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(240, 147, 251, 0.6);
+        }
+
+        /* 难度选择 */
+        .difficulty-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .difficulty-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .difficulty-card:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .difficulty-card.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+            border-color: rgba(240, 147, 251, 0.6);
+        }
+
+        .difficulty-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .difficulty-name {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .difficulty-desc {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        /* 底部按钮 */
+        .bottom-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, #1a1a2e, transparent);
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            max-width: 430px;
+            margin: 0 auto;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            outline: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="creation-container">
+        <!-- 标题 -->
+        <h1 class="page-title">创建角色</h1>
+        
+        <!-- 进度条 -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- 角色基础设置 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>👤</span>
+                <span>角色设置</span>
+            </div>
+
+            <!-- 角色预览 -->
+            <div class="character-preview">
+                <div class="preview-avatar">👧</div>
+            </div>
+
+            <!-- 姓名 -->
+            <div class="form-group">
+                <label class="form-label">角色姓名</label>
+                <input type="text" class="form-input" placeholder="输入你的角色名" value="小雨">
+            </div>
+
+            <!-- 性别 -->
+            <div class="form-group">
+                <label class="form-label">性别</label>
+                <div class="option-group">
+                    <div class="option-btn active" onclick="selectOption(this, 'gender')">女性</div>
+                    <div class="option-btn" onclick="selectOption(this, 'gender')">男性</div>
+                    <div class="option-btn" onclick="selectOption(this, 'gender')">其他</div>
+                </div>
+            </div>
+
+            <!-- 年龄 -->
+            <div class="form-group">
+                <label class="form-label">年龄</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="ageSlider" min="15" max="25" value="18" oninput="updateSliderValue('age', this.value)">
+                    <span class="slider-value" id="ageValue">18</span>
+                </div>
+            </div>
+
+            <!-- 外貌特征 -->
+            <div class="form-group">
+                <label class="form-label">发型</label>
+                <div class="option-group">
+                    <div class="option-btn active" onclick="selectOption(this, 'hair')">长发</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hair')">短发</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hair')">双马尾</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hair')">单马尾</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">发色</label>
+                <div class="option-group">
+                    <div class="option-btn active" onclick="selectOption(this, 'hairColor')">黑色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor')">棕色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor')">金色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor')">红色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor')">紫色</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">体型</label>
+                <div class="option-group">
+                    <div class="option-btn" onclick="selectOption(this, 'body')">纤细</div>
+                    <div class="option-btn active" onclick="selectOption(this, 'body')">标准</div>
+                    <div class="option-btn" onclick="selectOption(this, 'body')">健壮</div>
+                    <div class="option-btn" onclick="selectOption(this, 'body')">丰满</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 初始属性 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>⭐</span>
+                <span>初始属性</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">智力</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" min="1" max="10" value="5" oninput="updateSliderValue('int', this.value)">
+                    <span class="slider-value" id="intValue">5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">体力</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" min="1" max="10" value="5" oninput="updateSliderValue('str', this.value)">
+                    <span class="slider-value" id="strValue">5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">魅力</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" min="1" max="10" value="5" oninput="updateSliderValue('cha', this.value)">
+                    <span class="slider-value" id="chaValue">5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">勇气</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" min="1" max="10" value="5" oninput="updateSliderValue('cou', this.value)">
+                    <span class="slider-value" id="couValue">5</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- NPC设置 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>💕</span>
+                <span>主要NPC设置</span>
+            </div>
+
+            <div class="npc-list">
+                <!-- 默认NPC -->
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">👨‍🎓</span>
+                        <div class="npc-details">
+                            <span class="npc-name">林学长</span>
+                            <span class="npc-role">学霸学长 · 温柔体贴</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">🏃‍♂️</span>
+                        <div class="npc-details">
+                            <span class="npc-name">张同学</span>
+                            <span class="npc-role">运动健将 · 阳光开朗</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">🌙</span>
+                        <div class="npc-details">
+                            <span class="npc-name">夜同学</span>
+                            <span class="npc-role">神秘转学生 · 高冷神秘</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">🌟</span>
+                        <div class="npc-details">
+                            <span class="npc-name">小明</span>
+                            <span class="npc-role">青梅竹马 · 温暖可靠</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 添加自定义NPC -->
+            <button class="add-npc-btn" onclick="toggleCustomNPC()">
+                <span>➕</span>
+                <span>添加自定义NPC</span>
+            </button>
+
+            <!-- 自定义NPC表单 -->
+            <div class="custom-npc-form" id="customNPCForm">
+                <div class="form-group">
+                    <label class="form-label">NPC姓名</label>
+                    <input type="text" class="form-input" placeholder="例如：李老师">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">角色定位</label>
+                    <input type="text" class="form-input" placeholder="例如：严厉的班主任">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">性格特征</label>
+                    <textarea class="form-textarea" placeholder="描述NPC的性格特点，例如：表面严厉但内心关心学生，有着丰富的教学经验..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">日常作息</label>
+                    <textarea class="form-textarea" placeholder="描述NPC的日常活动，例如：早上7点到校，经常在办公室批改作业..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">兴趣爱好</label>
+                    <input type="text" class="form-input" placeholder="例如：阅读、园艺、古典音乐">
+                </div>
+
+                <div class="option-group">
+                    <button class="option-btn" onclick="saveCustomNPC()">保存NPC</button>
+                    <button class="option-btn" onclick="toggleCustomNPC()">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 难度设置 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>🎯</span>
+                <span>游戏难度</span>
+            </div>
+
+            <div class="difficulty-options">
+                <div class="difficulty-card active" onclick="selectDifficulty(this, 'easy')">
+                    <div class="difficulty-icon">😊</div>
+                    <div class="difficulty-name">简单</div>
+                    <div class="difficulty-desc">适合新手体验</div>
+                </div>
+
+                <div class="difficulty-card" onclick="selectDifficulty(this, 'normal')">
+                    <div class="difficulty-icon">😐</div>
+                    <div class="difficulty-name">普通</div>
+                    <div class="difficulty-desc">平衡的游戏体验</div>
+                </div>
+
+                <div class="difficulty-card" onclick="selectDifficulty(this, 'hard')">
+                    <div class="difficulty-icon">😤</div>
+                    <div class="difficulty-name">困难</div>
+                    <div class="difficulty-desc">需要策略规划</div>
+                </div>
+
+                <div class="difficulty-card" onclick="selectDifficulty(this, 'nightmare')">
+                    <div class="difficulty-icon">😈</div>
+                    <div class="difficulty-name">噩梦</div>
+                    <div class="difficulty-desc">极限挑战</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="bottom-buttons">
+        <button class="btn btn-secondary" onclick="goBack()">返回</button>
+        <button class="btn btn-primary" onclick="enterReality()">进入Reality</button>
+    </div>
+
+    <script>
+        // 选择选项
+        function selectOption(element, group) {
+            // 移除同组其他选项的active类
+            const parent = element.parentElement;
+            parent.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // 添加active类到当前选项
+            element.classList.add('active');
+            updateProgress();
+        }
+
+        // 更新滑块值
+        function updateSliderValue(id, value) {
+            document.getElementById(id + 'Value').textContent = value;
+            updateProgress();
+        }
+
+        // 切换NPC
+        function toggleNPC(element) {
+            element.classList.toggle('active');
+            updateProgress();
+        }
+
+        // 选择难度
+        function selectDifficulty(element, difficulty) {
+            // 移除其他难度的active类
+            document.querySelectorAll('.difficulty-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            // 添加active类到当前难度
+            element.classList.add('active');
+            updateProgress();
+        }
+
+        // 显示/隐藏自定义NPC表单
+        function toggleCustomNPC() {
+            const form = document.getElementById('customNPCForm');
+            form.classList.toggle('active');
+        }
+
+        // 保存自定义NPC
+        function saveCustomNPC() {
+            alert('自定义NPC已保存！');
+            toggleCustomNPC();
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            // 这里可以根据填写的内容计算进度
+            const progress = 75; // 示例值
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // 返回主菜单
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        // 进入游戏
+        function enterReality() {
+            console.log('进入游戏主界面');
+            // 保存角色数据
+            const characterData = {
+                name: document.querySelector('.form-input').value,
+                // ... 收集其他数据
+            };
+            localStorage.setItem('characterData', JSON.stringify(characterData));
+            // 跳转到游戏界面
+            window.location.href = 'game.html';
+        }
+    </script>
+</body>
+</html>

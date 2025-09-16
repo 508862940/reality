@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Reality">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b92f6'/%3E%3Cstop offset='100%25' style='stop-color:%23f093fb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23g)'/%3E%3Ctext x='90' y='105' text-anchor='middle' fill='white' font-size='75' font-family='Arial'%3E✨%3C/text%3E%3C/svg%3E">
+
+    <title>Reality - 游戏中</title>
+    <link rel="stylesheet" href="game-main.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- 上半部分 -->
+        <div class="upper-section">
+            <div class="upper-main">
+                <!-- A区 - 立绘 -->
+                <div class="area-a" id="characterSprite">
+                    <div class="character-sprite-container">
+                        <div class="sprite-placeholder">👧</div>
+                        <div class="sprite-name" id="characterName">角色</div>
+                    </div>
+                </div>
+
+                <!-- 右侧区域 -->
+                <div class="right-section">
+                    <!-- B区 - 位置时间 -->
+                    <div class="area-b">
+                        <div class="location-info">
+                            <span class="location-icon">📍</span>
+                            <span id="currentLocation">学校·教室</span>
+                        </div>
+                        <div class="time-info">
+                            <span class="time-icon">🕐</span>
+                            <span id="currentTime">星期一 08:30</span>
+                        </div>
+                    </div>
+
+                    <!-- C区 - 景色 -->
+                    <div class="area-c" id="scenePreview">
+                        <div class="scene-content">
+                            <span class="scene-emoji">🏫</span>
+                            <span class="scene-text">教室场景</span>
+                        </div>
+                    </div>
+
+                    <!-- D区 - 功能面板 -->
+                    <div class="area-d">
+                        <div class="function-tabs">
+                            <div class="tab-btn active" data-tab="status" onclick="switchTab('status')" title="状态">📊</div>
+                            <div class="tab-btn" data-tab="inventory" onclick="switchTab('inventory')" title="背包">🎒</div>
+                            <div class="tab-btn" data-tab="map" onclick="switchTab('map')" title="地图">🗺️</div>
+                            <div class="tab-btn" data-tab="skills" onclick="switchTab('skills')" title="属性">⭐</div>
+                            <div class="tab-btn" data-tab="social" onclick="switchTab('social')" title="社交">👥</div>
+                            <div class="tab-btn" data-tab="journal" onclick="switchTab('journal')" title="日志">📖</div>
+                            <div class="tab-btn" data-tab="settings" onclick="switchTab('settings')" title="设置">⚙️</div>
+                        </div>
+                        <div class="function-content" id="functionContent">
+                            <!-- 默认显示状态内容 -->
+                            <div class="tab-content" id="statusContent">
+                                <div class="stat-item">
+                                    <span class="stat-label">体力</span>
+                                    <div class="stat-bar">
+                                        <div class="stat-fill" id="healthBar" style="width: 100%;"></div>
+                                    </div>
+                                    <span class="stat-value" id="healthValue">100</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">心情</span>
+                                    <div class="stat-bar">
+                                        <div class="stat-fill mood" id="moodBar" style="width: 50%;"></div>
+                                    </div>
+                                    <span class="stat-value" id="moodValue">50</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">金钱</span>
+                                    <div class="stat-bar">
+                                        <div class="stat-fill money" id="moneyBar" style="width: 100%;"></div>
+                                    </div>
+                                    <span class="stat-value" id="moneyValue">100</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">精力</span>
+                                    <div class="stat-bar">
+                                        <div class="stat-fill energy" id="energyBar" style="width: 80%;"></div>
+                                    </div>
+                                    <span class="stat-value" id="energyValue">80</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E区 - 提醒 -->
+            <div class="area-e">
+                <span class="notice-text" id="noticeText">💡 提醒：第一节课即将开始，请尽快前往教室...</span>
+            </div>
+        </div>
+
+        <!-- 下半部分 - F区 -->
+        <div class="lower-section">
+            <!-- AI模式指示器 -->
+            <div class="ai-mode-indicator" id="aiModeIndicator">AI对话模式</div>
+
+            <!-- F1区 - 剧情文本和选项混合 -->
+            <div class="story-area" id="storyArea">
+                <!-- 剧情内容将动态加载 -->
+                <div class="story-text">
+                    <p>游戏正在加载中...</p>
+                </div>
+            </div>
+
+            <!-- F2区 - AI输入区域 -->
+            <div class="ai-input-area" id="aiInputArea">
+                <div class="ai-input-wrapper">
+                    <input type="text" class="ai-input" id="aiInput" placeholder="输入你想说的话..." />
+                    <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()">
+                        ➤
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载游戏脚本 -->
+    <script src="game-main.js"></script>
+    <!-- 加载原有的游戏逻辑 -->
+    <script src="game.js"></script>
+    <!-- 加载AI配置 -->
+    <script src="ai-config.js"></script>
+    <script src="ai-npc-system.js"></script>
+    <!-- 加载高级游戏系统（如果需要） -->
+    <!-- <script src="advanced-game.js"></script> -->
+</body>
+</html>

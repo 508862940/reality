@@ -1,0 +1,480 @@
+/* 角色创建界面样式 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* 主容器 */
+.creation-container {
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 100px;
+}
+
+/* 标题 */
+.page-title {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+}
+
+/* 进度指示器 */
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #8b92f6, #f093fb);
+    border-radius: 3px;
+    width: 25%;
+    transition: width 0.5s ease;
+}
+
+/* 卡片样式 */
+.creation-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    color: #f093fb;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 角色预览 */
+.character-preview {
+    width: 150px;
+    height: 200px;
+    margin: 0 auto 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-avatar {
+    font-size: 80px;
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+    transition: all 0.3s ease;
+}
+
+/* 表单元素 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    color: #e4e4e7;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.form-input:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(240, 147, 251, 0.6);
+}
+
+.form-select {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* 选项组 */
+.option-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.option-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    color: #e4e4e7;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.option-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+}
+
+.option-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+    border: 1px solid rgba(240, 147, 251, 0.6);
+    color: white;
+}
+
+/* 属性点数信息 */
+.attr-points-info {
+    text-align: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 8px;
+}
+
+.attr-points-info span {
+    color: #e4e4e7;
+    font-size: 14px;
+}
+
+.points-value {
+    color: #f093fb;
+    font-weight: bold;
+    font-size: 18px;
+    margin-left: 5px;
+}
+
+/* 滑块 */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.slider-value {
+    color: #f093fb;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 30px;
+    text-align: right;
+}
+
+/* NPC设置 */
+.npc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.npc-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.npc-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.npc-avatar {
+    font-size: 24px;
+}
+
+.npc-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.npc-name {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.npc-role {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.npc-toggle {
+    position: relative;
+    width: 45px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.npc-toggle.active {
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+}
+
+.npc-toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.npc-toggle.active .npc-toggle-slider {
+    transform: translateX(21px);
+}
+
+/* 添加自定义NPC按钮 */
+.add-npc-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(240, 147, 251, 0.2));
+    border: 2px dashed rgba(240, 147, 251, 0.4);
+    border-radius: 10px;
+    color: #f093fb;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.add-npc-btn:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+}
+
+/* 自定义NPC表单 */
+.custom-npc-form {
+    display: none;
+    background: rgba(139, 92, 246, 0.05);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.custom-npc-form.active {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.form-textarea:focus {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(240, 147, 251, 0.6);
+}
+
+/* 难度选择 */
+.difficulty-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.difficulty-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.difficulty-card:hover {
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.difficulty-card.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+    border-color: rgba(240, 147, 251, 0.6);
+}
+
+.difficulty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.difficulty-name {
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.difficulty-desc {
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+/* 底部按钮 */
+.bottom-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, #1a1a2e, transparent);
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    max-width: 430px;
+    margin: 0 auto;
+}
+
+.btn {
+    flex: 1;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    outline: none;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+}
+
+/* 响应式设计 */
+@media (max-width: 430px) {
+    .creation-container {
+        padding: 15px;
+        padding-bottom: 90px;
+    }
+
+    .page-title {
+        font-size: 22px;
+    }
+
+    .difficulty-options {
+        gap: 8px;
+    }
+
+    .difficulty-card {
+        padding: 12px;
+    }
+
+    .difficulty-icon {
+        font-size: 28px;
+    }
+}

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>文字冒险游戏 - 主菜单</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e3ace 100%);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 动态背景效果 */
+        .bg-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bg-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.4;
+            }
+            90% {
+                opacity: 0.4;
+            }
+            to {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* 主容器 */
+        .main-container {
+            width: 100%;
+            height: 100vh;
+            max-width: 430px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        /* 游戏标题 */
+        .game-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% {
+                text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                            0 0 30px rgba(139, 92, 246, 0.5);
+            }
+            50% {
+                text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                            0 0 50px rgba(240, 147, 251, 0.8);
+            }
+        }
+
+        .game-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        /* 主菜单按钮组 */
+        .menu-buttons {
+            width: 100%;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            width: 100%;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .menu-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-btn.primary {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.6), rgba(240, 147, 251, 0.6));
+            border-color: rgba(240, 147, 251, 0.4);
+            font-size: 18px;
+            padding: 20px;
+        }
+
+        .menu-btn.primary:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(240, 147, 251, 0.8));
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            z-index: 100;
+            animation: fadeIn 0.3s;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .settings-container {
+            width: 100%;
+            height: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+
+        .settings-header {
+            padding: 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-title {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .settings-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .section-title {
+            color: #f093fb;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-label {
+            color: #e4e4e7;
+            font-size: 14px;
+        }
+
+        .setting-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 14px;
+            width: 180px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .setting-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(240, 147, 251, 0.6);
+        }
+
+        .setting-select {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 14px;
+            width: 150px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        .volume-slider {
+            width: 150px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* 版本信息 */
+        .version-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+
+        /* 扩展包区域 */
+        .expansion-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .expansion-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expansion-name {
+            color: #e4e4e7;
+            font-size: 14px;
+        }
+
+        .expansion-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .expansion-status.disabled {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态背景 -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <!-- 主菜单容器 -->
+    <div class="main-container">
+        <h1 class="game-title">✨ Reality ✨</h1>
+        <p class="game-subtitle">互动文字冒险游戏</p>
+
+        <div class="menu-buttons">
+            <button class="menu-btn primary" onclick="startNewGame()">
+                🎮 开始新游戏
+            </button>
+            <button class="menu-btn" onclick="loadGame()">
+                💾 读取存档
+            </button>
+            <button class="menu-btn" onclick="openSettings()">
+                ⚙️ 游戏设置
+            </button>
+        </div>
+
+        <div class="version-info">
+            Version 0.1.0 Beta
+        </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-container">
+            <div class="settings-header">
+                <div class="settings-title">游戏设置</div>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="settings-content">
+                <!-- API设置 -->
+                <div class="settings-section">
+                    <div class="section-title">🤖 API 设置</div>
+                    <div class="setting-item">
+                        <span class="setting-label">AI服务商</span>
+                        <select class="setting-select">
+                            <option>OpenAI (GPT)</option>
+                            <option>Google (Gemini)</option>
+                            <option>Anthropic (Claude)</option>
+                            <option>本地代理</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">API密钥</span>
+                        <input type="password" class="setting-input" placeholder="输入你的API密钥">
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">API端点</span>
+                        <input type="text" class="setting-input" placeholder="默认">
+                    </div>
+                </div>
+
+                <!-- 游戏设置 -->
+                <div class="settings-section">
+                    <div class="section-title">🎮 游戏设置</div>
+                    <div class="setting-item">
+                        <span class="setting-label">难度</span>
+                        <select class="setting-select">
+                            <option>简单</option>
+                            <option>普通</option>
+                            <option>困难</option>
+                            <option>噩梦</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">自动存档</span>
+                        <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">跳过教程</span>
+                        <div class="toggle-switch" onclick="toggleSwitch(this)">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">显示提示</span>
+                        <div class="toggle-switch active" onclick="toggleSwitch(this)">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 音量设置 -->
+                <div class="settings-section">
+                    <div class="section-title">🔊 音量设置</div>
+                    <div class="setting-item">
+                        <span class="setting-label">主音量</span>
+                        <input type="range" class="volume-slider" min="0" max="100" value="70">
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">音效</span>
+                        <input type="range" class="volume-slider" min="0" max="100" value="80">
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">背景音乐</span>
+                        <input type="range" class="volume-slider" min="0" max="100" value="50">
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">语音</span>
+                        <input type="range" class="volume-slider" min="0" max="100" value="90">
+                    </div>
+                </div>
+
+                <!-- 扩展包设置 -->
+                <div class="settings-section">
+                    <div class="section-title">📦 扩展包设置</div>
+                    <div class="expansion-list">
+                        <div class="expansion-item">
+                            <span class="expansion-name">🏫 校园生活扩展包</span>
+                            <span class="expansion-status">已启用</span>
+                        </div>
+                        <div class="expansion-item">
+                            <span class="expansion-name">🌃 都市冒险扩展包</span>
+                            <span class="expansion-status disabled">未安装</span>
+                        </div>
+                        <div class="expansion-item">
+                            <span class="expansion-name">🎪 节日活动扩展包</span>
+                            <span class="expansion-status disabled">未安装</span>
+                        </div>
+                        <div class="expansion-item">
+                            <span class="expansion-name">💼 职场生涯扩展包</span>
+                            <span class="expansion-status disabled">即将推出</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 创建背景粒子效果
+        function createParticles() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'bg-particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                bgAnimation.appendChild(particle);
+            }
+        }
+
+        // 开始新游戏
+        function startNewGame() {
+            console.log('跳转到角色创建界面');
+            // 这里跳转到角色创建页面
+            window.location.href = 'character-creation.html';
+        }
+
+        // 读取存档
+        function loadGame() {
+            console.log('打开存档列表');
+            alert('存档功能开发中...');
+        }
+
+        // 打开设置
+        function openSettings() {
+            document.getElementById('settingsPanel').classList.add('active');
+        }
+
+        // 关闭设置
+        function closeSettings() {
+            document.getElementById('settingsPanel').classList.remove('active');
+        }
+
+        // 切换开关
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+
+        // 初始化
+        window.onload = function() {
+            createParticles();
+        };
+    </script>
+</body>
+</html>

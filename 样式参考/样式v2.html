@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>互动文字游戏 - 手机版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 主容器 */
+        .game-container {
+            width: 100%;
+            height: 100vh;
+            max-width: 430px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a2e;
+        }
+
+        /* 上半部分容器 */
+        .upper-section {
+            height: 45vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(to bottom, #2d3561, #1a1a2e);
+            border-bottom: 2px solid #16213e;
+        }
+
+        /* 上部主要内容区 */
+        .upper-main {
+            flex: 1;
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        /* A区 - 立绘区域 */
+        .area-a {
+            width: 35%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .character-sprite {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+        }
+
+        /* 右侧区域容器 */
+        .right-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* B区 - 位置时间信息 */
+        .area-b {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 6px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #e4e4e7;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* C区 - 景色预览 */
+        .area-c {
+            height: 60px;
+            background: linear-gradient(to right, #4a5568, #2d3748);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scene-preview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px);
+        }
+
+        /* D区 - 功能面板 */
+        .area-d {
+            flex: 1;
+            background: rgba(30, 30, 45, 0.8);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 功能按钮栏 */
+        .function-tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: white;
+        }
+
+        .tab-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            box-shadow: 0 0 15px rgba(240, 147, 251, 0.5);
+        }
+
+        /* 功能内容区 */
+        .function-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            color: #e4e4e7;
+            font-size: 13px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .stat-bar {
+            width: 100px;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 7px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+            border-radius: 7px;
+            transition: width 0.5s;
+        }
+
+        /* E区 - 提醒区域 */
+        .area-e {
+            height: 30px;
+            background: rgba(239, 68, 68, 0.1);
+            border-top: 1px solid rgba(239, 68, 68, 0.3);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 12px;
+            color: #fbbf24;
+            overflow: hidden;
+        }
+
+        .notice-text {
+            animation: slideLeft 10s linear infinite;
+            white-space: nowrap;
+        }
+
+        @keyframes slideLeft {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* 下半部分 - F区剧情区域 */
+        .lower-section {
+            flex: 1;
+            background: #0f0f23;
+            display: flex;
+            flex-direction: column;
+            border-top: 2px solid #1a1a2e;
+            position: relative;
+        }
+
+        /* F1区 - 剧情文本和选项混合区 */
+        .story-area {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            color: #e4e4e7;
+            font-size: 14px;
+            line-height: 1.6;
+            /* 自定义滚动条 */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+        }
+
+        .story-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .story-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .story-area::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 3px;
+        }
+
+        .story-text {
+            margin-bottom: 12px;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 剧情中的选项链接 - DoL风格 */
+        .story-choice {
+            display: inline-block;
+            color: #8b92f6;
+            text-decoration: none;
+            padding: 2px 6px;
+            margin: 2px 0;
+            border-bottom: 1px solid #8b92f6;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .story-choice:hover {
+            color: #f093fb;
+            border-bottom-color: #f093fb;
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .story-choice:active {
+            transform: scale(0.98);
+        }
+
+        /* 选项块 - 用于多个选项 */
+        .choice-block {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid rgba(139, 92, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .choice-item {
+            display: block;
+            color: #a5b4fc;
+            text-decoration: none;
+            padding: 8px 10px;
+            margin: 5px 0;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 6px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .choice-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(5px);
+            color: #c7d2fe;
+        }
+
+        .choice-item:active {
+            transform: translateX(3px) scale(0.98);
+        }
+
+        /* F2区 - AI输入区域（默认隐藏） */
+        .ai-input-area {
+            display: none;
+            padding: 10px;
+            background: rgba(30, 30, 45, 0.95);
+            border-top: 2px solid rgba(139, 92, 246, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .ai-input-area.active {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .ai-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .ai-input {
+            flex: 1;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            color: #e4e4e7;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .ai-input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+        }
+
+        .ai-input::placeholder {
+            color: rgba(228, 228, 231, 0.4);
+        }
+
+        .ai-send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-send-btn:active {
+            transform: scale(0.9);
+        }
+
+        .ai-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* NPC标识 */
+        .npc-name {
+            color: #f093fb;
+            font-weight: bold;
+        }
+
+        .npc-important {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        /* AI模式指示器 */
+        .ai-mode-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border-radius: 12px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+            display: none;
+        }
+
+        .ai-mode-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 响应式适配 */
+        @media (max-height: 700px) {
+            .upper-section {
+                height: 40vh;
+            }
+            .area-c {
+                height: 45px;
+            }
+            .tab-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 上半部分 -->
+        <div class="upper-section">
+            <div class="upper-main">
+                <!-- A区 - 立绘 -->
+                <div class="area-a">
+                    <div style="text-align: center; color: #8b5cf6;">
+                        <div style="font-size: 48px;">👧</div>
+                        <div style="font-size: 10px; margin-top: 5px;">角色立绘</div>
+                    </div>
+                </div>
+
+                <!-- 右侧区域 -->
+                <div class="right-section">
+                    <!-- B区 - 位置时间 -->
+                    <div class="area-b">
+                        <div class="location-info">
+                            <span>📍 学校·教室</span>
+                        </div>
+                        <div class="time-info">
+                            <span>🕐 星期一 08:30</span>
+                        </div>
+                    </div>
+
+                    <!-- C区 - 景色 -->
+                    <div class="area-c">
+                        <div class="scene-preview">
+                            🏫 教室场景
+                        </div>
+                    </div>
+
+                    <!-- D区 - 功能面板 -->
+                    <div class="area-d">
+                        <div class="function-tabs">
+                            <div class="tab-btn active" title="状态">📊</div>
+                            <div class="tab-btn" title="背包">🎒</div>
+                            <div class="tab-btn" title="地图">🗺️</div>
+                            <div class="tab-btn" title="属性">⭐</div>
+                            <div class="tab-btn" title="社交">👥</div>
+                            <div class="tab-btn" title="日志">📖</div>
+                            <div class="tab-btn" title="设置">⚙️</div>
+                        </div>
+                        <div class="function-content">
+                            <!-- 状态内容示例 -->
+                            <div class="stat-item">
+                                <span>体力</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: 80%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <span>心情</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <span>学习</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: 45%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <span>社交</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: 70%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E区 - 提醒 -->
+            <div class="area-e">
+                <span class="notice-text">💡 提醒：第一节课即将开始，请尽快前往教室...</span>
+            </div>
+        </div>
+
+        <!-- 下半部分 - F区 -->
+        <div class="lower-section">
+            <!-- AI模式指示器 -->
+            <div class="ai-mode-indicator" id="aiModeIndicator">AI对话模式</div>
+
+            <!-- F1区 - 剧情文本和选项混合 -->
+            <div class="story-area" id="storyArea">
+                <!-- 剧情段落 -->
+                <div class="story-text">
+                    清晨的阳光透过教室的窗户洒在课桌上，形成斑驳的光影。你坐在靠窗的位置，微风轻轻吹动着窗帘。
+                </div>
+                
+                <div class="story-text">
+                    教室里已经有几个早到的同学在小声交谈。你注意到前排的<span class="npc-important">林学长</span>正在认真地翻阅着笔记，他似乎察觉到了你的目光，回过头来对你微笑了一下。
+                </div>
+
+                <div class="story-text">
+                    "早上好，"他温柔地说道，"昨天的作业完成了吗？如果有不懂的地方，我可以帮你。"
+                </div>
+
+                <!-- DoL风格的选项 - 嵌入在文字中 -->
+                <div class="story-text">
+                    你可以<a class="story-choice" onclick="makeChoice('ask-help')">请教林学长问题</a>，或者<a class="story-choice" onclick="makeChoice('thank')">礼貌地道谢</a>。当然，你也可以<a class="story-choice" onclick="makeChoice('ignore')">专心整理自己的课本</a>。
+                </div>
+
+                <!-- 选项块 - 用于更多选项 -->
+                <div class="choice-block">
+                    <div style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">其他行动：</div>
+                    <a class="choice-item" onclick="makeChoice('look-around')">📍 环顾教室</a>
+                    <a class="choice-item" onclick="makeChoice('check-bag')">🎒 检查背包</a>
+                    <a class="choice-item" onclick="makeChoice('leave')">🚶 离开教室</a>
+                    <a class="choice-item" onclick="makeChoice('ai-talk')" style="background: linear-gradient(135deg, rgba(139, 146, 246, 0.2), rgba(240, 147, 251, 0.2)); border: 1px solid rgba(240, 147, 251, 0.3);">
+                        ✨ 与林学长自由对话（AI模式）
+                    </a>
+                </div>
+
+                <!-- 更多剧情内容示例 - 展示滚动效果 -->
+                <div class="story-text" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    【之前的记录】
+                </div>
+                <div class="story-text">
+                    你是一名普通的高中生，今天是新学期的第一天。昨晚因为兴奋而睡得很晚，差点迟到。
+                </div>
+                <div class="story-text">
+                    路上遇到了<span class="npc-name">小明</span>，他是你的青梅竹马。他关心地问你是否准备好了新学期的挑战。
+                </div>
+                <div class="story-text">
+                    你告诉他你有些紧张，但也很期待。小明拍了拍你的肩膀，说他会一直支持你的。
+                </div>
+                <div class="story-text">
+                    进入学校后，你发现今天的气氛格外热闹。原来是因为有一位<span class="npc-important">神秘的转学生</span>要来。
+                </div>
+                <div class="story-text">
+                    据说这位转学生来自国外，有着不寻常的背景。同学们都在议论纷纷，猜测他会是什么样的人。
+                </div>
+            </div>
+
+            <!-- F2区 - AI输入区域 -->
+            <div class="ai-input-area" id="aiInputArea">
+                <div class="ai-input-wrapper">
+                    <input type="text" class="ai-input" id="aiInput" placeholder="输入你想对林学长说的话..." />
+                    <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()">
+                        ➤
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 标签页切换功能
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const functionContent = document.querySelector('.function-content');
+
+        // 不同标签页的内容
+        const tabContents = {
+            0: `<!-- 状态 -->
+                <div class="stat-item">
+                    <span>体力</span>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 80%;"></div></div>
+                </div>
+                <div class="stat-item">
+                    <span>心情</span>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 60%;"></div></div>
+                </div>
+                <div class="stat-item">
+                    <span>学习</span>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 45%;"></div></div>
+                </div>
+                <div class="stat-item">
+                    <span>社交</span>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 70%;"></div></div>
+                </div>`,
+            1: `<!-- 背包 -->
+                <div style="padding: 5px;">
+                    <div style="margin-bottom: 8px;">📚 教科书 x3</div>
+                    <div style="margin-bottom: 8px;">✏️ 笔记本 x2</div>
+                    <div style="margin-bottom: 8px;">🍎 苹果 x1</div>
+                    <div style="margin-bottom: 8px;">💰 金钱: ¥500</div>
+                </div>`,
+            2: `<!-- 地图 -->
+                <div style="padding: 5px; font-size: 12px;">
+                    <div style="margin-bottom: 6px;">📍 当前: 教室</div>
+                    <div style="margin-bottom: 4px;">可前往:</div>
+                    <div style="margin-left: 10px;">• 走廊</div>
+                    <div style="margin-left: 10px;">• 操场</div>
+                    <div style="margin-left: 10px;">• 图书馆</div>
+                    <div style="margin-left: 10px;">• 食堂</div>
+                </div>`,
+            3: `<!-- 属性 -->
+                <div style="padding: 5px; font-size: 12px;">
+                    <div style="margin-bottom: 6px;">智力: ⭐⭐⭐☆☆</div>
+                    <div style="margin-bottom: 6px;">体力: ⭐⭐⭐⭐☆</div>
+                    <div style="margin-bottom: 6px;">魅力: ⭐⭐⭐☆☆</div>
+                    <div style="margin-bottom: 6px;">勇气: ⭐⭐☆☆☆</div>
+                </div>`,
+            4: `<!-- 社交 -->
+                <div style="padding: 5px; font-size: 12px;">
+                    <div style="margin-bottom: 6px;">林学长: ❤️❤️❤️🤍🤍</div>
+                    <div style="margin-bottom: 6px;">张同学: ❤️❤️🤍🤍🤍</div>
+                    <div style="margin-bottom: 6px;">夜同学: ❤️🤍🤍🤍🤍</div>
+                    <div style="margin-bottom: 6px;">小明: ❤️❤️❤️❤️🤍</div>
+                </div>`,
+            5: `<!-- 日志 -->
+                <div style="padding: 5px; font-size: 11px; line-height: 1.4;">
+                    <div style="margin-bottom: 6px;">📅 第1天 - 星期一</div>
+                    <div style="margin-bottom: 4px;">• 来到学校</div>
+                    <div style="margin-bottom: 4px;">• 遇到林学长</div>
+                    <div style="margin-bottom: 4px;">• 准备上课</div>
+                </div>`,
+            6: `<!-- 设置 -->
+                <div style="padding: 5px; font-size: 12px;">
+                    <div style="margin-bottom: 8px;">🔊 音效: 开启</div>
+                    <div style="margin-bottom: 8px;">🎵 音乐: 开启</div>
+                    <div style="margin-bottom: 8px;">📱 震动: 关闭</div>
+                    <div style="margin-bottom: 8px;">💾 自动存档: 开启</div>
+                </div>`
+        };
+
+        tabBtns.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                functionContent.innerHTML = tabContents[index];
+            });
+        });
+
+        // 选择处理函数
+        function makeChoice(choice) {
+            const storyArea = document.getElementById('storyArea');
+            
+            // 特殊处理：AI对话模式
+            if (choice === 'ai-talk') {
+                activateAIMode();
+                return;
+            }
+
+            // 普通选项处理
+            const responses = {
+                'ask-help': '<div class="story-text">你走向林学长，礼貌地请教了几个数学问题。他耐心地为你讲解，你感觉收获很大。<span style="color: #10b981;">【学习 +5】【林学长好感度 +3】</span></div>',
+                'thank': '<div class="story-text">你微笑着对林学长说："谢谢学长的关心，我已经完成了。"他点点头，继续看书。</div>',
+                'ignore': '<div class="story-text">你没有回应，继续整理自己的课本。林学长也没有再说什么。</div>',
+                'look-around': '<div class="story-text">你环顾教室，发现角落里有个陌生的身影，似乎是传说中的转学生。</div>',
+                'check-bag': '<div class="story-text">你检查了背包，确认所有的课本都带齐了。</div>',
+                'leave': '<div class="story-text">你起身离开教室，走向走廊。</div>'
+            };
+
+            // 添加响应到剧情区
+            const newContent = responses[choice] || '<div class="story-text">你做出了选择。</div>';
+            storyArea.innerHTML += newContent;
+
+            // 滚动到底部
+            storyArea.scrollTop = storyArea.scrollHeight;
+        }
+
+        // 激活AI对话模式
+        function activateAIMode() {
+            const aiInputArea = document.getElementById('aiInputArea');
+            const aiModeIndicator = document.getElementById('aiModeIndicator');
+            const storyArea = document.getElementById('storyArea');
+
+            // 显示AI输入区和指示器
+            aiInputArea.classList.add('active');
+            aiModeIndicator.classList.add('active');
+
+            // 添加提示文字
+            storyArea.innerHTML += `
+                <div class="story-text" style="background: linear-gradient(135deg, rgba(139, 146, 246, 0.1), rgba(240, 147, 251, 0.1)); padding: 10px; border-radius: 8px; margin-top: 10px;">
+                    <span style="color: #f093fb;">【AI对话模式已激活】</span><br>
+                    现在你可以自由地与林学长对话了。输入你想说的话，他会根据性格做出回应。<br>
+                    <small style="color: #94a3b8;">提示：输入"结束对话"可以退出AI模式</small>
+                </div>
+            `;
+
+            // 聚焦输入框
+            document.getElementById('aiInput').focus();
+
+            // 滚动到底部
+            storyArea.scrollTop = storyArea.scrollHeight;
+        }
+
+        // 发送AI消息
+        function sendAIMessage() {
+            const aiInput = document.getElementById('aiInput');
+            const storyArea = document.getElementById('storyArea');
+            const message = aiInput.value.trim();
+
+            if (!message) return;
+
+            // 检查是否结束对话
+            if (message === '结束对话') {
+                deactivateAIMode();
+                return;
+            }
+
+            // 显示玩家消息
+            storyArea.innerHTML += `
+                <div class="story-text">
+                    <span style="color: #8b92f6;">你：</span>"${message}"
+                </div>
+            `;
+
+            // 清空输入框
+            aiInput.value = '';
+
+            // 模拟AI回复（实际项目中这里会调用真实的AI API）
+            setTimeout(() => {
+                const aiResponse = generateAIResponse(message);
+                storyArea.innerHTML += `
+                    <div class="story-text">
+                        <span class="npc-important">林学长：</span>"${aiResponse}"
+                    </div>
+                `;
+                storyArea.scrollTop = storyArea.scrollHeight;
+            }, 1000);
+
+            // 滚动到底部
+            storyArea.scrollTop = storyArea.scrollHeight;
+        }
+
+        // 模拟AI响应（实际项目中替换为真实AI调用）
+        function generateAIResponse(input) {
+            const responses = [
+                "这是个有趣的想法，能告诉我更多吗？",
+                "我理解你的感受，让我们一起努力吧。",
+                "嗯，这个问题确实需要仔细思考...",
+                "你真的很特别，我很高兴能和你聊天。",
+                "如果你需要帮助，随时可以找我。"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        // 退出AI模式
+        function deactivateAIMode() {
+            const aiInputArea = document.getElementById('aiInputArea');
+            const aiModeIndicator = document.getElementById('aiModeIndicator');
+            const storyArea = document.getElementById('storyArea');
+
+            aiInputArea.classList.remove('active');
+            aiModeIndicator.classList.remove('active');
+
+            storyArea.innerHTML += `
+                <div class="story-text">
+                    <span style="color: #94a3b8;">【AI对话模式已关闭】</span>
+                </div>
+            `;
+
+            storyArea.scrollTop = storyArea.scrollHeight;
+        }
+
+        // 回车发送消息
+        document.getElementById('aiInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendAIMessage();
+            }
+        });
+    </script>
+</body>
+</html>

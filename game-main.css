@@ -1,0 +1,522 @@
+/* 游戏主界面样式 - 样式v2 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 主容器 */
+.game-container {
+    width: 100%;
+    height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: #1a1a2e;
+}
+
+/* 上半部分容器 */
+.upper-section {
+    height: 45vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(to bottom, #2d3561, #1a1a2e);
+    border-bottom: 2px solid #16213e;
+}
+
+/* 上部主要内容区 */
+.upper-main {
+    flex: 1;
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+}
+
+/* A区 - 立绘区域 */
+.area-a {
+    width: 35%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.character-sprite-container {
+    text-align: center;
+    color: #8b5cf6;
+}
+
+.sprite-placeholder {
+    font-size: 48px;
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+}
+
+.sprite-name {
+    font-size: 10px;
+    margin-top: 5px;
+    color: #e4e4e7;
+}
+
+/* 右侧区域容器 */
+.right-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* B区 - 位置时间信息 */
+.area-b {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #e4e4e7;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.location-info, .time-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.location-icon, .time-icon {
+    font-size: 14px;
+}
+
+/* C区 - 景色预览 */
+.area-c {
+    height: 60px;
+    background: linear-gradient(to right, #4a5568, #2d3748);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    position: relative;
+}
+
+.scene-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-image:
+        repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px);
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+.scene-emoji {
+    font-size: 24px;
+}
+
+.scene-text {
+    font-size: 12px;
+}
+
+/* D区 - 功能面板 */
+.area-d {
+    flex: 1;
+    background: rgba(30, 30, 45, 0.8);
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 功能按钮栏 */
+.function-tabs {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+    color: white;
+}
+
+.tab-btn:active {
+    transform: scale(0.95);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    box-shadow: 0 0 15px rgba(240, 147, 251, 0.5);
+}
+
+/* 功能内容区 */
+.function-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    color: #e4e4e7;
+    font-size: 13px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content#statusContent {
+    display: block;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.stat-label {
+    width: 40px;
+    font-size: 12px;
+}
+
+.stat-bar {
+    flex: 1;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+    margin: 0 8px;
+}
+
+.stat-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f093fb, #f5576c);
+    border-radius: 7px;
+    transition: width 0.5s;
+}
+
+.stat-fill.mood {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.stat-fill.money {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.stat-fill.energy {
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.stat-value {
+    min-width: 30px;
+    text-align: right;
+    font-size: 12px;
+    color: #f093fb;
+}
+
+/* E区 - 提醒区域 */
+.area-e {
+    height: 30px;
+    background: rgba(239, 68, 68, 0.1);
+    border-top: 1px solid rgba(239, 68, 68, 0.3);
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    font-size: 12px;
+    color: #fbbf24;
+    overflow: hidden;
+}
+
+.notice-text {
+    animation: slideLeft 10s linear infinite;
+    white-space: nowrap;
+}
+
+@keyframes slideLeft {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+/* 下半部分 - F区剧情区域 */
+.lower-section {
+    flex: 1;
+    background: #0f0f23;
+    display: flex;
+    flex-direction: column;
+    border-top: 2px solid #1a1a2e;
+    position: relative;
+}
+
+/* F1区 - 剧情文本和选项混合区 */
+.story-area {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    color: #e4e4e7;
+    font-size: 14px;
+    line-height: 1.6;
+    /* 自定义滚动条 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+.story-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.story-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.story-area::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+}
+
+.story-text {
+    margin-bottom: 12px;
+    animation: fadeIn 0.5s;
+}
+
+.story-text p {
+    margin-bottom: 10px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 剧情中的选项链接 - DoL风格 */
+.story-choice {
+    display: inline-block;
+    color: #8b92f6;
+    text-decoration: none;
+    padding: 2px 6px;
+    margin: 2px 0;
+    border-bottom: 1px solid #8b92f6;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.story-choice:hover {
+    color: #f093fb;
+    border-bottom-color: #f093fb;
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.story-choice:active {
+    transform: scale(0.98);
+}
+
+/* 选项块 - 用于多个选项 */
+.choice-block {
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid rgba(139, 92, 246, 0.5);
+    border-radius: 4px;
+}
+
+.choice-block-title {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.choice-item {
+    display: block;
+    color: #a5b4fc;
+    text-decoration: none;
+    padding: 8px 10px;
+    margin: 5px 0;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 6px;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.choice-item:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: translateX(5px);
+    color: #c7d2fe;
+}
+
+.choice-item:active {
+    transform: translateX(3px) scale(0.98);
+}
+
+.choice-item.ai-choice {
+    background: linear-gradient(135deg, rgba(139, 146, 246, 0.2), rgba(240, 147, 251, 0.2));
+    border: 1px solid rgba(240, 147, 251, 0.3);
+}
+
+/* F2区 - AI输入区域（默认隐藏） */
+.ai-input-area {
+    display: none;
+    padding: 10px;
+    background: rgba(30, 30, 45, 0.95);
+    border-top: 2px solid rgba(139, 92, 246, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+.ai-input-area.active {
+    display: block;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.ai-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ai-input {
+    flex: 1;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    color: #e4e4e7;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.ai-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
+.ai-input::placeholder {
+    color: rgba(228, 228, 231, 0.4);
+}
+
+.ai-send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-send-btn:active {
+    transform: scale(0.9);
+}
+
+.ai-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* NPC标识 */
+.npc-name {
+    color: #f093fb;
+    font-weight: bold;
+}
+
+.npc-important {
+    color: #fbbf24;
+    font-weight: bold;
+}
+
+/* AI模式指示器 */
+.ai-mode-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-radius: 12px;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+    display: none;
+}
+
+.ai-mode-indicator.active {
+    display: block;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* 响应式适配 */
+@media (max-height: 700px) {
+    .upper-section {
+        height: 40vh;
+    }
+    .area-c {
+        height: 45px;
+    }
+    .tab-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 430px) {
+    .game-container {
+        max-width: 100%;
+    }
+}

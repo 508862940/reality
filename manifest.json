@@ -1,22 +1,94 @@
 {
-  "name": "我的互动小说游戏",
-  "short_name": "互动小说",
-  "description": "乙女向互动小说游戏，AI驱动的NPC对话",
-  "start_url": "./",
+  "name": "Reality - 互动文字冒险游戏",
+  "short_name": "Reality",
+  "description": "乙女向互动文字冒险游戏，AI驱动的NPC对话，模拟人生体验",
+  "start_url": "./menu.html",
   "display": "standalone",
-  "background_color": "#667eea",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#1e3c72",
   "theme_color": "#764ba2",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "scope": "./",
   "lang": "zh-CN",
-  "categories": ["games", "entertainment"],
+  "categories": ["games", "entertainment", "lifestyle"],
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23667eea'/%3E%3Ctext x='96' y='100' text-anchor='middle' fill='white' font-size='24' font-family='Arial'%3E互动%3C/text%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b92f6'/%3E%3Cstop offset='100%25' style='stop-color:%23f093fb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='192' height='192' fill='url(%23g)'/%3E%3Ctext x='96' y='110' text-anchor='middle' fill='white' font-size='80' font-family='Arial'%3E✨%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b92f6'/%3E%3Cstop offset='100%25' style='stop-color:%23f093fb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' fill='url(%23g)'/%3E%3Ctext x='256' y='290' text-anchor='middle' fill='white' font-size='200' font-family='Arial'%3E✨%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b92f6'/%3E%3Cstop offset='100%25' style='stop-color:%23f093fb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23g)'/%3E%3Ctext x='90' y='105' text-anchor='middle' fill='white' font-size='75' font-family='Arial'%3E✨%3C/text%3E%3C/svg%3E",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "apple-touch-icon"
     }
   ],
-  "prefer_related_applications": false
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "430x932",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "游戏主界面"
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "开始新游戏",
+      "short_name": "新游戏",
+      "description": "开始一个新的冒险",
+      "url": "./character-creation.html",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%238b92f6'/%3E%3Ctext x='48' y='58' text-anchor='middle' fill='white' font-size='40'%3E🎮%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "读取存档",
+      "short_name": "存档",
+      "description": "继续你的冒险",
+      "url": "./menu.html?load=true",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23f093fb'/%3E%3Ctext x='48' y='58' text-anchor='middle' fill='white' font-size='40'%3E💾%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 430
+  },
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "viewport": {
+    "width": "device-width",
+    "initial-scale": 1,
+    "minimum-scale": 1,
+    "maximum-scale": 1,
+    "user-scalable": "no",
+    "viewport-fit": "cover"
+  },
+  "share_target": {
+    "action": "./share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

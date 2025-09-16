@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Reality">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b92f6'/%3E%3Cstop offset='100%25' style='stop-color:%23f093fb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23g)'/%3E%3Ctext x='90' y='105' text-anchor='middle' fill='white' font-size='75' font-family='Arial'%3E✨%3C/text%3E%3C/svg%3E">
+
+    <title>角色创建 - Reality</title>
+    <link rel="stylesheet" href="character-creation.css">
+</head>
+<body>
+    <div class="creation-container">
+        <!-- 标题 -->
+        <h1 class="page-title">创建角色</h1>
+
+        <!-- 进度条 -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- 角色基础设置 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>👤</span>
+                <span>角色设置</span>
+            </div>
+
+            <!-- 角色预览 -->
+            <div class="character-preview">
+                <div class="preview-avatar" id="previewAvatar">👧</div>
+            </div>
+
+            <!-- 姓名 -->
+            <div class="form-group">
+                <label class="form-label">角色姓名</label>
+                <input type="text" class="form-input" id="characterName" placeholder="输入你的角色名" value="">
+            </div>
+
+            <!-- 性别 -->
+            <div class="form-group">
+                <label class="form-label">性别</label>
+                <div class="option-group">
+                    <div class="option-btn active" onclick="selectOption(this, 'gender', 'female')">女性</div>
+                    <div class="option-btn" onclick="selectOption(this, 'gender', 'male')">男性</div>
+                    <div class="option-btn" onclick="selectOption(this, 'gender', 'other')">其他</div>
+                </div>
+            </div>
+
+            <!-- 年龄 -->
+            <div class="form-group">
+                <label class="form-label">年龄</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="ageSlider" min="15" max="25" value="18" oninput="updateSliderValue('age', this.value)">
+                    <span class="slider-value" id="ageValue">18</span>
+                </div>
+            </div>
+
+            <!-- 外貌特征 -->
+            <div class="form-group">
+                <label class="form-label">发型</label>
+                <div class="option-group">
+                    <div class="option-btn active" onclick="selectOption(this, 'hair', 'long')">长发</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hair', 'short')">短发</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hair', 'twintails')">双马尾</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hair', 'ponytail')">单马尾</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">发色</label>
+                <div class="option-group">
+                    <div class="option-btn active" onclick="selectOption(this, 'hairColor', 'black')">黑色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor', 'brown')">棕色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor', 'blonde')">金色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor', 'red')">红色</div>
+                    <div class="option-btn" onclick="selectOption(this, 'hairColor', 'purple')">紫色</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">体型</label>
+                <div class="option-group">
+                    <div class="option-btn" onclick="selectOption(this, 'body', 'slim')">纤细</div>
+                    <div class="option-btn active" onclick="selectOption(this, 'body', 'normal')">标准</div>
+                    <div class="option-btn" onclick="selectOption(this, 'body', 'athletic')">健壮</div>
+                    <div class="option-btn" onclick="selectOption(this, 'body', 'plump')">丰满</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 初始属性 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>⭐</span>
+                <span>初始属性</span>
+            </div>
+
+            <div class="attr-points-info">
+                <span>剩余点数：</span>
+                <span class="points-value" id="remainingPoints">20</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">智力</label>
+                <div class="slider-container">
+                    <input type="range" class="slider attr-slider" id="intSlider" min="1" max="10" value="5" oninput="updateAttribute('int', this.value)">
+                    <span class="slider-value" id="intValue">5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">体力</label>
+                <div class="slider-container">
+                    <input type="range" class="slider attr-slider" id="strSlider" min="1" max="10" value="5" oninput="updateAttribute('str', this.value)">
+                    <span class="slider-value" id="strValue">5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">魅力</label>
+                <div class="slider-container">
+                    <input type="range" class="slider attr-slider" id="chaSlider" min="1" max="10" value="5" oninput="updateAttribute('cha', this.value)">
+                    <span class="slider-value" id="chaValue">5</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">勇气</label>
+                <div class="slider-container">
+                    <input type="range" class="slider attr-slider" id="couSlider" min="1" max="10" value="5" oninput="updateAttribute('cou', this.value)">
+                    <span class="slider-value" id="couValue">5</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- NPC设置 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>💕</span>
+                <span>主要NPC设置</span>
+            </div>
+
+            <div class="npc-list" id="npcList">
+                <!-- 默认NPC -->
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">👨‍🎓</span>
+                        <div class="npc-details">
+                            <span class="npc-name">林学长</span>
+                            <span class="npc-role">学霸学长 · 温柔体贴</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" data-npc="linSenior" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">🏃‍♂️</span>
+                        <div class="npc-details">
+                            <span class="npc-name">张同学</span>
+                            <span class="npc-role">运动健将 · 阳光开朗</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" data-npc="zhangStudent" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">🌙</span>
+                        <div class="npc-details">
+                            <span class="npc-name">夜同学</span>
+                            <span class="npc-role">神秘转学生 · 高冷神秘</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" data-npc="nightStudent" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="npc-item">
+                    <div class="npc-info">
+                        <span class="npc-avatar">🌟</span>
+                        <div class="npc-details">
+                            <span class="npc-name">小明</span>
+                            <span class="npc-role">青梅竹马 · 温暖可靠</span>
+                        </div>
+                    </div>
+                    <div class="npc-toggle active" data-npc="xiaoMing" onclick="toggleNPC(this)">
+                        <div class="npc-toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 添加自定义NPC -->
+            <button class="add-npc-btn" onclick="toggleCustomNPC()">
+                <span>➕</span>
+                <span>添加自定义NPC</span>
+            </button>
+
+            <!-- 自定义NPC表单 -->
+            <div class="custom-npc-form" id="customNPCForm">
+                <div class="form-group">
+                    <label class="form-label">NPC姓名</label>
+                    <input type="text" class="form-input" id="npcName" placeholder="例如：李老师">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">角色定位</label>
+                    <input type="text" class="form-input" id="npcRole" placeholder="例如：严厉的班主任">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">性格特征</label>
+                    <textarea class="form-textarea" id="npcPersonality" placeholder="描述NPC的性格特点，例如：表面严厉但内心关心学生，有着丰富的教学经验..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">日常作息</label>
+                    <textarea class="form-textarea" id="npcSchedule" placeholder="描述NPC的日常活动，例如：早上7点到校，经常在办公室批改作业..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">兴趣爱好</label>
+                    <input type="text" class="form-input" id="npcHobbies" placeholder="例如：阅读、园艺、古典音乐">
+                </div>
+
+                <div class="option-group">
+                    <button class="option-btn" onclick="saveCustomNPC()">保存NPC</button>
+                    <button class="option-btn" onclick="toggleCustomNPC()">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 难度设置 -->
+        <div class="creation-card">
+            <div class="card-title">
+                <span>🎯</span>
+                <span>游戏难度</span>
+            </div>
+
+            <div class="difficulty-options">
+                <div class="difficulty-card active" data-difficulty="easy" onclick="selectDifficulty(this, 'easy')">
+                    <div class="difficulty-icon">😊</div>
+                    <div class="difficulty-name">简单</div>
+                    <div class="difficulty-desc">适合新手体验</div>
+                </div>
+
+                <div class="difficulty-card" data-difficulty="normal" onclick="selectDifficulty(this, 'normal')">
+                    <div class="difficulty-icon">😐</div>
+                    <div class="difficulty-name">普通</div>
+                    <div class="difficulty-desc">平衡的游戏体验</div>
+                </div>
+
+                <div class="difficulty-card" data-difficulty="hard" onclick="selectDifficulty(this, 'hard')">
+                    <div class="difficulty-icon">😤</div>
+                    <div class="difficulty-name">困难</div>
+                    <div class="difficulty-desc">需要策略规划</div>
+                </div>
+
+                <div class="difficulty-card" data-difficulty="nightmare" onclick="selectDifficulty(this, 'nightmare')">
+                    <div class="difficulty-icon">😈</div>
+                    <div class="difficulty-name">噩梦</div>
+                    <div class="difficulty-desc">极限挑战</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="bottom-buttons">
+        <button class="btn btn-secondary" onclick="goBack()">返回</button>
+        <button class="btn btn-primary" onclick="enterReality()">进入Reality</button>
+    </div>
+
+    <script src="character-creation.js"></script>
+</body>
+</html>
