@@ -569,6 +569,7 @@ function toggleMusic() {
 function returnToMenu() {
     if (confirm('返回主菜单将保存当前进度，确定要返回吗？')) {
         saveGameState();
+        // 返回主菜单
         window.location.href = 'menu.html';
     }
 }

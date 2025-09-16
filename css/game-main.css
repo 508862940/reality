@@ -290,11 +290,10 @@ body {
     color: #e4e4e7;
     font-size: 14px;
     line-height: 1.6;
-    /* 自定义滚动条 */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+    /* 滚动条样式 - Webkit浏览器 */
 }
 
+/* Webkit浏览器滚动条样式 (Chrome, Safari, Edge) */
 .story-area::-webkit-scrollbar {
     width: 6px;
 }

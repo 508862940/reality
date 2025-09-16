@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试API配置系统</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        #api-config-modal {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API配置系统测试</h1>
+
+        <div class="button-group">
+            <button onclick="openSettings()">⚙️ 打开API设置</button>
+            <button onclick="showCurrentConfig()">📋 显示当前配置</button>
+            <button onclick="testConnection()">🧪 测试连接</button>
+            <button onclick="exportData()">💾 导出所有数据</button>
+            <button onclick="importData()">📂 导入数据</button>
+            <button onclick="clearData()">🗑️ 清除所有数据</button>
+        </div>
+
+        <div id="status" class="status">准备就绪...</div>
+    </div>
+
+    <!-- API配置模态框 -->
+    <div id="api-config-modal"></div>
+
+    <!-- 加载脚本 -->
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="js/core/database.js"></script>
+    <script src="js/api/api-config.js"></script>
+    <script src="js/pages/api-settings.js"></script>
+
+    <script>
+        const status = document.getElementById('status');
+
+        function log(message) {
+            const time = new Date().toLocaleTimeString('zh-CN');
+            status.textContent = `[${time}] ${message}\n` + status.textContent;
+        }
+
+        async function init() {
+            log('初始化中...');
+            if (window.APIConfig) {
+                await window.APIConfig.init();
+                log('✅ API配置系统初始化完成');
+                showCurrentConfig();
+            } else {
+                log('❌ API配置系统未加载');
+            }
+        }
+
+        function openSettings() {
+            if (window.APISettingsUI) {
+                window.APISettingsUI.open();
+                log('打开API设置界面');
+            } else {
+                log('❌ 设置界面未加载');
+            }
+        }
+
+        function showCurrentConfig() {
+            if (window.APIConfig) {
+                const preset = window.APIConfig.getCurrentPreset();
+                if (preset) {
+                    log(`当前预设: ${preset.name}
+提供商: ${preset.provider}
+模型: ${preset.model}
+密钥: ${preset.apiKey ? '已配置' : '未配置'}
+端点: ${preset.endpoint || '默认'}`);
+                } else {
+                    log('没有活动的预设');
+                }
+            }
+        }
+
+        async function testConnection() {
+            log('测试连接中...');
+            if (window.APIConfig) {
+                const result = await window.APIConfig.testPreset();
+                if (result.success) {
+                    log('✅ 连接成功！');
+                } else {
+                    log(`❌ 连接失败: ${result.error}`);
+                }
+            }
+        }
+
+        async function exportData() {
+            log('导出数据...');
+            if (window.Database) {
+                await window.Database.exportAllData();
+                log('✅ 数据已导出');
+            }
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file && window.Database) {
+                    log('导入数据中...');
+                    await window.Database.importData(file);
+                }
+            };
+            input.click();
+        }
+
+        async function clearData() {
+            if (confirm('确定要清除所有数据吗？')) {
+                if (window.Database) {
+                    await window.Database.clearAllData();
+                }
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

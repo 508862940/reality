@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI配置测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .config-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .test-area {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f0f0f0;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #configStatus {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI配置测试工具</h1>
+
+        <div class="config-section">
+            <h2>📝 配置信息</h2>
+            <label for="apiService">选择AI服务：</label>
+            <select id="apiService">
+                <option value="openai_proxy">OpenAI兼容代理（推荐）</option>
+                <option value="openai">OpenAI官方</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="claude">Anthropic Claude</option>
+            </select>
+
+            <label for="apiKey">API密钥：</label>
+            <input type="password" id="apiKey" placeholder="sk-..." />
+
+            <label for="baseUrl">API地址（代理服务需要）：</label>
+            <input type="text" id="baseUrl" placeholder="https://api.example.com/v1/chat/completions" />
+
+            <label for="model">模型：</label>
+            <input type="text" id="model" value="gpt-3.5-turbo" />
+        </div>
+
+        <div style="text-align: center;">
+            <button onclick="saveConfig()">💾 保存配置</button>
+            <button onclick="testAPI()">🧪 测试API</button>
+            <button onclick="loadCurrentConfig()">📥 加载当前配置</button>
+            <button onclick="applyToGame()">🎮 应用到游戏</button>
+        </div>
+
+        <div id="configStatus" class="status info"></div>
+
+        <div class="test-area">
+            <h3>测试消息：</h3>
+            <input type="text" id="testMessage" value="你好，请简单介绍一下你自己" style="width: 100%;" />
+            <button onclick="sendTestMessage()">发送测试</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 加载当前配置
+        function loadCurrentConfig() {
+            const service = document.getElementById('apiService').value;
+
+            // 尝试从localStorage加载保存的配置
+            const saved = localStorage.getItem('ai_config');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('apiKey').value = config.apiKey || '';
+                document.getElementById('baseUrl').value = config.baseUrl || '';
+                document.getElementById('model').value = config.model || 'gpt-3.5-turbo';
+                document.getElementById('apiService').value = config.service || 'openai_proxy';
+
+                showResult('info', '✅ 已加载保存的配置');
+            } else {
+                showResult('info', '📝 请填写您的API配置');
+            }
+
+            updateConfigStatus();
+        }
+
+        // 保存配置
+        function saveConfig() {
+            const config = {
+                service: document.getElementById('apiService').value,
+                apiKey: document.getElementById('apiKey').value,
+                baseUrl: document.getElementById('baseUrl').value,
+                model: document.getElementById('model').value
+            };
+
+            // 保存到localStorage
+            localStorage.setItem('ai_config', JSON.stringify(config));
+
+            showResult('success', '✅ 配置已保存到浏览器本地存储');
+            updateConfigStatus();
+        }
+
+        // 应用配置到游戏
+        function applyToGame() {
+            const config = {
+                service: document.getElementById('apiService').value,
+                apiKey: document.getElementById('apiKey').value,
+                baseUrl: document.getElementById('baseUrl').value,
+                model: document.getElementById('model').value
+            };
+
+            // 尝试应用到游戏的AI系统
+            if (window.opener || window.parent !== window) {
+                // 如果是从游戏打开的
+                const targetWindow = window.opener || window.parent;
+
+                if (targetWindow.AIConfig) {
+                    targetWindow.AIConfig.api.openai_proxy.apiKey = config.apiKey;
+                    targetWindow.AIConfig.api.openai_proxy.baseURL = config.baseUrl;
+                    targetWindow.AIConfig.api.openai_proxy.model = config.model;
+                    targetWindow.AIConfig.api.openai_proxy.enabled = true;
+                    targetWindow.AIConfig.currentProvider = 'openai_proxy';
+
+                    if (targetWindow.syncAIServiceConfig) {
+                        targetWindow.syncAIServiceConfig();
+                    }
+
+                    showResult('success', '✅ 配置已应用到游戏！请返回游戏测试。');
+                }
+            } else {
+                // 生成配置代码
+                const configCode = `
+// 请将以下代码复制到 api-config.js 文件中：
+
+const API_CONFIG = {
+    OPENAI_PROXY: {
+        API_KEY: '${config.apiKey}',
+        BASE_URL: '${config.baseUrl}',
+        MODEL: '${config.model}'
+    }
+};`;
+
+                showResult('info', configCode);
+            }
+        }
+
+        // 测试API
+        async function testAPI() {
+            const service = document.getElementById('apiService').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            const model = document.getElementById('model').value;
+
+            if (!apiKey) {
+                showResult('error', '❌ 请先填写API密钥');
+                return;
+            }
+
+            if (service === 'openai_proxy' && !baseUrl) {
+                showResult('error', '❌ 代理服务需要填写API地址');
+                return;
+            }
+
+            showResult('info', '⏳ 正在测试API...');
+
+            try {
+                let response;
+
+                if (service === 'openai_proxy' || service === 'openai') {
+                    const url = service === 'openai'
+                        ? 'https://api.openai.com/v1/chat/completions'
+                        : baseUrl;
+
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                { role: 'system', content: '你是一个友好的助手' },
+                                { role: 'user', content: '说"测试成功"' }
+                            ],
+                            max_tokens: 50
+                        })
+                    });
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    let message = '';
+
+                    if (data.choices && data.choices[0]) {
+                        message = data.choices[0].message.content;
+                    } else if (data.response) {
+                        message = data.response;
+                    }
+
+                    showResult('success', `✅ API测试成功！\n\n响应：${message}\n\n完整响应：\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    const error = await response.text();
+                    showResult('error', `❌ API请求失败\n\n状态码：${response.status}\n错误信息：${error}`);
+                }
+            } catch (error) {
+                showResult('error', `❌ 网络错误\n\n${error.message}\n\n可能的原因：\n1. 网络连接问题\n2. API地址错误\n3. CORS跨域限制`);
+            }
+        }
+
+        // 发送测试消息
+        async function sendTestMessage() {
+            const message = document.getElementById('testMessage').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            const model = document.getElementById('model').value;
+
+            if (!apiKey || !baseUrl) {
+                showResult('error', '❌ 请先配置API信息');
+                return;
+            }
+
+            showResult('info', '⏳ 正在发送消息...');
+
+            try {
+                const response = await fetch(baseUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'user', content: message }
+                        ],
+                        max_tokens: 200
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const reply = data.choices[0].message.content;
+                    showResult('success', `🤖 AI回复：\n\n${reply}`);
+                } else {
+                    const error = await response.text();
+                    showResult('error', `❌ 请求失败：${error}`);
+                }
+            } catch (error) {
+                showResult('error', `❌ 错误：${error.message}`);
+            }
+        }
+
+        // 显示结果
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        // 更新配置状态
+        function updateConfigStatus() {
+            const apiKey = document.getElementById('apiKey').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            const service = document.getElementById('apiService').value;
+
+            let status = '配置状态：\n';
+            status += `• 服务：${service}\n`;
+            status += `• API密钥：${apiKey ? '已填写（' + apiKey.substring(0, 10) + '...）' : '未填写'}\n`;
+            status += `• API地址：${baseUrl || '未填写'}\n`;
+
+            document.getElementById('configStatus').textContent = status;
+        }
+
+        // 监听输入变化
+        document.getElementById('apiService').addEventListener('change', function() {
+            const service = this.value;
+            const baseUrlInput = document.getElementById('baseUrl');
+
+            if (service === 'openai') {
+                baseUrlInput.value = 'https://api.openai.com/v1/chat/completions';
+                baseUrlInput.disabled = true;
+            } else if (service === 'gemini') {
+                baseUrlInput.value = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+                baseUrlInput.disabled = true;
+            } else if (service === 'claude') {
+                baseUrlInput.value = 'https://api.anthropic.com/v1/messages';
+                baseUrlInput.disabled = true;
+            } else {
+                baseUrlInput.disabled = false;
+                baseUrlInput.value = '';
+            }
+
+            updateConfigStatus();
+        });
+
+        // 页面加载时执行
+        window.onload = function() {
+            loadCurrentConfig();
+
+            // 监听所有输入变化
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('input', updateConfigStatus);
+            });
+        };
+    </script>
+</body>
+</html>

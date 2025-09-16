@@ -54,6 +54,7 @@ body {
 /* 卡片样式 */
 .creation-card {
     background: rgba(255, 255, 255, 0.05);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(139, 92, 246, 0.2);
     border-radius: 16px;
@@ -199,10 +200,12 @@ body {
     border-radius: 3px;
     outline: none;
     -webkit-appearance: none;
+    appearance: none;
 }
 
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     width: 18px;
     height: 18px;
     background: linear-gradient(135deg, #8b92f6, #f093fb);

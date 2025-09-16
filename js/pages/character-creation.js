@@ -253,6 +253,7 @@ function updateProgress() {
 // 返回主菜单
 function goBack() {
     if (confirm('返回主菜单将丢失当前的角色设置，确定要返回吗？')) {
+        // 返回菜单
         window.location.href = 'menu.html';
     }
 }

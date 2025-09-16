@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>我的互动小说游戏</title>
+    
+    <!-- iPhone 15 适配 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="互动小说">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- 防止iOS缩放 -->
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- PWA配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#764ba2">
+    <meta name="msapplication-TileColor" content="#667eea">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23667eea'/%3E%3Ctext x='90' y='95' text-anchor='middle' fill='white' font-size='20' font-family='Arial'%3E互动%3C/text%3E%3C/svg%3E">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 游戏标题 -->
+        <header id="game-header">
+            <h1>我的互动小说游戏</h1>
+        </header>
+
+        <!-- 角色状态面板 -->
+        <div id="character-panel">
+            <div class="stat">
+                <span class="stat-name">体力:</span>
+                <span id="health" class="stat-value">100</span>
+            </div>
+            <div class="stat">
+                <span class="stat-name">心情:</span>
+                <span id="mood" class="stat-value">50</span>
+            </div>
+            <div class="stat">
+                <span class="stat-name">金钱:</span>
+                <span id="money" class="stat-value">100</span>
+            </div>
+        </div>
+
+        <!-- 游戏主界面 -->
+        <main id="game-main">
+            <!-- 地点显示 -->
+            <div id="location-display">
+                <h2 id="current-location">学校</h2>
+                <p id="location-description">你站在学校的大门前，可以看到教学楼和操场。</p>
+            </div>
+
+            <!-- 互动选项 -->
+            <div id="interaction-options">
+                <button class="option-btn" onclick="goToLocation('classroom')">进入教室</button>
+                <button class="option-btn" onclick="goToLocation('playground')">去操场</button>
+                <button class="option-btn" onclick="goToLocation('cafeteria')">去食堂</button>
+            </div>
+
+            <!-- AI互动按钮 -->
+            <div id="ai-interaction-area">
+                <button class="ai-btn" onclick="openAIChat()">与AI对话</button>
+                <button class="ai-btn" onclick="generateAIEvent()">AI生成事件</button>
+                <button class="ai-btn" onclick="toggleAISettings()">AI设置</button>
+            </div>
+
+            <!-- 对话/事件显示 -->
+            <div id="event-display">
+                <p id="event-text">欢迎来到游戏！选择一个地点开始探索吧。</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- API设置界面 -->
+    <div id="api-settings-panel" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>🔧 API设置</h2>
+                <span class="close-btn" onclick="closeAPISettings()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- 预设选择 -->
+                <div class="form-group">
+                    <label for="api-preset-select">API预设</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="api-preset-select" style="flex: 1;"></select>
+                        <button id="add-preset-btn" class="preset-btn">+</button>
+                        <button id="delete-preset-btn" class="preset-btn">-</button>
+                    </div>
+                </div>
+                <hr class="separator">
+
+                <!-- 预设配置 -->
+                <div class="form-group">
+                    <label for="preset-name-input">预设名称</label>
+                    <input type="text" id="preset-name-input" placeholder="例如：我的API">
+                </div>
+                <div class="form-group">
+                    <label for="api-provider-select">API 服务商</label>
+                    <select id="api-provider-select">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="openai-compatible">OpenAI 兼容 (中转)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="api-endpoint-input">API 地址 / 中转站</label>
+                    <input type="text" id="api-endpoint-input" placeholder="例如：https://api.openai.com/v1/chat/completions">
+                </div>
+                <div class="form-group">
+                    <label for="api-key-input">API 密钥</label>
+                    <input type="password" id="api-key-input" placeholder="在此输入你的密钥">
+                </div>
+                <div class="form-group">
+                    <label for="api-model-input">模型名称</label>
+                    <div style="position: relative;">
+                        <input list="api-models-list" id="api-model-input" name="model" placeholder="点击选择或手动输入..." autocomplete="off">
+                        <select id="api-model-select" style="position: absolute; top: 0; left: 0; width: 100%; opacity: 0; cursor: pointer;" onchange="document.getElementById('api-model-input').value = this.value;">
+                            <option value="">选择模型...</option>
+                            <optgroup label="OpenAI / 兼容">
+                                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                                <option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
+                                <option value="gpt-4">gpt-4</option>
+                                <option value="gpt-4-turbo">gpt-4-turbo</option>
+                                <option value="gpt-4o">gpt-4o</option>
+                                <option value="gpt-4o-mini">gpt-4o-mini</option>
+                            </optgroup>
+                            <optgroup label="Google Gemini">
+                                <option value="gemini-pro">gemini-pro</option>
+                                <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                            </optgroup>
+                            <optgroup label="Claude">
+                                <option value="claude-3-sonnet">claude-3-sonnet</option>
+                                <option value="claude-3-opus">claude-3-opus</option>
+                                <option value="claude-3-haiku">claude-3-haiku</option>
+                            </optgroup>
+                            <optgroup label="国产模型">
+                                <option value="qwen-turbo">qwen-turbo (通义千问)</option>
+                                <option value="qwen-plus">qwen-plus (通义千问)</option>
+                                <option value="moonshot-v1-8k">moonshot-v1-8k (月之暗面)</option>
+                                <option value="glm-4">glm-4 (智谱)</option>
+                            </optgroup>
+                        </select>
+                        <datalist id="api-models-list"></datalist>
+                    </div>
+                    <small style="color: #666; font-size: 12px;">可以从下拉列表选择或手动输入其他模型名称</small>
+                </div>
+                <div class="button-group">
+                    <button id="save-preset-btn" class="btn-success">💾 保存并应用</button>
+                    <button id="test-preset-btn" class="btn-info">🧪 测试API</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI聊天界面 -->
+    <div id="ai-chat-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="ai-npc-name">AI助手</h3>
+                <span class="close" onclick="closeAIChat()">&times;</span>
+            </div>
+            <div id="ai-chat-messages" class="chat-messages">
+                <!-- AI对话消息将显示在这里 -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="ai-chat-input" placeholder="输入消息..." onkeypress="handleChatKeyPress(event)">
+                <button onclick="sendChatMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 旧的AI设置面板（已废弃） -->
+    <div id="old-ai-settings-panel" class="settings-panel" style="display: none;">
+        <h3>AI设置</h3>
+        
+        <!-- AI服务选择 -->
+        <div class="setting-item">
+            <label for="ai-provider-select">AI服务:</label>
+            <select id="ai-provider-select" onchange="changeAIProvider()">
+                <option value="openai_proxy">OpenAI兼容代理 (推荐)</option>
+                <option value="openai">OpenAI GPT</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="claude">Anthropic Claude</option>
+                <option value="local">本地AI (Ollama)</option>
+            </select>
+        </div>
+        
+        <!-- OpenAI兼容代理配置 -->
+        <div id="openai-proxy-config" class="proxy-config">
+            <div class="setting-item">
+                <label for="proxy-url-input">代理地址:</label>
+                <input type="url" id="proxy-url-input" placeholder="https://your-proxy.com/v1">
+                <small>输入你的OpenAI兼容代理的完整URL</small>
+            </div>
+            <div class="setting-item">
+                <label for="proxy-key-input">API密钥:</label>
+                <input type="password" id="proxy-key-input" placeholder="输入API密钥">
+                <small>你的代理服务提供的API密钥</small>
+            </div>
+            <div class="setting-item">
+                <label for="proxy-model-select">模型:</label>
+                <div class="model-select-container">
+                    <select id="proxy-model-select" onchange="handleModelSelect()">
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="gpt-4">gpt-4</option>
+                        <option value="gpt-4-turbo">gpt-4-turbo</option>
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
+                        <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                        <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
+                        <option value="custom">自定义模型...</option>
+                    </select>
+                    <input type="text" id="custom-model-input" placeholder="输入自定义模型名称" class="custom-model-input">
+                </div>
+                <small>选择要使用的模型，或输入自定义模型名称</small>
+            </div>
+        </div>
+
+        <!-- 其他API配置 -->
+        <div id="other-api-config" class="other-config">
+            <div class="setting-item">
+                <label for="ai-settings-key-input">API密钥:</label>
+                <input type="password" id="ai-settings-key-input" placeholder="输入API密钥">
+            </div>
+        </div>
+        
+        <!-- 获取模型按钮 - 始终显示 -->
+        <button id="fetch-models-btn" onclick="fetchAvailableModels()" class="fetch-models-btn">获取可用模型</button>
+        
+        <!-- 高级设置 -->
+        <div class="setting-item">
+            <label for="temperature-slider">创造性 (0-1):</label>
+            <input type="range" id="temperature-slider" min="0" max="1" step="0.1" value="0.8">
+            <span id="temperature-value">0.8</span>
+            <small>数值越高，AI回应越有创造性</small>
+        </div>
+        
+        <div class="setting-item">
+            <label for="max-tokens-input">最大回复长度:</label>
+            <input type="number" id="max-tokens-input" min="50" max="500" value="200">
+            <small>控制AI回复的长度</small>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="setting-buttons">
+            <button onclick="saveAISettings()" class="save-btn">保存设置</button>
+            <button onclick="testAIConnection()" class="test-btn">测试连接</button>
+            <button onclick="resetAISettings()" class="reset-btn">重置设置</button>
+        </div>
+        
+        <!-- 状态显示 -->
+        <div id="ai-status" class="ai-status">
+            <span id="status-text">未配置</span>
+        </div>
+    </div>
+
+    <script src="js/api-state.js"></script>
+    <script src="ai-config.js"></script>
+    <script src="ai-npc-system.js"></script>
+    <script src="game.js"></script>
+    <script src="js/api-settings-ui.js"></script>
+    
+    <!-- PWA Service Worker注册 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // 移动端触摸优化 - 模态框滚动优先级管理
+        let isModalOpen = false;
+        
+        // 检测模态框状态
+        function updateModalState() {
+            const settingsPanel = document.getElementById('ai-settings-panel');
+            const chatModal = document.getElementById('ai-chat-modal');
+            const modalBackdrop = document.querySelector('.modal');
+            isModalOpen = settingsPanel.style.display === 'block' || 
+                         chatModal.style.display === 'block' ||
+                         (modalBackdrop && modalBackdrop.style.display === 'block');
+            
+            // 动态控制body滚动
+            if (isModalOpen) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+                document.body.style.top = `-${window.pageYOffset}px`;
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+                const scrollTop = document.body.style.top;
+                document.body.style.top = '';
+                if (scrollTop) {
+                    window.scrollTo(0, parseInt(scrollTop || '0') * -1);
+                }
+            }
+        }
+        
+        // 监听模态框显示/隐藏
+        const observer = new MutationObserver(updateModalState);
+        observer.observe(document.getElementById('ai-settings-panel'), { attributes: true, attributeFilter: ['style'] });
+        observer.observe(document.getElementById('ai-chat-modal'), { attributes: true, attributeFilter: ['style'] });
+        
+        // 监听模态框背景点击
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                updateModalState();
+            }
+        });
+        
+        // 触摸事件处理 - 模态框内滚动优先
+        let startY = 0;
+        let startX = 0;
+        
+        document.addEventListener('touchstart', function(e) {
+            startY = e.touches[0].pageY;
+            startX = e.touches[0].pageX;
+            updateModalState();
+        }, { passive: true });
+        
+        document.addEventListener('touchmove', function(e) {
+            updateModalState();
+            
+            // 如果模态框打开，检查是否在模态框内滚动
+            if (isModalOpen) {
+                const target = e.target;
+                const isInModal = target.closest('.modal-content') || 
+                                 target.closest('.settings-panel') ||
+                                 target.closest('.chat-messages');
+                
+                if (!isInModal) {
+                    // 不在模态框内，阻止滚动
+                    e.preventDefault();
+                    return;
+                }
+                
+                // 在模态框内，检查滚动容器
+                const scrollContainer = target.closest('.settings-panel, .chat-messages, .modal-content');
+                if (scrollContainer) {
+                    const scrollTop = scrollContainer.scrollTop;
+                    const scrollHeight = scrollContainer.scrollHeight;
+                    const clientHeight = scrollContainer.clientHeight;
+                    const deltaY = e.touches[0].pageY - startY;
+                    
+                    // 如果已经到顶部或底部，阻止过度滚动
+                    if ((scrollTop <= 0 && deltaY > 0) || 
+                        (scrollTop >= scrollHeight - clientHeight && deltaY < 0)) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            } else {
+                // 模态框未打开，处理主页面的边缘滚动
+                const currentY = e.touches[0].pageY;
+                const deltaY = currentY - startY;
+                
+                const isAtTop = window.pageYOffset <= 0;
+                const isAtBottom = window.pageYOffset + window.innerHeight >= document.body.scrollHeight;
+                
+                if ((isAtTop && deltaY > 0) || (isAtBottom && deltaY < 0)) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
+

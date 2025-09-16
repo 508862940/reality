@@ -95,9 +95,35 @@ function closeSettings() {
     saveConfig();
 }
 
-// 打开API配置（调用原有的API设置系统）
+// 打开API配置
+function openAPISettings() {
+    // 使用新的API设置界面
+    if (typeof APISettingsScreen !== 'undefined') {
+        APISettingsScreen.open();
+        // 关闭设置面板
+        closeSettings();
+        // 更新预设信息显示
+        updatePresetInfo();
+    } else {
+        console.error('API设置界面未加载');
+    }
+}
+
+// 更新当前预设信息显示
+function updatePresetInfo() {
+    const infoEl = document.getElementById('current-preset-info');
+    if (infoEl && typeof APIPresetManager !== 'undefined') {
+        const preset = APIPresetManager.getActivePreset();
+        if (preset) {
+            const hasKey = preset.apiKey ? '✅' : '❌';
+            infoEl.innerHTML = `当前: <strong>${preset.name}</strong> (${preset.provider}) ${hasKey}`;
+        }
+    }
+}
+
+// 兼容旧的函数名
 function openAPIConfig() {
-    // 检查原有的API设置UI是否已加载
+    openAPISettings();
     if (typeof window.openAPISettings === 'function') {
         window.openAPISettings();
     } else {

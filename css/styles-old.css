@@ -1,0 +1,1038 @@
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+#game-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    min-height: 100vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 游戏标题 */
+#game-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#game-header h1 {
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 角色状态面板 */
+#character-panel {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.stat {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    min-width: 120px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.stat-name {
+    display: block;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* 地点显示 */
+#location-display {
+    margin-bottom: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    border-radius: 15px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#current-location {
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#location-description {
+    font-size: 1.2em;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* 互动选项 */
+#interaction-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.option-btn {
+    padding: 15px 20px;
+    font-size: 1.1em;
+    font-weight: bold;
+    background: linear-gradient(45deg, #fd79a8, #e84393);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.option-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(45deg, #e84393, #fd79a8);
+}
+
+.option-btn:active {
+    transform: translateY(0);
+}
+
+/* 事件显示 */
+#event-display {
+    padding: 25px;
+    background: #fff;
+    border-radius: 15px;
+    border-left: 5px solid #00b894;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+#event-text {
+    font-size: 1.2em;
+    line-height: 1.8;
+    color: #2d3436;
+}
+
+/* AI互动区域 */
+#ai-interaction-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.ai-btn {
+    padding: 10px 15px;
+    font-size: 1em;
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ai-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(45deg, #00a085, #00b894);
+}
+
+/* AI聊天模态框 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
+    /* 移动端滚动优化 */
+    scroll-behavior: smooth;
+    /* 确保滚动优先级 */
+    touch-action: pan-y;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
+    /* 移动端滚动优化 */
+    scroll-behavior: smooth;
+    /* 确保滚动优先级 */
+    touch-action: pan-y;
+}
+
+.chat-message {
+    margin-bottom: 15px;
+    padding: 12px 16px;
+    border-radius: 15px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.chat-message.user {
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.chat-message.ai {
+    background: white;
+    color: #2d3436;
+    border: 1px solid #ddd;
+    margin-right: auto;
+}
+
+.chat-input-area {
+    padding: 20px;
+    background: white;
+    border-radius: 0 0 15px 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input-area input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+}
+
+.chat-input-area button {
+    padding: 12px 20px;
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.chat-input-area button:hover {
+    background: linear-gradient(45deg, #00a085, #00b894);
+    transform: translateY(-1px);
+}
+
+/* AI设置面板 */
+.settings-panel {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    /* 防止滚动穿透 */
+    overscroll-behavior: contain;
+    /* 移动端滚动优化 */
+    scroll-behavior: smooth;
+    /* 确保滚动优先级 */
+    touch-action: pan-y;
+}
+
+.settings-panel h3 {
+    margin-bottom: 20px;
+    color: #2d3436;
+    text-align: center;
+}
+
+.setting-item {
+    margin-bottom: 15px;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #636e72;
+}
+
+.setting-item input,
+.setting-item select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.setting-item input:focus,
+.setting-item select:focus {
+    outline: none;
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.2);
+}
+
+.setting-item small {
+    display: block;
+    margin-top: 5px;
+    color: #74b9ff;
+    font-size: 0.9em;
+}
+
+/* 模型选择容器 */
+.model-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.model-select-container select,
+.model-select-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.model-select-container input {
+    margin-top: 8px;
+    background: #f8f9fa;
+    border-color: #74b9ff;
+}
+
+.model-select-container input:focus {
+    outline: none;
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.2);
+    background: white;
+}
+
+/* 自定义模型输入框 */
+.custom-model-input {
+    display: none;
+}
+
+.custom-model-input.show {
+    display: block;
+}
+
+/* 获取模型按钮 - Edge兼容性修复 */
+.fetch-models-btn {
+    width: 100%;
+    padding: 8px 12px;
+    margin: 10px 0;
+    background: #0984e3; /* 移除渐变，使用纯色 */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease; /* 简化transition */
+    display: block !important; /* 强制显示，Edge兼容 */
+    visibility: visible !important; /* Edge兼容性 */
+    opacity: 1 !important; /* Edge兼容性 */
+}
+
+.fetch-models-btn:hover {
+    background: #74b9ff; /* 简化为纯色hover */
+}
+
+.fetch-models-btn:disabled {
+    background: #b2bec3;
+    cursor: not-allowed;
+}
+
+/* 代理配置样式 */
+.proxy-config {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    border-left: 4px solid #00b894;
+    display: block; /* 默认显示 */
+}
+
+.other-config {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    display: none;
+}
+
+/* 滑块样式 */
+.setting-item input[type="range"] {
+    width: 70%;
+    margin-right: 10px;
+}
+
+#temperature-value {
+    font-weight: bold;
+    color: #6c5ce7;
+}
+
+/* 按钮组 */
+.setting-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.setting-buttons button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.save-btn {
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+}
+
+.save-btn:hover {
+    background: linear-gradient(45deg, #00a085, #00b894);
+    transform: translateY(-1px);
+}
+
+.test-btn {
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    color: white;
+}
+
+.test-btn:hover {
+    background: linear-gradient(45deg, #0984e3, #74b9ff);
+    transform: translateY(-1px);
+}
+
+.reset-btn {
+    background: linear-gradient(45deg, #fd79a8, #e84393);
+    color: white;
+}
+
+.reset-btn:hover {
+    background: linear-gradient(45deg, #e84393, #fd79a8);
+    transform: translateY(-1px);
+}
+
+/* 状态显示 */
+.ai-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.ai-status.success {
+    background: #d1f2eb;
+    color: #00b894;
+    border: 1px solid #00b894;
+}
+
+.ai-status.error {
+    background: #fadbd8;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+/* API设置界面样式 */
+.preset-btn {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.preset-btn:hover {
+    background: #e9ecef;
+}
+
+.preset-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.separator {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid #dee2e6;
+}
+
+#api-settings-panel .form-group {
+    margin: 15px 0;
+}
+
+#api-settings-panel label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+#api-settings-panel input,
+#api-settings-panel select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+#api-settings-panel input:focus,
+#api-settings-panel select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#api-settings-panel .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#api-settings-panel .btn-success,
+#api-settings-panel .btn-info {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+#api-settings-panel .btn-success {
+    background: #28a745;
+}
+
+#api-settings-panel .btn-success:hover {
+    background: #218838;
+}
+
+#api-settings-panel .btn-info {
+    background: #17a2b8;
+}
+
+#api-settings-panel .btn-info:hover {
+    background: #138496;
+}
+
+/* 模型选择器样式 */
+#api-model-select {
+    height: 100%;
+    background: transparent;
+    border: none;
+}
+
+#api-model-select option,
+#api-model-select optgroup {
+    background: white;
+    color: #333;
+}
+
+#api-model-select:hover ~ #api-model-input {
+    border-color: #667eea;
+}
+
+#api-settings-panel small {
+    display: block;
+    margin-top: 5px;
+    color: #6c757d;
+}
+
+.ai-status.warning {
+    background: #fef9e7;
+    color: #f39c12;
+    border: 1px solid #f39c12;
+}
+
+.ai-status.info {
+    background: #ebf3fd;
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+/* iPhone 15 和移动端适配 */
+/* iPhone 15 Pro Max: 430px × 932px */
+/* iPhone 15 Pro: 393px × 852px */
+/* iPhone 15 Plus: 428px × 926px */
+/* iPhone 15: 393px × 852px */
+
+/* 通用移动端适配 */
+@media (max-width: 600px) {
+    body {
+        /* 防止iOS双击缩放，但允许滚动 */
+        touch-action: pan-y;
+        /* 平滑滚动 */
+        scroll-behavior: smooth;
+        /* 确保内容可以正常滚动 */
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    
+    #game-container {
+        padding: 10px;
+        /* iPhone 15适配 - 考虑安全区域 */
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        padding-left: max(10px, env(safe-area-inset-left));
+        padding-right: max(10px, env(safe-area-inset-right));
+    }
+    
+    #game-header h1 {
+        font-size: 2em;
+        /* iPhone 15状态栏适配 */
+        margin-top: env(safe-area-inset-top);
+    }
+    
+    #character-panel {
+        flex-direction: column;
+        gap: 10px;
+        /* iPhone 15横屏适配 */
+        flex-wrap: wrap;
+    }
+    
+    .stat {
+        min-width: auto;
+        flex: 1;
+        min-width: 100px;
+    }
+    
+    #interaction-options {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    #ai-interaction-area {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        max-height: 90vh;
+        /* iPhone 15安全区域适配 */
+        margin-top: max(5%, env(safe-area-inset-top));
+    }
+    
+    .chat-message {
+        max-width: 90%;
+    }
+    
+    /* 按钮优化 - 适合手指点击 */
+    .option-btn, .ai-btn {
+        min-height: 44px; /* iOS推荐的最小触摸目标 */
+        font-size: 1.1em;
+        padding: 15px 20px;
+    }
+    
+    /* AI设置面板移动端优化 */
+    .settings-panel {
+        width: 95%;
+        max-height: 85vh;
+        margin: 2.5% auto;
+        padding: 20px;
+        /* iPhone 15安全区域 */
+        margin-top: max(2.5%, env(safe-area-inset-top));
+    }
+    
+    .setting-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .setting-buttons button {
+        min-height: 44px;
+        font-size: 1.1em;
+    }
+}
+
+/* iPhone 15 特定适配 */
+@media (max-width: 430px) and (max-height: 932px) {
+    /* iPhone 15 Pro Max */
+    #game-container {
+        padding: 8px;
+        padding-top: max(8px, env(safe-area-inset-top));
+    }
+    
+    #game-header h1 {
+        font-size: 1.8em;
+    }
+    
+    .stat {
+        padding: 8px;
+        min-width: 90px;
+    }
+}
+
+@media (max-width: 393px) and (max-height: 852px) {
+    /* iPhone 15 Pro 和 iPhone 15 */
+    #game-container {
+        padding: 6px;
+    }
+    
+    #game-header h1 {
+        font-size: 1.6em;
+    }
+    
+    .stat {
+        padding: 6px;
+        min-width: 80px;
+    }
+    
+    /* 更紧凑的布局 */
+    #character-panel {
+        gap: 8px;
+    }
+    
+    .option-btn, .ai-btn {
+        padding: 12px 16px;
+        font-size: 1em;
+    }
+}
+
+/* 横屏适配 */
+@media (max-height: 600px) and (orientation: landscape) {
+    #game-container {
+        padding: 5px;
+    }
+    
+    #character-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .stat {
+        min-width: 70px;
+        padding: 5px;
+    }
+    
+    #game-header h1 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+    
+    .modal-content {
+        margin: 2% auto;
+        max-height: 95vh;
+    }
+    
+    .settings-panel {
+        margin: 1% auto;
+        max-height: 98vh;
+        padding: 15px;
+    }
+}
+
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+    /* 触摸设备优化 */
+    .option-btn:hover, .ai-btn:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .option-btn:active, .ai-btn:active {
+        transform: scale(0.95);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        transition: all 0.1s ease;
+    }
+    
+    /* 聊天输入框优化 */
+    .chat-input-area input {
+        font-size: 16px; /* 防止iOS缩放 */
+        -webkit-appearance: none;
+        border-radius: 8px;
+    }
+    
+    .setting-item input,
+    .setting-item select {
+        font-size: 16px; /* 防止iOS缩放 */
+        -webkit-appearance: none;
+        border-radius: 8px;
+    }
+    
+    /* 修复iOS Safari的输入框问题 */
+    input, select, textarea {
+        -webkit-appearance: none;
+        -webkit-border-radius: 0;
+        border-radius: 8px;
+    }
+    
+    /* 修复按钮触摸反馈 */
+    button {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        /* 确保按钮可以正常点击 */
+        pointer-events: auto;
+        cursor: pointer;
+    }
+    
+    /* 确保所有交互元素都可以正常触摸 */
+    .option-btn, .ai-btn, input, select, textarea {
+        pointer-events: auto;
+        touch-action: manipulation;
+    }
+}
+
+/* 高级游戏系统样式 */
+.event-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.event-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.event-content h3 {
+    color: #2d3436;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.event-content p {
+    color: #636e72;
+    margin-bottom: 25px;
+    line-height: 1.6;
+    font-size: 1.1em;
+}
+
+.event-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.event-choice {
+    padding: 12px 20px;
+    background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.event-choice:hover {
+    background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+    transform: translateY(-2px);
+}
+
+/* 时间显示 */
+#time-display {
+    background: linear-gradient(45deg, #00b894, #00a085);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+#time-display h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+}
+
+#time-display p {
+    margin: 0;
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+/* 技能条 */
+.skill-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.skill-name {
+    width: 80px;
+    font-weight: bold;
+    color: #2d3436;
+}
+
+.skill-progress {
+    flex: 1;
+    height: 20px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 10px;
+}
+
+.skill-fill {
+    height: 100%;
+    background: linear-gradient(45deg, #74b9ff, #0984e3);
+    transition: width 0.3s ease;
+}
+
+.skill-value {
+    width: 40px;
+    text-align: right;
+    font-weight: bold;
+    color: #2d3436;
+}
+
+/* 物品栏 */
+#inventory-panel {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#inventory-panel h3 {
+    margin: 0 0 15px 0;
+    color: #2d3436;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.inventory-item {
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.inventory-item-name {
+    font-weight: bold;
+    color: #2d3436;
+    margin-bottom: 5px;
+}
+
+.inventory-item-count {
+    color: #636e72;
+    font-size: 0.9em;
+}
+

@@ -8,7 +8,12 @@
       "Read(//e/柚子机/yoyo/**)",
       "Bash(node:*)",
       "Bash(python:*)",
-      "Bash(start python -m http.server 8080)"
+      "Bash(start python -m http.server 8080)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Read(//e/柚子机/**)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
