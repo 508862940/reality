@@ -13,7 +13,9 @@
       "Bash(find:*)",
       "Read(//e/柚子机/**)",
       "Bash(npm install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git remote:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

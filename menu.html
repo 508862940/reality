@@ -19,6 +19,9 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b92f6'/%3E%3Cstop offset='100%25' style='stop-color:%23f093fb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23g)'/%3E%3Ctext x='90' y='105' text-anchor='middle' fill='white' font-size='75' font-family='Arial'%3E✨%3C/text%3E%3C/svg%3E">
 
     <title>Reality - 互动文字冒险游戏</title>
+    <!-- PWA适配样式 -->
+    <link rel="stylesheet" href="css/app.css">
+    <!-- 主菜单样式 -->
     <link rel="stylesheet" href="css/menu.css">
 </head>
 <body>
@@ -26,7 +29,7 @@
     <div class="bg-animation" id="bgAnimation"></div>
 
     <!-- 主菜单容器 -->
-    <div class="main-container">
+    <div class="main-container pwa-safe-container">
         <h1 class="game-title">✨ Reality ✨</h1>
         <p class="game-subtitle">互动文字冒险游戏</p>
 
@@ -151,6 +154,10 @@
     </div>
 
     <!-- 加载必要的脚本 -->
+    <!-- Dexie.js for IndexedDB -->
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+    <!-- Database module -->
+    <script src="js/core/database.js"></script>
     <script src="js/pages/menu.js"></script>
     <!-- 新的API预设管理系统 -->
     <script src="js/api/api-preset-manager.js"></script>

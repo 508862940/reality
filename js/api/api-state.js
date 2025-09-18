@@ -20,20 +20,54 @@ const APIState = {
     },
 
     // 初始化状态
-    init() {
-        // 从localStorage加载
-        const saved = localStorage.getItem('game_api_state');
-        if (saved) {
+    async init() {
+        // 从IndexedDB加载（如果Database可用）
+        if (typeof Database !== 'undefined' && Database.loadAPIConfig) {
             try {
-                const data = JSON.parse(saved);
-                this.state = data;
-                console.log('✅ 加载了保存的API配置');
+                const config = await Database.loadAPIConfig();
+                if (config && config.presets) {
+                    this.state = {
+                        apiConfig: {
+                            activePresetId: config.activePresetId,
+                            presets: config.presets
+                        }
+                    };
+                    console.log('✅ 从IndexedDB加载了API配置');
+                } else {
+                    this.state = this.getDefaultState();
+                }
             } catch (e) {
-                console.error('加载配置失败:', e);
-                this.state = this.getDefaultState();
+                console.error('从IndexedDB加载配置失败:', e);
+                // 降级到localStorage
+                const saved = localStorage.getItem('game_api_state');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        this.state = data;
+                        console.log('✅ 从localStorage加载了保存的API配置');
+                    } catch (e2) {
+                        console.error('加载配置失败:', e2);
+                        this.state = this.getDefaultState();
+                    }
+                } else {
+                    this.state = this.getDefaultState();
+                }
             }
         } else {
-            this.state = this.getDefaultState();
+            // Database不可用，使用localStorage
+            const saved = localStorage.getItem('game_api_state');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    this.state = data;
+                    console.log('✅ 从localStorage加载了保存的API配置');
+                } catch (e) {
+                    console.error('加载配置失败:', e);
+                    this.state = this.getDefaultState();
+                }
+            } else {
+                this.state = this.getDefaultState();
+            }
         }
 
         // 自动应用配置
@@ -49,9 +83,26 @@ const APIState = {
     },
 
     // 保存状态
-    save() {
-        localStorage.setItem('game_api_state', JSON.stringify(this.state));
-        console.log('💾 API配置已保存');
+    async save() {
+        // 优先保存到IndexedDB
+        if (typeof Database !== 'undefined' && Database.saveAPIConfig) {
+            try {
+                await Database.saveAPIConfig({
+                    presets: this.state.apiConfig.presets,
+                    activePresetId: this.state.apiConfig.activePresetId
+                });
+                console.log('💾 API配置已保存到IndexedDB');
+            } catch (e) {
+                console.error('保存到IndexedDB失败:', e);
+                // 降级到localStorage
+                localStorage.setItem('game_api_state', JSON.stringify(this.state));
+                console.log('💾 API配置已保存到localStorage（备用）');
+            }
+        } else {
+            // Database不可用，使用localStorage
+            localStorage.setItem('game_api_state', JSON.stringify(this.state));
+            console.log('💾 API配置已保存到localStorage');
+        }
     },
 
     // 获取当前激活的预设
@@ -242,8 +293,8 @@ const APIState = {
 
 // 页面加载时初始化
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        APIState.init();
+    document.addEventListener('DOMContentLoaded', async () => {
+        await APIState.init();
     });
 } else {
     APIState.init();

@@ -15,6 +15,24 @@ body {
     position: relative;
 }
 
+/* PWA灵动岛适配 */
+.game-container.pwa-safe-container {
+    /* 内容区域微调 */
+    padding-top: calc(var(--dynamic-padding-top, 0px) + 10px);
+}
+
+/* 调整顶部状态栏位置 */
+.status-bar,
+.header-bar {
+    /* 如果有顶部固定元素，确保它们不会太靠上 */
+    top: var(--dynamic-padding-top, 0px);
+}
+
+/* 角色信息卡片稍微下移 */
+.character-panel:first-child {
+    margin-top: 10px;
+}
+
 /* 主容器 */
 .game-container {
     width: 100%;

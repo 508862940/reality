@@ -144,6 +144,86 @@ body {
     }
 }
 
+/* PWA 灵动岛适配样式 */
+:root {
+    /* 定义安全区域变量 */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --dynamic-padding-top: max(20px, env(safe-area-inset-top, 20px));
+}
+
+/* 全局PWA适配类 */
+.pwa-safe-container {
+    /* 保持全屏，但内容区域适当下移 */
+    min-height: 100vh;
+    padding-top: var(--dynamic-padding-top);
+    position: relative;
+}
+
+/* 渐变遮罩，让顶部过渡更自然 */
+.pwa-safe-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--dynamic-padding-top) + 40px);
+    background: linear-gradient(
+        to bottom,
+        rgba(26, 26, 46, 0.95) 0%,
+        rgba(26, 26, 46, 0.8) 30%,
+        rgba(26, 26, 46, 0) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 针对设置面板等弹出内容 */
+.settings-panel,
+.modal-content,
+.api-settings-ui {
+    /* 设置面板从稍低位置开始 */
+    margin-top: var(--dynamic-padding-top);
+}
+
+/* 检测是否为PWA模式 */
+@media (display-mode: standalone) {
+    .pwa-safe-container {
+        /* PWA模式下增加一点额外空间 */
+        padding-top: calc(var(--dynamic-padding-top) + 10px);
+    }
+}
+
+/* 适配不同屏幕的刘海/灵动岛 */
+@supports (padding-top: env(safe-area-inset-top)) {
+    @media screen and (max-width: 430px) {
+        /* 手机竖屏模式 */
+        .pwa-safe-container {
+            padding-top: calc(env(safe-area-inset-top, 20px) + 15px);
+        }
+    }
+
+    @media screen and (orientation: landscape) {
+        /* 横屏模式减少顶部空间 */
+        .pwa-safe-container {
+            padding-top: max(10px, env(safe-area-inset-top, 10px));
+        }
+    }
+}
+
+/* iPhone 14 Pro / 15 Pro 灵动岛适配 */
+@media screen and (device-width: 393px) and (device-height: 852px) {
+    .pwa-safe-container {
+        padding-top: 59px; /* 灵动岛高度 + 间距 */
+    }
+}
+
+/* iPhone 12/13/14 刘海屏适配 */
+@media screen and (device-width: 390px) and (device-height: 844px) {
+    .pwa-safe-container {
+        padding-top: 47px; /* 刘海高度 + 间距 */
+    }
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     body {
@@ -151,7 +231,7 @@ body {
     }
 }
 
-/* 安全区域适配（iPhone） */
+/* 安全区域适配（iPhone） - 保留原有适配 */
 @supports (padding: max(0px)) {
     .page-container {
         padding-top: max(20px, env(safe-area-inset-top));
