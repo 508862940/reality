@@ -847,3 +847,107 @@ body {
     pointer-events: none;
     z-index: 1;
 }
+
+/* ==================== 插图系统样式 ==================== */
+.illustration-container {
+    display: none;
+    margin: 20px 0;
+    padding: 16px;
+    background: linear-gradient(145deg, #1e1e2e 0%, #252535 100%);
+    border: 1px solid rgba(139, 146, 246, 0.2);
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: scale(0.95);
+}
+
+.illustration-container.show {
+    display: block;
+    opacity: 1;
+    transform: scale(1);
+    animation: illustrationSlideIn 0.4s ease-out;
+}
+
+@keyframes illustrationSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.illustration-content {
+    text-align: center;
+}
+
+.illustration-image {
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 26, 46, 0.5);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.illustration-emoji {
+    font-size: 80px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.illustration-image img {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.illustration-caption {
+    font-size: 16px;
+    font-weight: bold;
+    color: #e5e7eb;
+    margin-bottom: 8px;
+}
+
+.illustration-desc {
+    font-size: 14px;
+    color: #9ca3af;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+/* 彩蛋插图特殊效果 */
+.illustration-container.easter-egg {
+    animation: easterEggPulse 3s ease-in-out;
+    border-color: rgba(250, 204, 21, 0.6);
+    background: linear-gradient(145deg, #1e1e2e 0%, #3d2f1f 100%);
+    box-shadow: 0 0 30px rgba(250, 204, 21, 0.3);
+}
+
+@keyframes easterEggPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.illustration-container.easter-egg .illustration-emoji {
+    animation: rainbowGlow 2s ease-in-out infinite;
+}
+
+@keyframes rainbowGlow {
+    0%, 100% { filter: drop-shadow(0 0 10px #ff0080); }
+    25% { filter: drop-shadow(0 0 10px #00ff80); }
+    50% { filter: drop-shadow(0 0 10px #80ff00); }
+    75% { filter: drop-shadow(0 0 10px #ff8000); }
+}
+
+/* 临时提示样式 */
+@keyframes tipFadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
