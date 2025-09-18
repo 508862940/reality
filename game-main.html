@@ -145,6 +145,13 @@
     <script src="js/api/api-state.js"></script>
     <!-- 加载动画系统 -->
     <script src="js/utils/animations.js"></script>
+    <!-- 加载场景管理系统 -->
+    <script src="js/core/scene-manager.js"></script>
+    <!-- 加载F2区管理器 -->
+    <script src="js/core/f2-manager.js"></script>
+    <!-- 加载插图系统 -->
+    <script src="js/data/scene-illustrations.js"></script>
+    <script src="js/core/illustration-manager.js"></script>
     <!-- 加载游戏脚本 -->
     <script src="js/pages/game-main.js"></script>
     <!-- 加载原有的游戏逻辑 -->
@@ -160,6 +167,29 @@
             if (typeof AnimationEffects !== 'undefined') {
                 AnimationEffects.init();
                 AnimationEffects.createGameAnimations();
+            }
+
+            // 加载初始场景
+            if (window.sceneManager) {
+                // 测试场景数据
+                const testScene = {
+                    id: 'start',
+                    location: '宿舍',
+                    text: [
+                        '清晨的阳光透过窗帘洒进房间。',
+                        '新的一天开始了，你打算做什么？'
+                    ],
+                    choices: [
+                        { text: '→ 起床洗漱', target: 'bathroom' },
+                        { text: '→ 再睡一会', target: 'sleep' },
+                        { text: '→ 查看手机', target: 'phone' }
+                    ]
+                };
+
+                // 加载场景
+                setTimeout(() => {
+                    sceneManager.loadScene(testScene);
+                }, 500);
             }
         });
     </script>

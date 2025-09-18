@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1区插图查看系统演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .demo-container {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 430px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-title {
+            color: #f093fb;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* F1区样式 */
+        .f1-area {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 15px;
+            color: #e4e4e7;
+            height: 400px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* 自定义滚动条 */
+        .f1-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .f1-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .f1-area::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 4px;
+        }
+
+        /* 场景内容 */
+        .scene-content {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .scene-content.fade-out {
+            opacity: 0;
+        }
+
+        .scene-content.fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .location-tag {
+            color: #8b92f6;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .story-text {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* 选项样式 */
+        .choice-item {
+            display: block;
+            color: #a5b4fc;
+            padding: 10px 15px;
+            margin: 8px 0;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .choice-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(5px);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        /* 隐藏的插图区域 */
+        .hidden-illustration {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(139, 92, 246, 0.05);
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .hidden-illustration.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .illustration-placeholder {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea22, #764ba222);
+            border: 2px dashed rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .illustration-caption {
+            color: #94a3b8;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        /* F2区控制栏 */
+        .f2-area {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(30, 30, 45, 0.95);
+            border-radius: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #e4e4e7;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .control-btn:hover {
+            background: rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* 放大镜按钮特殊样式 */
+        .zoom-btn {
+            padding: 8px 12px;
+            font-size: 16px;
+            background: rgba(240, 147, 251, 0.2);
+            border-color: rgba(240, 147, 251, 0.3);
+            position: relative;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(240, 147, 251, 0.3);
+        }
+
+        .zoom-btn.active {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        /* 插图标记 */
+        .has-illustration-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #f093fb;
+            border-radius: 50%;
+            margin-left: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        .reset-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+
+        /* 场景标题 */
+        .scene-title {
+            color: #f093fb;
+            font-size: 18px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        /* 多场景演示 */
+        .scene-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .scene-tab {
+            flex: 1;
+            padding: 8px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 6px;
+            color: #a5b4fc;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .scene-tab.active {
+            background: rgba(139, 92, 246, 0.3);
+            color: white;
+        }
+
+        /* 提示信息 */
+        .tip {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #fbbf24;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-title">📸 F1区插图查看系统演示</div>
+
+        <!-- 场景选择 -->
+        <div class="scene-select">
+            <div class="scene-tab active" onclick="loadScene(1, this)">场景1：有插图</div>
+            <div class="scene-tab" onclick="loadScene(2, this)">场景2：无插图</div>
+            <div class="scene-tab" onclick="loadScene(3, this)">场景3：多插图</div>
+        </div>
+
+        <div class="tip">💡 有插图时，放大镜按钮会有小红点提示</div>
+
+        <!-- F1区 -->
+        <div class="f1-area" id="f1Area">
+            <div class="scene-content" id="sceneContent">
+                <!-- 场景1：有插图 -->
+                <div class="location-tag">📍 学校天台</div>
+                <div class="story-text">
+                    <p>夕阳西下，天台上的风很温柔。</p>
+                    <p>远处的城市天际线被染成了橙红色，你靠在栏杆上，享受着这片刻的宁静。</p>
+                    <p>突然，你听到身后传来脚步声...</p>
+                </div>
+
+                <!-- 选项 -->
+                <div class="choice-item" onclick="selectChoice(this)">
+                    → 回头看看是谁
+                </div>
+                <div class="choice-item" onclick="selectChoice(this)">
+                    → 继续欣赏夕阳
+                </div>
+                <div class="choice-item" onclick="selectChoice(this)">
+                    → 假装没听见
+                </div>
+
+                <!-- 隐藏的插图（需要拖动滚动条 + 点击放大镜） -->
+                <div class="hidden-illustration" id="illustration1">
+                    <div class="illustration-placeholder">
+                        🌅
+                    </div>
+                    <div class="illustration-caption">
+                        「夕阳下的天台风景」
+                    </div>
+                </div>
+
+                <!-- 为了演示滚动，添加一些内容 -->
+                <div style="margin-top: 30px; color: #94a3b8; font-size: 12px;">
+                    <p>（继续向下滚动...）</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- F2区 -->
+        <div class="f2-area">
+            <button class="control-btn" onclick="continueScene()">
+                ▶️ 继续
+            </button>
+            <button class="control-btn" onclick="resetScene()">
+                ↩️ 重置
+            </button>
+            <button class="control-btn zoom-btn" id="zoomBtn" onclick="toggleIllustration()">
+                🔍
+                <span class="has-illustration-indicator" id="illustrationIndicator"></span>
+            </button>
+            <span class="reset-hint">本回合可重置</span>
+        </div>
+    </div>
+
+    <script>
+        let currentScene = 1;
+        let hasIllustration = true;
+        let illustrationVisible = false;
+
+        // 场景数据
+        const scenes = {
+            1: {
+                location: "📍 学校天台",
+                text: [
+                    "夕阳西下，天台上的风很温柔。",
+                    "远处的城市天际线被染成了橙红色，你靠在栏杆上，享受着这片刻的宁静。",
+                    "突然，你听到身后传来脚步声..."
+                ],
+                choices: [
+                    "→ 回头看看是谁",
+                    "→ 继续欣赏夕阳",
+                    "→ 假装没听见"
+                ],
+                illustration: {
+                    emoji: "🌅",
+                    caption: "「夕阳下的天台风景」"
+                }
+            },
+            2: {
+                location: "📍 教室",
+                text: [
+                    "空荡荡的教室里只有你一个人。",
+                    "黑板上还留着今天的课程内容，窗外传来操场上的喧闹声。",
+                    "你该做点什么..."
+                ],
+                choices: [
+                    "→ 开始写作业",
+                    "→ 看看窗外",
+                    "→ 离开教室"
+                ],
+                illustration: null
+            },
+            3: {
+                location: "📍 图书馆",
+                text: [
+                    "安静的图书馆里弥漫着书香。",
+                    "阳光透过窗户洒在木质书架上，形成斑驳的光影。",
+                    "你在书架间漫步，寻找着什么..."
+                ],
+                choices: [
+                    "→ 找一本小说",
+                    "→ 查找学习资料",
+                    "→ 去二楼看看"
+                ],
+                illustration: {
+                    emoji: "📚",
+                    caption: "「午后的图书馆一角」"
+                }
+            }
+        };
+
+        // 加载场景
+        function loadScene(sceneId, tab) {
+            currentScene = sceneId;
+            const scene = scenes[sceneId];
+            hasIllustration = scene.illustration !== null;
+
+            // 更新标签状态
+            document.querySelectorAll('.scene-tab').forEach(t => t.classList.remove('active'));
+            if (tab) tab.classList.add('active');
+
+            // 淡出效果
+            const content = document.getElementById('sceneContent');
+            content.classList.add('fade-out');
+
+            setTimeout(() => {
+                // 构建HTML
+                let html = `
+                    <div class="location-tag">${scene.location}</div>
+                    <div class="story-text">
+                        ${scene.text.map(t => `<p>${t}</p>`).join('')}
+                    </div>
+                `;
+
+                // 添加选项
+                scene.choices.forEach(choice => {
+                    html += `
+                        <div class="choice-item" onclick="selectChoice(this)">
+                            ${choice}
+                        </div>
+                    `;
+                });
+
+                // 如果有插图，添加隐藏的插图区域
+                if (hasIllustration) {
+                    html += `
+                        <div class="hidden-illustration" id="illustration1">
+                            <div class="illustration-placeholder">
+                                ${scene.illustration.emoji}
+                            </div>
+                            <div class="illustration-caption">
+                                ${scene.illustration.caption}
+                            </div>
+                        </div>
+                        <div style="margin-top: 30px; color: #94a3b8; font-size: 12px;">
+                            <p>（继续向下滚动查看更多...）</p>
+                        </div>
+                    `;
+                }
+
+                content.innerHTML = html;
+                content.classList.remove('fade-out');
+                content.classList.add('fade-in');
+
+                // 更新放大镜按钮状态
+                updateZoomButton();
+
+                // 重置插图显示状态
+                illustrationVisible = false;
+                document.getElementById('zoomBtn').classList.remove('active');
+
+                // 滚动到顶部
+                document.getElementById('f1Area').scrollTop = 0;
+            }, 300);
+        }
+
+        // 更新放大镜按钮
+        function updateZoomButton() {
+            const indicator = document.getElementById('illustrationIndicator');
+            const zoomBtn = document.getElementById('zoomBtn');
+
+            if (hasIllustration) {
+                indicator.style.display = 'inline-block';
+                zoomBtn.style.opacity = '1';
+                zoomBtn.disabled = false;
+            } else {
+                indicator.style.display = 'none';
+                zoomBtn.style.opacity = '0.5';
+                zoomBtn.disabled = true;
+            }
+        }
+
+        // 切换插图显示
+        function toggleIllustration() {
+            if (!hasIllustration) return;
+
+            const illustration = document.getElementById('illustration1');
+            const zoomBtn = document.getElementById('zoomBtn');
+            const f1Area = document.getElementById('f1Area');
+
+            illustrationVisible = !illustrationVisible;
+
+            if (illustrationVisible) {
+                // 显示插图
+                illustration.classList.add('show');
+                zoomBtn.classList.add('active');
+
+                // 自动滚动到插图位置
+                setTimeout(() => {
+                    illustration.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            } else {
+                // 隐藏插图
+                illustration.classList.remove('show');
+                zoomBtn.classList.remove('active');
+
+                // 滚动回顶部
+                f1Area.scrollTop = 0;
+            }
+        }
+
+        // 选择选项
+        function selectChoice(element) {
+            // 移除其他选中状态
+            document.querySelectorAll('.choice-item').forEach(choice => {
+                choice.style.background = 'rgba(139, 92, 246, 0.1)';
+            });
+
+            // 添加选中效果
+            element.style.background = 'rgba(139, 92, 246, 0.3)';
+
+            // 模拟场景切换
+            setTimeout(() => {
+                continueScene();
+            }, 500);
+        }
+
+        // 继续场景
+        function continueScene() {
+            const content = document.getElementById('sceneContent');
+            content.classList.add('fade-out');
+
+            setTimeout(() => {
+                content.innerHTML = `
+                    <div class="scene-title">场景已切换</div>
+                    <div class="story-text">
+                        <p>你选择了一个选项，故事继续发展...</p>
+                        <p>（这是新的场景内容）</p>
+                    </div>
+                `;
+                content.classList.remove('fade-out');
+                content.classList.add('fade-in');
+
+                // 隐藏插图指示器
+                document.getElementById('illustrationIndicator').style.display = 'none';
+                document.getElementById('zoomBtn').classList.remove('active');
+                hasIllustration = false;
+                updateZoomButton();
+            }, 300);
+        }
+
+        // 重置场景
+        function resetScene() {
+            loadScene(currentScene);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateZoomButton();
+        });
+    </script>
+</body>
+</html>

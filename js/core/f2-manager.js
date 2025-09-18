@@ -1,0 +1,295 @@
+/**
+ * F2区管理器
+ * 管理场景控制按钮和AI输入模式的切换
+ */
+
+class F2Manager {
+    constructor() {
+        this.currentMode = 'scene'; // 'scene' 或 'ai'
+        this.continueEnabled = false;
+        this.resetCount = 0;
+        this.maxResets = 1;
+
+        this.init();
+    }
+
+    init() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.setupElements());
+        } else {
+            this.setupElements();
+        }
+    }
+
+    setupElements() {
+        // 获取元素
+        this.aiInputArea = document.getElementById('aiInputArea');
+        this.sceneControlArea = document.getElementById('sceneControlArea');
+
+        // 如果没有场景控制区，创建它
+        if (!this.sceneControlArea) {
+            this.createSceneControlArea();
+        }
+
+        // 默认显示场景模式
+        this.switchToSceneMode();
+    }
+
+    /**
+     * 创建场景控制区
+     */
+    createSceneControlArea() {
+        const lowerSection = document.querySelector('.lower-section');
+        if (!lowerSection) return;
+
+        // 在AI输入区之前插入场景控制区
+        const controlHTML = `
+            <div class="scene-control-area" id="sceneControlArea">
+                <button class="control-btn continue-btn" id="continueBtn" onclick="f2Manager.handleContinue()">
+                    ▶️ 继续
+                </button>
+                <button class="control-btn reset-btn" id="resetBtn" onclick="f2Manager.handleReset()">
+                    ↩️ 重置
+                </button>
+                <button class="control-btn zoom-btn" id="zoomBtn" onclick="f2Manager.toggleIllustration()">
+                    🔍
+                    <span class="has-illustration-indicator" id="illustrationIndicator"></span>
+                </button>
+                <span class="reset-hint" id="resetHint">本回合可重置</span>
+            </div>
+        `;
+
+        // 插入到AI输入区之前
+        if (this.aiInputArea) {
+            this.aiInputArea.insertAdjacentHTML('beforebegin', controlHTML);
+        } else {
+            lowerSection.insertAdjacentHTML('beforeend', controlHTML);
+        }
+
+        this.sceneControlArea = document.getElementById('sceneControlArea');
+    }
+
+    /**
+     * 切换到场景模式
+     */
+    switchToSceneMode() {
+        this.currentMode = 'scene';
+
+        if (this.aiInputArea) {
+            this.aiInputArea.style.display = 'none';
+            this.aiInputArea.classList.remove('active');
+        }
+
+        if (this.sceneControlArea) {
+            this.sceneControlArea.style.display = 'flex';
+        }
+
+        // 隐藏AI模式指示器
+        const aiIndicator = document.getElementById('aiModeIndicator');
+        if (aiIndicator) {
+            aiIndicator.classList.remove('active');
+        }
+    }
+
+    /**
+     * 切换到AI模式
+     */
+    switchToAIMode() {
+        this.currentMode = 'ai';
+
+        if (this.sceneControlArea) {
+            this.sceneControlArea.style.display = 'none';
+        }
+
+        if (this.aiInputArea) {
+            this.aiInputArea.style.display = 'block';
+            this.aiInputArea.classList.add('active');
+
+            // 自动聚焦输入框
+            const input = document.getElementById('aiInput');
+            if (input) {
+                setTimeout(() => input.focus(), 300);
+            }
+        }
+
+        // 显示AI模式指示器
+        const aiIndicator = document.getElementById('aiModeIndicator');
+        if (aiIndicator) {
+            aiIndicator.classList.add('active');
+        }
+
+        // AI模式不可重置
+        this.resetCount = this.maxResets;
+    }
+
+    /**
+     * 处理继续按钮
+     */
+    handleContinue() {
+        if (!this.continueEnabled) {
+            this.showTip('请先选择一个选项');
+            return;
+        }
+
+        // 调用场景管理器的继续方法
+        if (window.sceneManager) {
+            window.sceneManager.proceedToNext();
+        }
+    }
+
+    /**
+     * 处理重置按钮
+     */
+    handleReset() {
+        if (this.resetCount >= this.maxResets) {
+            this.showTip('本场景只能重置一次');
+            return;
+        }
+
+        this.resetCount++;
+
+        // 更新提示
+        const resetHint = document.getElementById('resetHint');
+        if (resetHint) {
+            resetHint.textContent = '已使用重置';
+            resetHint.style.color = '#6b7280';
+        }
+
+        // 调用场景管理器的重置方法
+        if (window.sceneManager) {
+            window.sceneManager.resetScene();
+        }
+    }
+
+    /**
+     * 切换插图显示
+     */
+    toggleIllustration() {
+        // 调用插图管理器
+        if (window.illustrationManager) {
+            window.illustrationManager.toggle();
+        } else {
+            this.showTip('当前场景没有插图');
+        }
+    }
+
+    /**
+     * 更新继续按钮状态
+     */
+    updateContinueButton(enabled) {
+        this.continueEnabled = enabled;
+        const btn = document.getElementById('continueBtn');
+
+        if (btn) {
+            if (enabled) {
+                btn.classList.remove('disabled');
+                btn.style.opacity = '1';
+            } else {
+                btn.classList.add('disabled');
+                btn.style.opacity = '0.5';
+            }
+        }
+    }
+
+    /**
+     * 更新插图指示器
+     */
+    updateIllustrationIndicator(hasIllustration, tooltip = '') {
+        const indicator = document.getElementById('illustrationIndicator');
+        const zoomBtn = document.getElementById('zoomBtn');
+
+        if (!indicator || !zoomBtn) return;
+
+        if (hasIllustration) {
+            indicator.style.display = 'inline-block';
+            zoomBtn.classList.add('has-content');
+
+            // 更新提示文本
+            if (tooltip) {
+                zoomBtn.setAttribute('title', tooltip);
+            }
+        } else {
+            indicator.style.display = 'none';
+            zoomBtn.classList.remove('has-content');
+        }
+    }
+
+    /**
+     * 重置状态
+     */
+    resetState() {
+        this.resetCount = 0;
+        this.continueEnabled = false;
+        this.updateContinueButton(false);
+
+        // 重置提示文本
+        const resetHint = document.getElementById('resetHint');
+        if (resetHint) {
+            resetHint.textContent = '本回合可重置';
+            resetHint.style.color = '#94a3b8';
+        }
+    }
+
+    /**
+     * 显示提示
+     */
+    showTip(message) {
+        // 创建临时提示
+        const tip = document.createElement('div');
+        tip.className = 'temp-tip';
+        tip.textContent = message;
+        tip.style.cssText = `
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 45, 0.95);
+            color: #fbbf24;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 1000;
+            animation: tipFadeInOut 2s ease;
+        `;
+
+        document.body.appendChild(tip);
+
+        setTimeout(() => {
+            tip.remove();
+        }, 2000);
+    }
+
+    /**
+     * 处理AI消息发送
+     */
+    sendAIMessage() {
+        const input = document.getElementById('aiInput');
+        if (!input) return;
+
+        const message = input.value.trim();
+        if (!message) return;
+
+        // 调用AI对话管理器
+        if (window.aiDialogueManager) {
+            window.aiDialogueManager.sendMessage(message);
+        }
+
+        input.value = '';
+    }
+
+    /**
+     * 结束AI对话
+     */
+    endAIDialogue() {
+        // 切换回场景模式
+        this.switchToSceneMode();
+
+        // 通知场景管理器
+        if (window.sceneManager) {
+            window.sceneManager.endAIDialogue();
+        }
+    }
+}
+
+// 创建全局实例
+window.f2Manager = new F2Manager();

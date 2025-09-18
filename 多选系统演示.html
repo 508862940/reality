@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1区多选系统演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .demo-section {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            color: #f093fb;
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        /* F1区样式 */
+        .f1-area {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 20px;
+            color: #e4e4e7;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .story-text {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .location-tag {
+            color: #8b92f6;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* 单选选项样式 */
+        .single-choice {
+            display: block;
+            color: #a5b4fc;
+            text-decoration: none;
+            padding: 10px 15px;
+            margin: 8px 0;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .single-choice:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(5px);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .single-choice:active {
+            transform: translateX(3px) scale(0.98);
+        }
+
+        /* 多选组样式 */
+        .multi-choice-group {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(139, 92, 246, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .multi-choice-title {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .multi-choice-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .multi-choice-item:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .multi-choice-item.selected {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .multi-choice-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .multi-choice-item input[type="checkbox"] {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            accent-color: #8b92f6;
+            cursor: pointer;
+        }
+
+        .multi-choice-item label {
+            flex: 1;
+            cursor: pointer;
+            color: #e4e4e7;
+            user-select: none;
+        }
+
+        .slot-indicator {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: 8px;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        /* 确认按钮 */
+        .proceed-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 15px;
+        }
+
+        .proceed-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .proceed-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .proceed-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* F2区控制栏 */
+        .f2-area {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(30, 30, 45, 0.95);
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #e4e4e7;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .reset-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+
+        /* 状态显示 */
+        .status-display {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(139, 92, 246, 0.2);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #f093fb;
+        }
+
+        /* 装备槽显示 */
+        .equipment-display {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .equipment-slot {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .slot-name {
+            color: #8b92f6;
+        }
+
+        .slot-item {
+            color: #e4e4e7;
+        }
+
+        /* 冲突提示 */
+        .conflict-warning {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .conflict-warning.show {
+            display: block;
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* AI对话模式 */
+        .ai-input-area {
+            display: none;
+            padding: 12px;
+            background: rgba(30, 30, 45, 0.95);
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .ai-input-area.active {
+            display: block;
+        }
+
+        .ai-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ai-input {
+            flex: 1;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            color: #e4e4e7;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .ai-input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(139, 92, 246, 0.6);
+        }
+
+        .ai-send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ai-send-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .ai-send-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 F1区多选系统演示</h1>
+
+        <!-- 场景1：单选场景 -->
+        <div class="demo-section">
+            <div class="section-title">场景1：普通单选（早晨起床）</div>
+            <div class="f1-area" id="scene1">
+                <div class="status-display">⏰ 07:30 AM</div>
+                <div class="story-text">
+                    <div class="location-tag">📍 宿舍</div>
+                    <p>清晨的阳光透过窗帘洒进房间。</p>
+                    <p>闹钟响了，新的一天开始了，你打算...</p>
+                </div>
+                <div class="single-choice" onclick="selectSingle(this, 1)">
+                    → 立即起床
+                </div>
+                <div class="single-choice" onclick="selectSingle(this, 1)">
+                    → 再睡5分钟
+                </div>
+                <div class="single-choice" onclick="selectSingle(this, 1)">
+                    → 关掉闹钟继续睡
+                </div>
+            </div>
+            <div class="f2-area">
+                <button class="control-btn" onclick="nextScene(1)">▶️ 继续</button>
+                <button class="control-btn" onclick="resetScene(1)">↩️ 重置</button>
+                <span class="reset-hint">可重置一次</span>
+            </div>
+        </div>
+
+        <!-- 场景2：多选装备 -->
+        <div class="demo-section">
+            <div class="section-title">场景2：多选装备（准备出门）</div>
+            <div class="f1-area" id="scene2">
+                <div class="status-display">⏰ 08:00 AM</div>
+                <div class="story-text">
+                    <div class="location-tag">📍 更衣室</div>
+                    <p>准备出门前，你需要整理装备...</p>
+                </div>
+
+                <div class="multi-choice-group">
+                    <div class="multi-choice-title">服装选择</div>
+                    <div class="multi-choice-item" onclick="toggleMulti(this, 'outfit')">
+                        <input type="checkbox" id="outfit1">
+                        <label for="outfit1">👔 校服套装</label>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleMulti(this, 'outfit')">
+                        <input type="checkbox" id="outfit2">
+                        <label for="outfit2">👗 休闲装</label>
+                    </div>
+                </div>
+
+                <div class="multi-choice-group">
+                    <div class="multi-choice-title">手部装备（左右手冲突检测）</div>
+                    <div class="multi-choice-item" onclick="toggleMulti(this, 'leftHand')">
+                        <input type="checkbox" id="left1">
+                        <label for="left1">⌚ 手表</label>
+                        <span class="slot-indicator">左手</span>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleMulti(this, 'rightHand')">
+                        <input type="checkbox" id="right1">
+                        <label for="right1">👜 书包</label>
+                        <span class="slot-indicator">右手</span>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleMulti(this, 'rightHand')">
+                        <input type="checkbox" id="right2">
+                        <label for="right2">☂️ 雨伞</label>
+                        <span class="slot-indicator">右手</span>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleMulti(this, 'bothHands')">
+                        <input type="checkbox" id="both1">
+                        <label for="both1">🎸 吉他</label>
+                        <span class="slot-indicator">双手</span>
+                    </div>
+                </div>
+
+                <div class="conflict-warning" id="warning2">
+                    ⚠️ 装备冲突：同一部位只能装备一件物品
+                </div>
+
+                <div class="equipment-display">
+                    <div class="equipment-slot">
+                        <span class="slot-name">左手：</span>
+                        <span class="slot-item" id="leftHandSlot">空</span>
+                    </div>
+                    <div class="equipment-slot">
+                        <span class="slot-name">右手：</span>
+                        <span class="slot-item" id="rightHandSlot">空</span>
+                    </div>
+                    <div class="equipment-slot">
+                        <span class="slot-name">服装：</span>
+                        <span class="slot-item" id="outfitSlot">空</span>
+                    </div>
+                </div>
+
+                <button class="proceed-btn" id="proceedBtn2" onclick="proceedMulti(2)" disabled>
+                    ✓ 准备完毕，出门
+                </button>
+            </div>
+            <div class="f2-area">
+                <button class="control-btn" onclick="nextScene(2)">▶️ 跳过</button>
+                <button class="control-btn" onclick="resetScene(2)">↩️ 重置装备</button>
+            </div>
+        </div>
+
+        <!-- 场景3：购物多选 -->
+        <div class="demo-section">
+            <div class="section-title">场景3：购物场景（可多选）</div>
+            <div class="f1-area" id="scene3">
+                <div class="status-display">💰 金币: 50</div>
+                <div class="story-text">
+                    <div class="location-tag">📍 便利店</div>
+                    <p>店员：欢迎光临！需要买点什么吗？</p>
+                </div>
+
+                <div class="multi-choice-group">
+                    <div class="multi-choice-title">商品列表（可多选）</div>
+                    <div class="multi-choice-item" onclick="toggleShop(this, 10)">
+                        <input type="checkbox" id="shop1">
+                        <label for="shop1">🥤 饮料</label>
+                        <span class="slot-indicator">💰 10</span>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleShop(this, 5)">
+                        <input type="checkbox" id="shop2">
+                        <label for="shop2">🍞 面包</label>
+                        <span class="slot-indicator">💰 5</span>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleShop(this, 15)">
+                        <input type="checkbox" id="shop3">
+                        <label for="shop3">🍱 便当</label>
+                        <span class="slot-indicator">💰 15</span>
+                    </div>
+                    <div class="multi-choice-item" onclick="toggleShop(this, 30)">
+                        <input type="checkbox" id="shop4">
+                        <label for="shop4">📚 杂志</label>
+                        <span class="slot-indicator">💰 30</span>
+                    </div>
+                </div>
+
+                <div class="equipment-display">
+                    <div class="equipment-slot">
+                        <span class="slot-name">总计：</span>
+                        <span class="slot-item" id="totalCost">💰 0</span>
+                    </div>
+                    <div class="equipment-slot">
+                        <span class="slot-name">余额：</span>
+                        <span class="slot-item" id="balance">💰 50</span>
+                    </div>
+                </div>
+
+                <button class="proceed-btn" id="proceedBtn3" onclick="proceedShop()">
+                    💳 结账
+                </button>
+
+                <div class="single-choice" onclick="leaveShop()">
+                    → 什么都不买，离开商店
+                </div>
+            </div>
+            <div class="f2-area">
+                <button class="control-btn" onclick="nextScene(3)">▶️ 继续</button>
+                <button class="control-btn" onclick="resetScene(3)">↩️ 重置</button>
+            </div>
+        </div>
+
+        <!-- 场景4：AI对话模式 -->
+        <div class="demo-section">
+            <div class="section-title">场景4：遇到重要NPC（AI对话模式）</div>
+            <div class="f1-area" id="scene4">
+                <div class="status-display">💬 对话中</div>
+                <div class="story-text">
+                    <div class="location-tag">📍 图书馆</div>
+                    <p><span style="color: #f093fb">【林学长】</span>："哦，是你啊。在找什么书吗？"</p>
+                    <p style="color: #94a3b8; font-size: 12px; margin-top: 10px;">
+                        [进入AI对话模式 - 可自由输入对话内容]
+                    </p>
+                </div>
+
+                <div id="dialogHistory" style="margin-top: 20px;">
+                    <!-- 对话历史会显示在这里 -->
+                </div>
+            </div>
+
+            <!-- AI输入模式 -->
+            <div class="ai-input-area active">
+                <div class="ai-input-wrapper">
+                    <input type="text" class="ai-input" id="aiInput"
+                           placeholder="输入你想说的话..."
+                           onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="ai-send-btn" onclick="sendMessage()">➤</button>
+                </div>
+            </div>
+
+            <!-- 场景控制隐藏 -->
+            <div class="f2-area" style="display: none;" id="sceneControl4">
+                <button class="control-btn" onclick="endDialog()">结束对话</button>
+                <span class="reset-hint">AI对话不可重置</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 装备槽管理
+        const equipment = {
+            leftHand: null,
+            rightHand: null,
+            outfit: null,
+            bothHands: null
+        };
+
+        // 购物系统
+        let totalCost = 0;
+        const maxMoney = 50;
+
+        // 场景重置计数
+        const resetCount = {};
+
+        // 单选处理
+        function selectSingle(element, sceneId) {
+            // 移除其他选中状态
+            const parent = element.parentElement;
+            parent.querySelectorAll('.single-choice').forEach(choice => {
+                choice.style.background = 'rgba(139, 92, 246, 0.1)';
+                choice.style.borderColor = 'transparent';
+            });
+
+            // 添加选中效果
+            element.style.background = 'rgba(139, 92, 246, 0.3)';
+            element.style.borderColor = 'rgba(139, 92, 246, 0.5)';
+
+            // 淡出淡入效果
+            setTimeout(() => {
+                const f1 = document.getElementById(`scene${sceneId}`);
+                f1.style.opacity = '0';
+                setTimeout(() => {
+                    f1.innerHTML = `
+                        <div class="status-display">⏰ 07:35 AM</div>
+                        <div class="story-text">
+                            <div class="location-tag">📍 走廊</div>
+                            <p>你选择了：${element.textContent}</p>
+                            <p>场景已切换到下一幕...</p>
+                        </div>
+                    `;
+                    f1.style.opacity = '1';
+                }, 300);
+            }, 500);
+        }
+
+        // 多选装备处理
+        function toggleMulti(element, slot) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            const warning = document.getElementById('warning2');
+
+            if (slot === 'bothHands') {
+                // 双手装备，需要清空左右手
+                if (!checkbox.checked) {
+                    // 检查左右手是否有装备
+                    if (equipment.leftHand || equipment.rightHand) {
+                        warning.classList.add('show');
+                        setTimeout(() => warning.classList.remove('show'), 2000);
+                        return;
+                    }
+                    equipment.bothHands = element.querySelector('label').textContent;
+                    // 禁用左右手选项
+                    document.querySelectorAll('[onclick*="leftHand"], [onclick*="rightHand"]').forEach(item => {
+                        if (!item.querySelector('input').checked) {
+                            item.classList.add('disabled');
+                            item.onclick = null;
+                        }
+                    });
+                } else {
+                    equipment.bothHands = null;
+                    // 启用左右手选项
+                    location.reload(); // 简单重置
+                }
+            } else if (slot === 'outfit') {
+                // 服装只能选一件
+                document.querySelectorAll('[onclick*="outfit"]').forEach(item => {
+                    item.querySelector('input').checked = false;
+                });
+                equipment.outfit = checkbox.checked ? null : element.querySelector('label').textContent;
+            } else if (slot === 'leftHand') {
+                if (equipment.bothHands) {
+                    warning.classList.add('show');
+                    return;
+                }
+                equipment.leftHand = checkbox.checked ? null : element.querySelector('label').textContent;
+            } else if (slot === 'rightHand') {
+                if (equipment.bothHands) {
+                    warning.classList.add('show');
+                    return;
+                }
+                // 右手只能装备一件
+                if (!checkbox.checked) {
+                    document.querySelectorAll('[onclick*="rightHand"]').forEach(item => {
+                        item.querySelector('input').checked = false;
+                    });
+                }
+                equipment.rightHand = checkbox.checked ? null : element.querySelector('label').textContent;
+            }
+
+            checkbox.checked = !checkbox.checked;
+            element.classList.toggle('selected');
+
+            updateEquipmentDisplay();
+
+            // 检查是否可以继续
+            const hasEquipment = equipment.outfit || equipment.leftHand ||
+                                 equipment.rightHand || equipment.bothHands;
+            document.getElementById('proceedBtn2').disabled = !hasEquipment;
+        }
+
+        // 更新装备显示
+        function updateEquipmentDisplay() {
+            document.getElementById('leftHandSlot').textContent = equipment.leftHand || '空';
+            document.getElementById('rightHandSlot').textContent = equipment.rightHand || '空';
+            document.getElementById('outfitSlot').textContent = equipment.outfit || '空';
+        }
+
+        // 购物多选
+        function toggleShop(element, price) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+
+            if (!checkbox.checked) {
+                if (totalCost + price > maxMoney) {
+                    alert('💰 金币不足！');
+                    return;
+                }
+                totalCost += price;
+            } else {
+                totalCost -= price;
+            }
+
+            checkbox.checked = !checkbox.checked;
+            element.classList.toggle('selected');
+
+            document.getElementById('totalCost').textContent = `💰 ${totalCost}`;
+            document.getElementById('balance').textContent = `💰 ${maxMoney - totalCost}`;
+        }
+
+        // 购物结账
+        function proceedShop() {
+            if (totalCost === 0) {
+                alert('请至少选择一件商品');
+                return;
+            }
+
+            const f1 = document.getElementById('scene3');
+            f1.style.opacity = '0';
+            setTimeout(() => {
+                f1.innerHTML = `
+                    <div class="story-text">
+                        <div class="location-tag">📍 便利店</div>
+                        <p>店员：谢谢惠顾！总计 💰 ${totalCost}</p>
+                        <p>购买成功！剩余 💰 ${maxMoney - totalCost}</p>
+                    </div>
+                `;
+                f1.style.opacity = '1';
+            }, 300);
+        }
+
+        // 离开商店
+        function leaveShop() {
+            const f1 = document.getElementById('scene3');
+            f1.style.opacity = '0';
+            setTimeout(() => {
+                f1.innerHTML = `
+                    <div class="story-text">
+                        <div class="location-tag">📍 街道</div>
+                        <p>你什么都没买就离开了商店...</p>
+                    </div>
+                `;
+                f1.style.opacity = '1';
+            }, 300);
+        }
+
+        // 发送AI消息
+        function sendMessage() {
+            const input = document.getElementById('aiInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            const history = document.getElementById('dialogHistory');
+            history.innerHTML += `
+                <div style="margin: 10px 0; text-align: right;">
+                    <span style="background: rgba(139, 92, 246, 0.2); padding: 8px 12px; border-radius: 12px; display: inline-block;">
+                        ${message}
+                    </span>
+                </div>
+            `;
+
+            // 模拟AI回复
+            setTimeout(() => {
+                history.innerHTML += `
+                    <div style="margin: 10px 0;">
+                        <span style="color: #f093fb">【林学长】</span>：
+                        <span style="background: rgba(240, 147, 251, 0.1); padding: 8px 12px; border-radius: 12px; display: inline-block;">
+                            ${getAIResponse(message)}
+                        </span>
+                    </div>
+                `;
+                history.scrollTop = history.scrollHeight;
+            }, 1000);
+
+            input.value = '';
+        }
+
+        // 模拟AI回复
+        function getAIResponse(message) {
+            const responses = [
+                "这本书确实很有意思，我上周刚读完。",
+                "你也对这个领域感兴趣吗？我们可以一起讨论。",
+                "图书馆二楼有更多相关的资料。",
+                "有什么不懂的可以问我，我很乐意帮忙。"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        // 结束对话
+        function endDialog() {
+            const f1 = document.getElementById('scene4');
+            f1.style.opacity = '0';
+            setTimeout(() => {
+                f1.innerHTML = `
+                    <div class="story-text">
+                        <div class="location-tag">📍 图书馆</div>
+                        <p>你结束了与林学长的对话。</p>
+                        <p>对话内容已自动保存到日记中...</p>
+                    </div>
+                `;
+                f1.style.opacity = '1';
+            }, 300);
+
+            document.querySelector('.ai-input-area').classList.remove('active');
+            document.getElementById('sceneControl4').style.display = 'flex';
+        }
+
+        // 场景切换
+        function nextScene(sceneId) {
+            alert(`切换到场景${sceneId}的下一幕`);
+        }
+
+        // 重置场景
+        function resetScene(sceneId) {
+            if (!resetCount[sceneId]) {
+                resetCount[sceneId] = 0;
+            }
+
+            if (resetCount[sceneId] >= 1) {
+                alert('该场景只能重置一次');
+                return;
+            }
+
+            resetCount[sceneId]++;
+            location.reload(); // 简单重载
+        }
+
+        // 处理多选确认
+        function proceedMulti(sceneId) {
+            const f1 = document.getElementById(`scene${sceneId}`);
+            f1.style.opacity = '0';
+            setTimeout(() => {
+                let equipped = [];
+                if (equipment.outfit) equipped.push(equipment.outfit);
+                if (equipment.leftHand) equipped.push(equipment.leftHand);
+                if (equipment.rightHand) equipped.push(equipment.rightHand);
+                if (equipment.bothHands) equipped.push(equipment.bothHands);
+
+                f1.innerHTML = `
+                    <div class="story-text">
+                        <div class="location-tag">📍 街道</div>
+                        <p>你已装备：${equipped.join('、')}</p>
+                        <p>准备完毕，出发前往学校...</p>
+                    </div>
+                `;
+                f1.style.opacity = '1';
+            }, 300);
+        }
+    </script>
+</body>
+</html>
