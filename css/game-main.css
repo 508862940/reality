@@ -11,7 +11,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* 确保body无滚动条 */
     position: relative;
 }
 
@@ -42,6 +42,7 @@ body {
     display: flex;
     flex-direction: column;
     background: #1a1a2e;
+    overflow: hidden; /* 确保主容器无滚动条 */
 }
 
 /* 上半部分容器 */
@@ -200,13 +201,44 @@ body {
     box-shadow: 0 0 15px rgba(240, 147, 251, 0.5);
 }
 
-/* 功能内容区 */
+/* 功能内容区 - D区滚动条 */
 .function-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 8px;
     color: #e4e4e7;
     font-size: 13px;
+    max-height: calc(100% - 48px); /* 减去标签栏高度 */
+    /* 移动端触摸滚动优化 */
+    -webkit-overflow-scrolling: touch; /* iOS惯性滚动 */
+    overscroll-behavior: contain; /* 防止滚动链传递 */
+    touch-action: pan-y; /* 只允许垂直滚动 */
+}
+
+/* D区滚动条样式 - Webkit */
+.function-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.function-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.function-content::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+}
+
+.function-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+}
+
+/* D区滚动条样式 - Firefox */
+.function-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) rgba(255, 255, 255, 0.05);
 }
 
 .tab-content {
@@ -298,6 +330,8 @@ body {
     flex-direction: column;
     border-top: 2px solid #1a1a2e;
     position: relative;
+    min-height: 0; /* 确保flex布局中可以正确收缩 */
+    overflow: hidden; /* 防止子元素溢出 */
 }
 
 /* F1区 - 剧情文本和选项混合区 */
@@ -305,24 +339,40 @@ body {
     flex: 1;
     padding: 15px;
     overflow-y: auto;
+    overflow-x: hidden;
     color: #e4e4e7;
     font-size: 14px;
     line-height: 1.6;
-    /* 滚动条样式 - Webkit浏览器 */
+    min-height: 0; /* 确保flex子元素可以正确滚动 */
+    /* 移动端触摸滚动优化 */
+    -webkit-overflow-scrolling: touch; /* iOS惯性滚动 */
+    overscroll-behavior: contain; /* 防止滚动链传递 */
+    touch-action: pan-y; /* 只允许垂直滚动 */
 }
 
-/* Webkit浏览器滚动条样式 (Chrome, Safari, Edge) */
+/* F1区滚动条样式 - Webkit (Chrome, Safari, Edge) */
 .story-area::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .story-area::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
 }
 
 .story-area::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
-    border-radius: 3px;
+    background: rgba(139, 92, 246, 0.4);
+    border-radius: 4px;
+}
+
+.story-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.6);
+}
+
+/* F1区滚动条样式 - Firefox */
+.story-area {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.4) rgba(255, 255, 255, 0.05);
 }
 
 .story-text {
@@ -515,6 +565,46 @@ body {
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
+}
+
+/* 移动端和PWA滚动条隐藏策略 */
+/* 检测触摸设备 - 移动端和平板 */
+@media (pointer: coarse) {
+    /* F1区移动端滚动条隐藏 */
+    .story-area::-webkit-scrollbar {
+        width: 0;
+        display: none;
+    }
+
+    .story-area {
+        scrollbar-width: none; /* Firefox移动端 */
+        -ms-overflow-style: none; /* IE和旧Edge */
+    }
+
+    /* D区移动端滚动条隐藏 */
+    .function-content::-webkit-scrollbar {
+        width: 0;
+        display: none;
+    }
+
+    .function-content {
+        scrollbar-width: none; /* Firefox移动端 */
+        -ms-overflow-style: none; /* IE和旧Edge */
+    }
+}
+
+/* 备用方案：使用屏幕宽度和hover检测 */
+@media (max-width: 768px) and (hover: none) {
+    .story-area::-webkit-scrollbar,
+    .function-content::-webkit-scrollbar {
+        width: 0;
+        display: none;
+    }
+
+    .story-area, .function-content {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
 }
 
 /* 响应式适配 */
