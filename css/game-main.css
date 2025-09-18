@@ -460,6 +460,7 @@ body {
 .ai-input-area {
     display: none;
     padding: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); /* 底部安全区适配 */
     background: rgba(30, 30, 45, 0.95);
     border-top: 2px solid rgba(139, 92, 246, 0.3);
     animation: slideUp 0.3s ease-out;
@@ -626,4 +627,35 @@ body {
     .game-container {
         max-width: 100%;
     }
+}
+
+/* 游戏界面底部安全区适配 */
+.game-container {
+    /* 确保内容不被底部横条遮挡 */
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+
+/* 底部操作区域调整 */
+.bottom-actions,
+.interaction-options {
+    /* 为底部预留空间 */
+    margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
+}
+
+/* 如果有底部固定的UI元素 */
+.bottom-fixed-ui {
+    /* 固定在安全区域之上 */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+/* 底部淡色遮罩条 - 仅在需要时显示 */
+.bottom-safe-indicator {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: rgba(26, 26, 46, 0.3); /* 很淡的背景色 */
+    pointer-events: none;
+    z-index: 1;
 }

@@ -335,3 +335,71 @@ body {
 .error-message button:hover {
     background: #5a6fd8;
 }
+
+/* 底部安全区域适配 - 超窄版本 */
+:root {
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --dynamic-padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+}
+
+/* 底部安全区容器 */
+.pwa-safe-container {
+    /* 添加底部内边距 */
+    padding-bottom: var(--dynamic-padding-bottom);
+}
+
+/* 底部渐变遮罩 - 超窄版本 */
+.pwa-safe-container::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--safe-area-bottom) + 8px); /* 超窄：只有8px */
+    background: linear-gradient(
+        to top,
+        rgba(26, 26, 46, 0.7) 0%,
+        rgba(26, 26, 46, 0.4) 40%,
+        rgba(26, 26, 46, 0) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* PWA模式下的底部调整 */
+@media (display-mode: standalone) {
+    .pwa-safe-container::after {
+        height: calc(var(--safe-area-bottom) + 6px); /* PWA模式更窄 */
+    }
+}
+
+/* 针对iPhone X及以上机型的底部横条 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media screen and (max-width: 430px) {
+        /* 手机竖屏模式 */
+        .game-bottom-area,
+        .bottom-navigation,
+        .bottom-toolbar {
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
+        }
+
+        /* 底部固定元素调整 */
+        .fixed-bottom {
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
+        }
+    }
+
+    @media screen and (orientation: landscape) {
+        /* 横屏模式底部更小 */
+        .pwa-safe-container::after {
+            height: calc(var(--safe-area-bottom) + 4px); /* 横屏超窄 */
+        }
+    }
+}
+
+/* 特别针对底部输入区域的调整 */
+.bottom-input-area,
+.chat-input-container,
+.action-buttons-bottom {
+    margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
