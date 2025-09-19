@@ -160,6 +160,11 @@ const OpeningScenes = {
                 hiddenTrigger: 'memoryGap'
             },
             {
+                id: 'select_items_first',
+                text: '→ 整理背包再出门',
+                target: 'select_items'
+            },
+            {
                 id: 'leave_now',
                 text: '→ 直接出门',
                 target: 'street_scene'
@@ -167,6 +172,110 @@ const OpeningScenes = {
         ],
 
         roomLevel: 0  // 房间等级：0级（最基础）
+    },
+
+    // 场景003A：选择携带物品（多选测试场景）
+    'select_items': {
+        id: 'select_items',
+        location: '公寓',
+        time: '周一 08:05',
+        multiChoice: true,  // 标记为多选场景
+
+        text: [
+            '准备出门前，你看了看房间里的物品。',
+            '虽然东西不多，但你需要决定带什么出门。',
+            '你的背包空间有限，最多只能带3样东西。'
+        ],
+
+        choices: [
+            {
+                id: 'phone',
+                text: '📱 手机',
+                value: 'phone',
+                description: '保持联系的必需品'
+            },
+            {
+                id: 'wallet',
+                text: '💳 钱包',
+                value: 'wallet',
+                description: '里面有身份证和少量现金'
+            },
+            {
+                id: 'keys',
+                text: '🔑 钥匙',
+                value: 'keys',
+                description: '公寓和信箱的钥匙'
+            },
+            {
+                id: 'medicine',
+                text: '💊 药瓶',
+                value: 'medicine',
+                description: '无标签的小药瓶，似乎很重要'
+            },
+            {
+                id: 'notebook',
+                text: '📝 笔记本',
+                value: 'notebook',
+                description: '里面写着一些你看不懂的笔记'
+            },
+            {
+                id: 'umbrella',
+                text: '☂️ 雨伞',
+                value: 'umbrella',
+                description: '天气看起来可能会下雨'
+            }
+        ],
+
+        // 多选参数
+        minChoices: 1,    // 最少选择1个
+        maxChoices: 3,    // 最多选择3个
+
+        // 插图数据
+        illustrations: {
+            default: {
+                emoji: '🎒',
+                caption: '整理背包',
+                description: '仔细选择要携带的物品'
+            },
+            choices: {
+                'phone': {
+                    emoji: '📱',
+                    caption: '智能手机',
+                    description: '屏幕有些旧了，但还能用'
+                },
+                'wallet': {
+                    emoji: '💳',
+                    caption: '黑色钱包',
+                    description: '有些破旧，但很实用'
+                },
+                'medicine': {
+                    emoji: '💊',
+                    caption: '神秘药瓶',
+                    description: '不知道是什么药，但感觉很重要'
+                }
+            }
+        }
+    },
+
+    // 场景003B：整理完背包
+    'items_selected': {
+        id: 'items_selected',
+        location: '公寓',
+        time: '周一 08:10',
+
+        text: [
+            '你仔细整理了一下要带的物品。',
+            '背包里现在有：{selectedItems}',
+            '感觉今天应该足够应付了。'
+        ],
+
+        choices: [
+            {
+                id: 'leave_with_items',
+                text: '→ 出门',
+                target: 'street_scene'
+            }
+        ]
     },
 
     // 场景004：街道场景

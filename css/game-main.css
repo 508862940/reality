@@ -411,6 +411,130 @@ body {
     transform: scale(0.98);
 }
 
+/* ==================== 多选系统样式 ==================== */
+/* 多选容器 */
+.multi-choice-container {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+}
+
+/* 多选项目 */
+.multi-choice-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.multi-choice-item:hover {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.multi-choice-item.selected {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.5);
+    color: #f093fb;
+}
+
+/* 自定义复选框 */
+.multi-choice-item input[type="checkbox"] {
+    display: none;
+}
+
+.multi-choice-item::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    border-radius: 3px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.multi-choice-item.selected::before {
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-color: #f093fb;
+}
+
+.multi-choice-item.selected::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: -14px;
+    margin-top: -1px;
+}
+
+/* 多选确认按钮 */
+.multi-choice-confirm {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.multi-choice-confirm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+}
+
+.multi-choice-confirm:active {
+    transform: translateY(0);
+}
+
+.multi-choice-confirm:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 多选提示文本 */
+.multi-choice-hint {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* 已选择计数 */
+.selected-count {
+    color: #f093fb;
+    font-weight: bold;
+}
+
+/* 选择描述 */
+.choice-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+    font-style: italic;
+}
+
 /* 选项块 - 用于多个选项 */
 .choice-block {
     margin: 15px 0;

@@ -111,32 +111,50 @@ class SceneManager {
         if (sceneData.choices && sceneData.choices.length > 0) {
             html += '<div class="choices-container">';
 
-            sceneData.choices.forEach((choice, index) => {
-                // 检查是否是多选
-                if (sceneData.multiChoice) {
+            // 多选场景
+            if (sceneData.multiChoice) {
+                // 多选容器
+                html += '<div class="multi-choice-container">';
+
+                // 多选提示
+                const minChoices = sceneData.minChoices || 1;
+                const maxChoices = sceneData.maxChoices || sceneData.choices.length;
+                html += `
+                    <div class="multi-choice-hint">
+                        请选择 ${minChoices}-${maxChoices} 个选项
+                        (<span class="selected-count" id="selectedCount">0</span>/${maxChoices})
+                    </div>
+                `;
+
+                sceneData.choices.forEach((choice, index) => {
                     html += `
-                        <div class="multi-choice-item" data-index="${index}" data-value="${choice.value || ''}">
+                        <div class="multi-choice-item" data-index="${index}" data-value="${choice.value || ''}" data-id="${choice.id || ''}">
                             <input type="checkbox" id="choice_${index}">
-                            <label for="choice_${index}">${choice.text}</label>
+                            <label for="choice_${index}">
+                                ${choice.text}
+                                ${choice.description ? `<div class="choice-desc">${choice.description}</div>` : ''}
+                            </label>
                         </div>
                     `;
-                } else {
-                    // 单选
+                });
+
+                // 多选确认按钮
+                html += `
+                    <button class="multi-choice-confirm" id="multiConfirmBtn" onclick="sceneManager.confirmMultiChoice()" disabled>
+                        ✓ 确认选择
+                    </button>
+                `;
+
+                html += '</div>'; // 关闭multi-choice-container
+            } else {
+                // 单选场景
+                sceneData.choices.forEach((choice, index) => {
                     html += `
                         <div class="story-choice" data-index="${index}" data-target="${choice.target || ''}">
                             ${choice.text}
                         </div>
                     `;
-                }
-            });
-
-            // 多选确认按钮
-            if (sceneData.multiChoice) {
-                html += `
-                    <button class="multi-choice-confirm" onclick="sceneManager.confirmMultiChoice()">
-                        ✓ 确认选择
-                    </button>
-                `;
+                });
             }
 
             html += '</div>';
@@ -165,12 +183,34 @@ class SceneManager {
         const multiChoices = this.storyArea.querySelectorAll('.multi-choice-item');
         multiChoices.forEach(choice => {
             choice.addEventListener('click', (e) => {
-                // 切换复选框状态
-                const checkbox = choice.querySelector('input[type="checkbox"]');
-                if (e.target !== checkbox) {
-                    checkbox.checked = !checkbox.checked;
+                // 防止点击label时重复触发
+                if (e.target.tagName === 'LABEL' || e.target.classList.contains('choice-desc')) {
+                    return;
                 }
-                choice.classList.toggle('selected', checkbox.checked);
+
+                const checkbox = choice.querySelector('input[type="checkbox"]');
+                const maxChoices = this.currentScene.maxChoices || this.currentScene.choices.length;
+                const currentSelected = this.storyArea.querySelectorAll('.multi-choice-item.selected').length;
+
+                // 如果是选中状态，允许取消
+                if (checkbox.checked) {
+                    checkbox.checked = false;
+                    choice.classList.remove('selected');
+                }
+                // 如果未选中且未达到上限，允许选中
+                else if (currentSelected < maxChoices) {
+                    checkbox.checked = true;
+                    choice.classList.add('selected');
+
+                    // 更新插图显示
+                    const choiceData = this.currentScene.choices[parseInt(choice.dataset.index)];
+                    if (window.illustrationManager && choiceData) {
+                        window.illustrationManager.updateByChoice(choiceData, parseInt(choice.dataset.index));
+                    }
+                }
+
+                // 更新计数和按钮状态
+                this.updateMultiChoiceState();
             });
         });
     }
@@ -198,6 +238,52 @@ class SceneManager {
 
         // 更新继续按钮状态
         this.updateContinueButton(true);
+    }
+
+    /**
+     * 更新多选状态
+     */
+    updateMultiChoiceState() {
+        const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+        const selectedCount = selectedItems.length;
+        const minChoices = this.currentScene.minChoices || 1;
+        const maxChoices = this.currentScene.maxChoices || this.currentScene.choices.length;
+
+        // 更新计数显示
+        const countElement = document.getElementById('selectedCount');
+        if (countElement) {
+            countElement.textContent = selectedCount;
+        }
+
+        // 更新确认按钮状态
+        const confirmBtn = document.getElementById('multiConfirmBtn');
+        if (confirmBtn) {
+            const isValid = selectedCount >= minChoices && selectedCount <= maxChoices;
+            confirmBtn.disabled = !isValid;
+
+            if (isValid) {
+                confirmBtn.textContent = `✓ 确认选择 (${selectedCount})`;
+            } else if (selectedCount < minChoices) {
+                confirmBtn.textContent = `请选择至少 ${minChoices} 项`;
+            } else {
+                confirmBtn.textContent = `最多只能选择 ${maxChoices} 项`;
+            }
+        }
+
+        // 显示选择限制提示
+        if (selectedCount >= maxChoices) {
+            const unselectedItems = this.storyArea.querySelectorAll('.multi-choice-item:not(.selected)');
+            unselectedItems.forEach(item => {
+                item.style.opacity = '0.5';
+                item.style.pointerEvents = 'none';
+            });
+        } else {
+            const allItems = this.storyArea.querySelectorAll('.multi-choice-item');
+            allItems.forEach(item => {
+                item.style.opacity = '1';
+                item.style.pointerEvents = 'auto';
+            });
+        }
     }
 
     /**
@@ -332,6 +418,24 @@ class SceneManager {
      * 获取多选场景
      */
     getMultiChoiceScene(choices) {
+        // 如果当前场景是选择物品场景，跳转到特定结果场景
+        if (this.currentScene.id === 'select_items') {
+            const selectedItems = choices.map(c => c.text).join('、');
+
+            // 获取预定义的结果场景
+            if (window.OpeningScenes && window.OpeningScenes.items_selected) {
+                const resultScene = JSON.parse(JSON.stringify(window.OpeningScenes.items_selected));
+
+                // 替换文本中的占位符
+                resultScene.text = resultScene.text.map(text =>
+                    text.replace('{selectedItems}', selectedItems)
+                );
+
+                return resultScene;
+            }
+        }
+
+        // 默认多选结果处理
         const selected = choices.map(c => c.text).join('、');
         return {
             id: 'multi_result',
