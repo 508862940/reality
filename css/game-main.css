@@ -775,7 +775,7 @@ body {
 /* 场景控制区 - PWA风格 */
 .scene-control-area {
     display: flex;
-    gap: 8px;
+    gap: 12px;  /* 增加按钮间距，防止误触 */
     align-items: center;
     justify-content: center;
     padding: 8px 15px;  /* 缩小内边距 */
@@ -859,6 +859,12 @@ body {
             box-shadow: 0 0 18px rgba(139, 92, 246, 0.7);
             transform: translateY(-0.5px);
         }
+    }
+
+    /* PWA模式下增加更多间距防止误触 */
+    .scene-control-area {
+        gap: 16px;  /* PWA模式下更大间距 */
+        padding: 10px 20px;  /* 稍微增加内边距 */
     }
 }
 
