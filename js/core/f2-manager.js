@@ -46,13 +46,22 @@ class F2Manager {
         const controlHTML = `
             <div class="scene-control-area" id="sceneControlArea">
                 <button class="control-btn continue-btn" id="continueBtn" onclick="f2Manager.handleContinue()" title="继续">
-                    ▶️
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </button>
                 <button class="control-btn reset-btn" id="resetBtn" onclick="f2Manager.handleReset()" title="重置">
-                    ↩️
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 12a8 8 0 1 0 2.343-5.657" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M4 6v5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </button>
                 <button class="control-btn zoom-btn" id="zoomBtn" onclick="f2Manager.toggleIllustration()" title="查看插图">
-                    🔍
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="2"/>
+                        <path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
                     <span class="has-illustration-indicator" id="illustrationIndicator"></span>
                 </button>
                 <span class="reset-hint" id="resetHint">可重置</span>

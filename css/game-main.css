@@ -1,5 +1,17 @@
 /* 游戏主界面样式 - 样式v2 */
 
+/* 参考UI设计的颜色变量 */
+:root {
+    --ui-bg: #0f0c1a;
+    --ui-panel: #141025;
+    --ui-text: #f6f3ff;
+    --ui-muted: #bcb3ff;
+    --ui-ghost: #2a2146;
+    --ui-primary: #6a57ff;
+    --ui-primary-press: #5846ff;
+    --ui-border: rgba(255,255,255,.12);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -772,50 +784,48 @@ body {
 
 /* 删除重复的.story-text和fadeIn定义 */
 
-/* 场景控制区 - PWA风格 */
+/* 场景控制区 - 毛玻璃风格（基于参考UI设计） */
 .scene-control-area {
     display: flex;
-    gap: 12px;  /* 增加按钮间距，防止误触 */
+    gap: 14px;  /* 参考设计的间距 */
     align-items: center;
     justify-content: center;
-    padding: 8px 15px;  /* 缩小内边距 */
-    background: rgba(26, 26, 46, 0.95);
-    border-top: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 15px 15px 0 0;
+    padding: 14px 18px;  /* 参考设计的内边距 */
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-border);
+    border-radius: 20px;  /* 参考设计的圆角 */
+    backdrop-filter: blur(20px);  /* 毛玻璃效果 */
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);  /* 浮动阴影 */
 }
 
 .control-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 12px;  /* 缩小内边距 */
-    border-radius: 20px;  /* 缩小圆角 */
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(147, 51, 234, 0.8));
-    border: 1px solid rgba(255, 255, 255, 0.2);  /* 缩小边框 */
-    color: white;
+    width: 56px;  /* 参考设计的尺寸 */
+    height: 56px;
+    border-radius: 50%;  /* 完美圆形 */
+    display: grid;
+    place-items: center;
+    background: var(--ui-ghost);  /* 默认半透明背景 */
+    border: 1px solid var(--ui-border);
+    color: var(--ui-muted);  /* 暗淡文字色 */
     cursor: pointer;
-    font-size: 16px;  /* 调整emoji大小 */
-    font-weight: 600;
-    transition: all 0.3s ease;
+    font-size: 24px;  /* SVG图标大小 */
+    transition: transform 0.08s ease, background 0.12s ease, color 0.12s ease;  /* 参考设计的过渡 */
     outline: none;
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);  /* 缩小阴影 */
-    backdrop-filter: blur(10px);
-    min-width: 40px;  /* 缩小最小宽度 */
-    width: 40px;  /* 固定圆形宽度 */
-    height: 40px;  /* 固定圆形高度 */
+    box-shadow: none;  /* 去掉默认阴影 */
 }
 
 .control-btn:hover:not(.disabled) {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(147, 51, 234, 0.9));
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--ui-primary);
+    color: #fff;
+    transform: translateY(0);  /* 参考设计无上移 */
+    box-shadow: none;
+    border-color: var(--ui-border);
 }
 
 .control-btn:active:not(.disabled) {
-    transform: translateY(-1px) scale(0.98);
-    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.5);
+    transform: translateY(0);  /* 参考设计的按压效果 */
+    background: var(--ui-primary-press);
+    color: #fff;
 }
 
 .control-btn.disabled {
