@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F2快捷菜单测试</title>
+    <link rel="stylesheet" href="css/game-main.css">
+    <style>
+        body {
+            background: #1a1a2e;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 430px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 20px;
+        }
+        .test-info {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+        h2 {
+            color: #8b92f6;
+            margin-bottom: 10px;
+        }
+        .test-list {
+            color: #e4e4e7;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-info">
+            <h2>🧪 F2快捷菜单测试</h2>
+            <div class="test-list">
+                <p>测试步骤：</p>
+                <ol>
+                    <li>点击下方"⋮"按钮（更多）</li>
+                    <li>应该看到菜单向上弹出</li>
+                    <li>测试各个功能：
+                        <ul>
+                            <li>💾 快速存档 - 应显示"已快速存档"</li>
+                            <li>📁 读取存档 - 显示存档时间或"没有找到存档"</li>
+                            <li>📜 历史记录 - 显示"开发中"</li>
+                            <li>⚡ 自动模式 - 显示"开发中"</li>
+                        </ul>
+                    </li>
+                    <li>点击空白处关闭菜单</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- F2控制区 -->
+        <div class="scene-control-area" id="sceneControlArea">
+            <button class="control-btn continue-btn" id="continueBtn" onclick="f2Manager.handleContinue()" title="继续">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M12 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <button class="control-btn reset-btn" id="resetBtn" onclick="f2Manager.handleReset()" title="重置">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12a8 8 0 1 0 2.343-5.657" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M4 6v5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <button class="control-btn zoom-btn" id="zoomBtn" onclick="f2Manager.toggleIllustration()" title="查看插图">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="2"/>
+                    <path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button class="control-btn more-btn" id="moreBtn" onclick="f2Manager.toggleQuickMenu()" title="更多功能">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="5" r="2" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                    <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 快捷菜单（放在控制区外面，但在容器内） -->
+        <div class="quick-menu" id="quickMenu" style="display: none;">
+            <div class="quick-menu-content">
+                <button class="quick-menu-item" data-action="quickSave">
+                    <span class="quick-icon">💾</span>
+                    <span class="quick-text">快速存档</span>
+                </button>
+                <button class="quick-menu-item" data-action="loadSave">
+                    <span class="quick-icon">📁</span>
+                    <span class="quick-text">读取存档</span>
+                </button>
+                <button class="quick-menu-item" data-action="showHistory">
+                    <span class="quick-icon">📜</span>
+                    <span class="quick-text">历史记录</span>
+                </button>
+                <button class="quick-menu-item" data-action="toggleAutoMode">
+                    <span class="quick-icon">⚡</span>
+                    <span class="quick-text">自动模式</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 快捷菜单遮罩层（独立的，覆盖整个屏幕） -->
+        <div class="quick-menu-overlay" id="quickMenuOverlay" style="display: none;" onclick="f2Manager.closeQuickMenu()"></div>
+    </div>
+
+    <script src="js/core/f2-manager.js"></script>
+    <script>
+        // f2Manager已经在f2-manager.js中创建了全局实例
+        // 等待DOM加载完成后设置
+        document.addEventListener('DOMContentLoaded', function() {
+            // 手动设置场景控制区（因为没有完整的游戏环境）
+            f2Manager.sceneControlArea = document.getElementById('sceneControlArea');
+
+            // 测试覆盖不需要的功能
+            const originalContinue = f2Manager.handleContinue;
+            f2Manager.handleContinue = function() {
+                f2Manager.showTip('继续按钮（测试中）');
+            };
+
+            const originalReset = f2Manager.handleReset;
+            f2Manager.handleReset = function() {
+                f2Manager.showTip('重置按钮（测试中）');
+            };
+
+            const originalZoom = f2Manager.toggleIllustration;
+            f2Manager.toggleIllustration = function() {
+                f2Manager.showTip('查看插图（测试中）');
+            };
+
+            // 测试快捷菜单功能是否正常
+            console.log('F2Manager已初始化:', f2Manager);
+
+            // 为快捷菜单按钮添加事件监听
+            const menuContent = document.querySelector('.quick-menu-content');
+            if (menuContent) {
+                menuContent.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止事件冒泡
+
+                    const button = e.target.closest('.quick-menu-item');
+                    if (button) {
+                        const action = button.dataset.action;
+                        if (action && f2Manager[action]) {
+                            f2Manager[action]();
+                        }
+                    }
+                });
+            }
+
+            // 确保点击菜单内容区域不会关闭菜单
+            const quickMenu = document.getElementById('quickMenu');
+            if (quickMenu) {
+                quickMenu.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止点击菜单时触发关闭
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -64,8 +64,16 @@ class F2Manager {
                     </svg>
                     <span class="has-illustration-indicator" id="illustrationIndicator"></span>
                 </button>
+                <button class="control-btn more-btn" id="moreBtn" onclick="f2Manager.toggleQuickMenu()" title="更多功能">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="5" r="2" fill="currentColor"/>
+                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                        <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                    </svg>
+                </button>
                 <span class="reset-hint" id="resetHint">可重置</span>
             </div>
+
         `;
 
         // 插入到AI输入区之前
@@ -75,7 +83,64 @@ class F2Manager {
             lowerSection.insertAdjacentHTML('beforeend', controlHTML);
         }
 
+        // 插入快捷菜单和遮罩层
+        const menuHTML = `
+            <!-- 快捷菜单遮罩层 -->
+            <div class="quick-menu-overlay" id="quickMenuOverlay" style="display: none;" onclick="f2Manager.closeQuickMenu()"></div>
+
+            <!-- 快捷菜单 -->
+            <div class="quick-menu" id="quickMenu" style="display: none;">
+                <div class="quick-menu-content">
+                    <button class="quick-menu-item" data-action="quickSave">
+                        <span class="quick-icon">💾</span>
+                        <span class="quick-text">快速存档</span>
+                    </button>
+                    <button class="quick-menu-item" data-action="loadSave">
+                        <span class="quick-icon">📁</span>
+                        <span class="quick-text">读取存档</span>
+                    </button>
+                    <button class="quick-menu-item" data-action="showHistory">
+                        <span class="quick-icon">📜</span>
+                        <span class="quick-text">历史记录</span>
+                    </button>
+                    <button class="quick-menu-item" data-action="toggleAutoMode">
+                        <span class="quick-icon">⚡</span>
+                        <span class="quick-text">自动模式</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        lowerSection.insertAdjacentHTML('beforeend', menuHTML);
+
         this.sceneControlArea = document.getElementById('sceneControlArea');
+        this.initQuickMenuEvents();
+    }
+
+    /**
+     * 初始化快捷菜单事件
+     */
+    initQuickMenuEvents() {
+        const menuContent = document.querySelector('.quick-menu-content');
+        if (menuContent) {
+            menuContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                const button = e.target.closest('.quick-menu-item');
+                if (button) {
+                    const action = button.dataset.action;
+                    if (action && this[action]) {
+                        this[action]();
+                    }
+                }
+            });
+        }
+
+        const quickMenu = document.getElementById('quickMenu');
+        if (quickMenu) {
+            quickMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     }
 
     /**
@@ -256,6 +321,129 @@ class F2Manager {
             resetHint.textContent = '本回合可重置';
             resetHint.style.color = '#94a3b8';
         }
+    }
+
+    /**
+     * 切换快捷菜单
+     */
+    toggleQuickMenu() {
+        const menu = document.getElementById('quickMenu');
+        if (!menu) return;
+
+        if (menu.style.display === 'none' || !menu.style.display) {
+            this.openQuickMenu();
+        } else {
+            this.closeQuickMenu();
+        }
+    }
+
+    /**
+     * 打开快捷菜单
+     */
+    openQuickMenu() {
+        const menu = document.getElementById('quickMenu');
+        const overlay = document.getElementById('quickMenuOverlay');
+        if (!menu) return;
+
+        // 显示遮罩层和菜单
+        if (overlay) overlay.style.display = 'block';
+        menu.style.display = 'block';
+
+        // 添加动画类
+        setTimeout(() => {
+            menu.classList.add('active');
+        }, 10);
+    }
+
+    /**
+     * 关闭快捷菜单
+     */
+    closeQuickMenu() {
+        const menu = document.getElementById('quickMenu');
+        const overlay = document.getElementById('quickMenuOverlay');
+        if (!menu) return;
+
+        menu.classList.remove('active');
+        setTimeout(() => {
+            menu.style.display = 'none';
+            if (overlay) overlay.style.display = 'none';
+        }, 300); // 等待动画完成
+    }
+
+    /**
+     * 快速存档
+     */
+    quickSave() {
+        // 阻止事件冒泡
+        if (event) event.stopPropagation();
+
+        // 收集游戏状态
+        const saveData = {
+            timestamp: new Date().toISOString(),
+            scene: window.sceneManager ? window.sceneManager.currentScene : null,
+            playerState: this.getPlayerState(),
+            location: document.getElementById('currentLocation')?.textContent || '',
+            time: document.getElementById('currentTime')?.textContent || ''
+        };
+
+        // 保存到localStorage
+        localStorage.setItem('quickSave', JSON.stringify(saveData));
+
+        // 显示提示
+        this.showTip('已快速存档');
+        this.closeQuickMenu();
+    }
+
+    /**
+     * 读取存档
+     */
+    loadSave() {
+        const saveData = localStorage.getItem('quickSave');
+        if (!saveData) {
+            this.showTip('没有找到存档');
+            this.closeQuickMenu();
+            return;
+        }
+
+        try {
+            const data = JSON.parse(saveData);
+            // TODO: 实现加载逻辑
+            this.showTip(`读取存档 (${new Date(data.timestamp).toLocaleString()})`);
+        } catch (e) {
+            this.showTip('存档损坏');
+        }
+
+        this.closeQuickMenu();
+    }
+
+    /**
+     * 显示历史记录
+     */
+    showHistory() {
+        // TODO: 实现历史记录功能
+        this.showTip('历史记录功能开发中');
+        this.closeQuickMenu();
+    }
+
+    /**
+     * 切换自动模式
+     */
+    toggleAutoMode() {
+        // TODO: 实现自动模式
+        this.showTip('自动模式开发中');
+        this.closeQuickMenu();
+    }
+
+    /**
+     * 获取玩家状态
+     */
+    getPlayerState() {
+        return {
+            health: document.getElementById('healthValue')?.textContent || 100,
+            mood: document.getElementById('moodValue')?.textContent || 50,
+            money: document.getElementById('moneyValue')?.textContent || 100,
+            energy: document.getElementById('energyValue')?.textContent || 80
+        };
     }
 
     /**

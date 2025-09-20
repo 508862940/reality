@@ -786,6 +786,7 @@ body {
 
 /* 场景控制区 - 毛玻璃风格（基于参考UI设计） */
 .scene-control-area {
+    position: relative;  /* 为快捷菜单提供定位上下文 */
     display: flex;
     gap: 14px;  /* 参考设计的间距 */
     align-items: center;
@@ -1064,6 +1065,115 @@ body {
     background: rgba(26, 26, 46, 0.3); /* 很淡的背景色 */
     pointer-events: none;
     z-index: 1;
+}
+
+/* ==================== F2快捷菜单样式 ==================== */
+.quick-menu {
+    position: fixed;  /* 改为fixed，独立定位 */
+    bottom: 100px;    /* 距离底部的固定位置 */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;  /* 高于遮罩层 */
+    max-width: 430px;  /* 限制最大宽度 */
+}
+
+.quick-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);  /* 半透明黑色，让用户知道可以点击关闭 */
+    z-index: 1000;
+}
+
+.quick-menu-content {
+    position: relative;
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-border);
+    border-radius: 16px;
+    padding: 8px;
+    margin-bottom: 10px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    transform: translateY(100%);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    min-width: 200px;
+}
+
+.quick-menu.active .quick-menu-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.quick-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--ui-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    text-align: left;
+}
+
+.quick-menu-item:hover {
+    background: rgba(139, 146, 246, 0.1);
+    transform: translateX(4px);
+}
+
+.quick-menu-item:active {
+    transform: translateX(2px) scale(0.98);
+}
+
+.quick-icon {
+    font-size: 18px;
+    min-width: 24px;
+    text-align: center;
+}
+
+.quick-text {
+    flex: 1;
+    color: var(--ui-muted);
+}
+
+.quick-menu-item:hover .quick-text {
+    color: var(--ui-text);
+}
+
+/* 更多按钮样式 */
+.control-btn.more-btn {
+    position: relative;
+}
+
+.control-btn.more-btn:hover {
+    background: var(--ui-primary);
+}
+
+/* 临时提示动画 */
+@keyframes tipFadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    20% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    80% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
 }
 
 /* ==================== 插图系统样式 ==================== */
