@@ -242,7 +242,8 @@ class SceneManager {
         // }
 
         // 更新继续按钮状态（预览可用）
-        this.updateContinueButton(true, 'preview');
+        const checkResult = this.canProceedToNext();
+        this.updateContinueButton(checkResult.canProceed, checkResult.mode);
     }
 
     /**
@@ -332,7 +333,8 @@ class SceneManager {
         // }
 
         // 更新继续按钮为预览状态
-        this.updateContinueButton(true, 'preview');
+        const checkResult = this.canProceedToNext();
+        this.updateContinueButton(checkResult.canProceed, checkResult.mode);
 
         // 隐藏多选确认按钮，等待F2继续按钮确认
         const confirmBtn = document.getElementById('multiConfirmBtn');
@@ -489,12 +491,21 @@ class SceneManager {
      * 获取单选场景
      */
     getSingleChoiceScene(choice) {
-        // TODO: 从场景数据中获取
-        // 模拟返回
+        // 从OpeningScenes中获取下一场景
+        if (choice.target && window.OpeningScenes && window.OpeningScenes[choice.target]) {
+            return window.OpeningScenes[choice.target];
+        }
+
+        // 检查MemoryFragments等其他场景集合
+        if (choice.target && window.MemoryFragments && window.MemoryFragments[choice.target]) {
+            return window.MemoryFragments[choice.target];
+        }
+
+        // 如果没有找到对应场景，返回默认场景
         return {
             id: 'next_scene',
             location: choice.target || '未知地点',
-            text: [`你选择了：${choice.text}`, '新的场景展开了...'],
+            text: [`你选择了：${choice.text}`, `（场景 ${choice.target} 尚未实现）`],
             choices: [
                 { text: '→ 继续探索', target: 'explore' },
                 { text: '→ 返回', target: 'back' }
@@ -612,6 +623,116 @@ class SceneManager {
         const noticeText = document.getElementById('noticeText');
         if (noticeText) {
             noticeText.textContent = `💡 ${message}`;
+        }
+    }
+
+    /**
+     * 获取场景规则
+     * @returns {Object} 场景规则对象
+     */
+    getSceneRules() {
+        if (!this.currentScene) {
+            return { type: 'none', canProceed: false };
+        }
+
+        // 检查自定义规则（特殊场景）
+        if (this.currentScene.rules) {
+            return {
+                type: 'special',
+                canProceed: this.currentScene.rules.canProceed || false,
+                message: this.currentScene.rules.message || '请遵循场景规则'
+            };
+        }
+
+        // 检查是否为多选场景
+        if (this.currentScene.multiChoice || this.currentScene.maxChoices > 1) {
+            return {
+                type: 'multi',
+                canProceed: true, // 多选场景0选择也可继续（灵活性）
+                minChoices: this.currentScene.minChoices || 0,
+                maxChoices: this.currentScene.maxChoices || this.currentScene.choices.length
+            };
+        }
+
+        // 检查是否为单选场景
+        if (this.currentScene.choices && this.currentScene.choices.length > 0) {
+            return {
+                type: 'single',
+                canProceed: false, // 单选场景必须有preview选择
+                message: '请先选择一个选项'
+            };
+        }
+
+        // 无选择场景（纯文本）
+        return {
+            type: 'text',
+            canProceed: true,
+            message: '点击继续'
+        };
+    }
+
+    /**
+     * 检查是否可以继续到下一步
+     * @returns {Object} 检查结果 {canProceed: boolean, message: string, mode: string}
+     */
+    canProceedToNext() {
+        const rules = this.getSceneRules();
+
+        switch (rules.type) {
+            case 'single':
+                // 单选场景：必须有预览选择
+                if (this.isPreviewMode && this.previewChoice) {
+                    return {
+                        canProceed: true,
+                        message: '点击确认选择',
+                        mode: 'preview'
+                    };
+                }
+                return {
+                    canProceed: false,
+                    message: rules.message || '请先选择一个选项',
+                    mode: 'disabled'
+                };
+
+            case 'multi':
+                // 多选场景：0选择也可继续（灵活性）
+                if (this.isPreviewMode) {
+                    const selectedCount = Array.isArray(this.previewChoice) ? this.previewChoice.length : 0;
+                    return {
+                        canProceed: true,
+                        message: selectedCount > 0 ? `确认${selectedCount}项选择` : '确认跳过选择',
+                        mode: 'preview'
+                    };
+                }
+                return {
+                    canProceed: true,
+                    message: '可以直接继续或先选择',
+                    mode: 'normal'
+                };
+
+            case 'special':
+                // 特殊场景：按自定义规则判断
+                return {
+                    canProceed: rules.canProceed,
+                    message: rules.message,
+                    mode: rules.canProceed ? 'normal' : 'disabled'
+                };
+
+            case 'text':
+                // 纯文本场景：直接可继续
+                return {
+                    canProceed: true,
+                    message: rules.message || '点击继续',
+                    mode: 'normal'
+                };
+
+            default:
+                // 无场景或其他情况
+                return {
+                    canProceed: false,
+                    message: '场景未加载',
+                    mode: 'disabled'
+                };
         }
     }
 

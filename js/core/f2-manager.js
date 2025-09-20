@@ -135,14 +135,23 @@ class F2Manager {
      * 处理继续按钮
      */
     handleContinue() {
-        if (!this.continueEnabled) {
-            this.showTip('请先选择一个选项');
-            return;
-        }
-
-        // 调用场景管理器的继续方法
+        // 使用场景管理器的精确检测逻辑
         if (window.sceneManager) {
+            const checkResult = window.sceneManager.canProceedToNext();
+
+            if (!checkResult.canProceed) {
+                this.showTip(checkResult.message);
+                return;
+            }
+
+            // 可以继续，调用场景管理器的继续方法
             window.sceneManager.proceedToNext();
+        } else {
+            // 后备检查（如果场景管理器不可用）
+            if (!this.continueEnabled) {
+                this.showTip('请先选择一个选项');
+                return;
+            }
         }
     }
 

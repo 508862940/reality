@@ -330,9 +330,13 @@ function startGame() {
             displayChoices(location.options);
         }
     } else {
-        // 新版本使用场景管理器，不需要显示默认选项
-        // 场景管理器会自动加载正确的开场场景
-        console.log('等待场景管理器加载开场场景...');
+        // 新版本使用场景管理器加载开场场景
+        if (window.sceneManager && window.OpeningScenes) {
+            console.log('开始加载开场场景...');
+            window.sceneManager.loadScene(window.OpeningScenes.awakening);
+        } else {
+            console.error('场景管理器或开场场景数据未找到');
+        }
     }
 }
 
