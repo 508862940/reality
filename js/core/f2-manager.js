@@ -45,17 +45,17 @@ class F2Manager {
         // 在AI输入区之前插入场景控制区
         const controlHTML = `
             <div class="scene-control-area" id="sceneControlArea">
-                <button class="control-btn continue-btn" id="continueBtn" onclick="f2Manager.handleContinue()">
-                    ▶️ 继续
+                <button class="control-btn continue-btn" id="continueBtn" onclick="f2Manager.handleContinue()" title="继续">
+                    ▶️
                 </button>
-                <button class="control-btn reset-btn" id="resetBtn" onclick="f2Manager.handleReset()">
-                    ↩️ 重置
+                <button class="control-btn reset-btn" id="resetBtn" onclick="f2Manager.handleReset()" title="重置">
+                    ↩️
                 </button>
-                <button class="control-btn zoom-btn" id="zoomBtn" onclick="f2Manager.toggleIllustration()">
+                <button class="control-btn zoom-btn" id="zoomBtn" onclick="f2Manager.toggleIllustration()" title="查看插图">
                     🔍
                     <span class="has-illustration-indicator" id="illustrationIndicator"></span>
                 </button>
-                <span class="reset-hint" id="resetHint">本回合可重置</span>
+                <span class="reset-hint" id="resetHint">可重置</span>
             </div>
         `;
 
