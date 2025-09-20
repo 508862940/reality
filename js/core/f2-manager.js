@@ -175,8 +175,10 @@ class F2Manager {
 
     /**
      * 更新继续按钮状态
+     * @param {boolean} enabled - 是否启用
+     * @param {string} mode - 模式：'preview' 或 'confirmed'
      */
-    updateContinueButton(enabled) {
+    updateContinueButton(enabled, mode = 'confirmed') {
         this.continueEnabled = enabled;
         const btn = document.getElementById('continueBtn');
 
@@ -184,8 +186,16 @@ class F2Manager {
             if (enabled) {
                 btn.classList.remove('disabled');
                 btn.style.opacity = '1';
+
+                // 根据模式添加不同的视觉效果
+                if (mode === 'preview') {
+                    btn.classList.add('preview-ready');
+                } else {
+                    btn.classList.remove('preview-ready');
+                }
             } else {
                 btn.classList.add('disabled');
+                btn.classList.remove('preview-ready');
                 btn.style.opacity = '0.5';
             }
         }

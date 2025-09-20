@@ -44,7 +44,7 @@ function loadGameState() {
                 mood: 50,
                 money: 100,
                 energy: 80,
-                location: 'school'
+                location: 'awakening_room'
             },
             gameTime: {
                 day: 1,
@@ -330,9 +330,9 @@ function startGame() {
             displayChoices(location.options);
         }
     } else {
-        // 使用默认的开场
-        displayStory('新的一天开始了。你站在学校门口，阳光洒在身上，感觉充满活力。');
-        displayDefaultChoices();
+        // 新版本使用场景管理器，不需要显示默认选项
+        // 场景管理器会自动加载正确的开场场景
+        console.log('等待场景管理器加载开场场景...');
     }
 }
 
@@ -413,7 +413,7 @@ window.goToLocation = function(location) {
         // 简单的地点切换
         displayStory(`你前往了${location}。`);
         updateLocationTime();
-        displayDefaultChoices();
+        // 不再显示默认选项，由场景管理器处理
     }
 
     // 保存游戏状态
@@ -452,11 +452,11 @@ window.performAction = function(action) {
         // 更新界面
         updateStatus();
 
-        // 显示当前地点的选项
-        const location = gameState.character.location;
-        if (gameData.locations[location]) {
-            displayChoices(gameData.locations[location].options);
-        }
+        // 显示当前地点的选项 - 已禁用，使用场景管理器
+        // const location = gameState.character.location;
+        // if (gameData.locations[location]) {
+        //     displayChoices(gameData.locations[location].options);
+        // }
     } else {
         // 默认动作处理
         displayStory(`你执行了动作：${action}`);
@@ -533,13 +533,11 @@ function deactivateAIMode() {
 
     displayStory('【AI对话模式已关闭】');
 
-    // 显示当前地点的选项
-    const location = gameState.character.location;
-    if (typeof gameData !== 'undefined' && gameData.locations && gameData.locations[location]) {
-        displayChoices(gameData.locations[location].options);
-    } else {
-        displayDefaultChoices();
-    }
+    // 显示当前地点的选项 - 已禁用，使用场景管理器
+    // const location = gameState.character.location;
+    // if (typeof gameData !== 'undefined' && gameData.locations && gameData.locations[location]) {
+    //     displayChoices(gameData.locations[location].options);
+    // }
 }
 
 // 保存游戏状态

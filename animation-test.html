@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动画效果对比</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #e4e4e7;
+            padding: 20px;
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            flex: 1;
+            max-width: 400px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        h2 {
+            color: #8b92f6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* 第一种动画 - 0.5秒 */
+        @keyframes fadeIn1 {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 第二种动画 - 0.3秒 + ease */
+        @keyframes fadeIn2 {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .story-text-v1 {
+            margin-bottom: 12px;
+            animation: fadeIn1 0.5s;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .story-text-v2 {
+            margin-bottom: 12px;
+            animation: fadeIn2 0.3s ease;
+            background: rgba(240, 147, 251, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .timing-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* 多选项样式对比 */
+        .multi-choice-demo {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .choice-item-v1 {
+            display: block;
+            color: #a5b4fc;
+            text-decoration: none;
+            padding: 8px 10px;
+            margin: 5px 0;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 6px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .choice-item-v1:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(5px);
+        }
+
+        /* DoL风格的选项链接 */
+        .story-choice {
+            display: inline-block;
+            color: #8b92f6;
+            text-decoration: none;
+            padding: 2px 6px;
+            margin: 2px 0;
+            border-bottom: 1px solid #8b92f6;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .story-choice:hover {
+            color: #f093fb;
+            border-bottom-color: #f093fb;
+            background: rgba(139, 92, 246, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>版本1: 0.5秒动画</h2>
+
+        <div id="content1">
+            <!-- 剧情文本将在这里动态添加 -->
+        </div>
+
+        <div class="timing-info">
+            动画时长: 0.5秒<br>
+            缓动函数: 默认(ease)
+        </div>
+
+        <div class="multi-choice-demo">
+            <h3 style="color: #f093fb; font-size: 14px;">选项展示：</h3>
+            <a href="#" class="choice-item-v1">→ 前往商店购买道具</a>
+            <a href="#" class="choice-item-v1">→ 与NPC对话</a>
+            <a href="#" class="choice-item-v1">→ 探索周围环境</a>
+        </div>
+
+        <button onclick="replay1()">重播动画</button>
+    </div>
+
+    <div class="container">
+        <h2>版本2: 0.3秒动画 + ease</h2>
+
+        <div id="content2">
+            <!-- 剧情文本将在这里动态添加 -->
+        </div>
+
+        <div class="timing-info">
+            动画时长: 0.3秒<br>
+            缓动函数: ease(更平滑)
+        </div>
+
+        <div class="multi-choice-demo">
+            <h3 style="color: #f093fb; font-size: 14px;">DoL风格选项：</h3>
+            <p>
+                你看到前方有个神秘的商人。
+                <a href="#" class="story-choice">接近商人</a> |
+                <a href="#" class="story-choice">保持距离</a> |
+                <a href="#" class="story-choice">转身离开</a>
+            </p>
+            <p>
+                商人注意到了你，向你招手。
+                <a href="#" class="story-choice">友好回应</a> |
+                <a href="#" class="story-choice">谨慎观察</a>
+            </p>
+        </div>
+
+        <button onclick="replay2()">重播动画</button>
+    </div>
+
+    <script>
+        function addStoryText1() {
+            const content = document.getElementById('content1');
+            content.innerHTML = '';
+
+            const texts = [
+                '你醒来时发现自己在一个陌生的房间里...',
+                '窗外传来城市的喧嚣声，霓虹灯光透过百叶窗洒进房间。',
+                '你的记忆似乎出现了空白，只记得自己的名字。'
+            ];
+
+            texts.forEach((text, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'story-text-v1';
+                    div.textContent = text;
+                    content.appendChild(div);
+                }, index * 600); // 每个文本间隔0.6秒出现
+            });
+        }
+
+        function addStoryText2() {
+            const content = document.getElementById('content2');
+            content.innerHTML = '';
+
+            const texts = [
+                '你醒来时发现自己在一个陌生的房间里...',
+                '窗外传来城市的喧嚣声，霓虹灯光透过百叶窗洒进房间。',
+                '你的记忆似乎出现了空白，只记得自己的名字。'
+            ];
+
+            texts.forEach((text, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'story-text-v2';
+                    div.textContent = text;
+                    content.appendChild(div);
+                }, index * 400); // 每个文本间隔0.4秒出现（更快）
+            });
+        }
+
+        function replay1() {
+            addStoryText1();
+        }
+
+        function replay2() {
+            addStoryText2();
+        }
+
+        // 页面加载时自动播放
+        window.onload = function() {
+            setTimeout(() => addStoryText1(), 500);
+            setTimeout(() => addStoryText2(), 500);
+        };
+    </script>
+</body>
+</html>

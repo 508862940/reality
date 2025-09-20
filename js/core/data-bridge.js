@@ -41,7 +41,7 @@ const DataBridge = {
                 mood: 50,
                 money: 100,
                 energy: 100,
-                location: 'school',
+                location: 'awakening_room',
                 // 外貌
                 appearance: {
                     hair: 'long',

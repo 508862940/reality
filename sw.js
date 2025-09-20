@@ -3,11 +3,19 @@ const CACHE_NAME = 'interactive-novel-v1.0.0';
 const urlsToCache = [
   './',
   './index.html',
-  './styles.css',
-  './game.js',
-  './ai-config.js',
-  './ai-npc-system.js',
-  './advanced-game.js',
+  './menu.html',
+  './character-creation.html',
+  './game-main.html',
+  './css/app.css',
+  './css/menu.css',
+  './css/character-creation.css',
+  './css/game-main.css',
+  './js/pages/menu.js',
+  './js/pages/character-creation.js',
+  './js/pages/game-main.js',
+  './js/core/scene-manager.js',
+  './js/core/f2-manager.js',
+  './js/core/illustration-manager.js',
   './manifest.json'
 ];
 

@@ -5,7 +5,7 @@ const gameData = {
         health: 100,
         mood: 50,
         money: 100,
-        location: 'school'
+        location: 'awakening_room'
     },
 
     // 地点数据
@@ -135,30 +135,66 @@ function initGame() {
 
 // 更新角色状态面板
 function updateCharacterPanel() {
-    document.getElementById('health').textContent = gameData.character.health;
-    document.getElementById('mood').textContent = gameData.character.mood;
-    document.getElementById('money').textContent = gameData.character.money;
+    const healthElement = document.getElementById('healthValue');
+    const moodElement = document.getElementById('moodValue');
+    const moneyElement = document.getElementById('moneyValue');
+
+    if (healthElement) healthElement.textContent = gameData.character.health;
+    if (moodElement) moodElement.textContent = gameData.character.mood;
+    if (moneyElement) moneyElement.textContent = gameData.character.money;
 }
 
 // 更新地点显示
 function updateLocationDisplay() {
+    if (!gameData.locations || !gameData.character.location) {
+        return; // 安全检查
+    }
+
     const currentLocation = gameData.locations[gameData.character.location];
-    document.getElementById('current-location').textContent = currentLocation.name;
-    document.getElementById('location-description').textContent = currentLocation.description;
+    if (!currentLocation) {
+        return; // 如果地点数据不存在，直接返回
+    }
+
+    // 更新B区的位置显示
+    const locationElement = document.getElementById('currentLocation');
+    if (locationElement && currentLocation.name) {
+        locationElement.textContent = currentLocation.name;
+    }
+
+    // 更新场景描述（如果有的话）
+    const descElement = document.getElementById('location-description');
+    if (descElement && currentLocation.description) {
+        descElement.textContent = currentLocation.description;
+    }
 }
 
 // 更新互动选项
 function updateInteractionOptions() {
     const optionsContainer = document.getElementById('interaction-options');
+
+    // 安全检查：如果容器不存在，说明使用了新的场景管理器
+    if (!optionsContainer) {
+        // 新版本使用场景管理器，不需要在这里处理选项
+        return;
+    }
+
+    // 安全检查：确保地点数据存在
+    if (!gameData.locations || !gameData.character.location) {
+        return;
+    }
+
     const currentLocation = gameData.locations[gameData.character.location];
-    
+    if (!currentLocation || !currentLocation.options) {
+        return;
+    }
+
     optionsContainer.innerHTML = '';
-    
+
     currentLocation.options.forEach(option => {
         const button = document.createElement('button');
         button.className = 'option-btn';
         button.textContent = option.text;
-        
+
         if (option.target) {
             button.onclick = () => goToLocation(option.target);
         } else if (option.action) {
@@ -398,6 +434,12 @@ function toggleAISettings() {
 
 function changeAIProvider() {
     const select = document.getElementById('ai-provider-select');
+
+    // 安全检查：如果元素不存在，说明当前页面不需要AI提供商选择
+    if (!select) {
+        return;
+    }
+
     const selectedProvider = select.value;
     
     // 更新当前使用的AI提供商
@@ -770,9 +812,22 @@ async function testAIConnection() {
 function updateStatus(message, type = 'info') {
     const statusElement = document.getElementById('ai-status');
     const statusText = document.getElementById('status-text');
-    
-    statusText.textContent = message;
-    statusElement.className = `ai-status ${type}`;
+
+    // 安全检查，避免null错误
+    if (statusText) {
+        statusText.textContent = message;
+    }
+    if (statusElement) {
+        statusElement.className = `ai-status ${type}`;
+    }
+
+    // 如果找不到AI状态元素，使用提醒栏显示
+    if (!statusText) {
+        const noticeText = document.getElementById('noticeText');
+        if (noticeText) {
+            noticeText.textContent = `💡 ${message}`;
+        }
+    }
 }
 
 // 重置AI设置

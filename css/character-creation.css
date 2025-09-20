@@ -31,7 +31,6 @@ body {
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
 
@@ -490,7 +489,7 @@ body {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.7), rgba(240, 147, 251, 0.7));
 }
 
-/* Firefox滚动条 */
+/* Firefox滚动条 (Firefox only - graceful degradation for other browsers) */
 .creation-container {
     scrollbar-width: thin;
     scrollbar-color: rgba(139, 92, 246, 0.5) rgba(255, 255, 255, 0.05);
@@ -503,8 +502,8 @@ body {
     }
 
     .creation-container {
-        scrollbar-width: none;
-        -ms-overflow-style: none;
+        scrollbar-width: none; /* Firefox only */
+        -ms-overflow-style: none; /* IE/Edge */
     }
 }
 

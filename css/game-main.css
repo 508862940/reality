@@ -211,7 +211,6 @@ body {
     font-size: 13px;
     max-height: calc(100% - 48px); /* 减去标签栏高度 */
     /* 移动端触摸滚动优化 */
-    -webkit-overflow-scrolling: touch; /* iOS惯性滚动 */
     overscroll-behavior: contain; /* 防止滚动链传递 */
     touch-action: pan-y; /* 只允许垂直滚动 */
 }
@@ -235,8 +234,9 @@ body {
     background: rgba(139, 92, 246, 0.5);
 }
 
-/* D区滚动条样式 - Firefox */
+/* D区滚动条样式 */
 .function-content {
+    /* Firefox only - graceful degradation for other browsers */
     scrollbar-width: thin;
     scrollbar-color: rgba(139, 92, 246, 0.3) rgba(255, 255, 255, 0.05);
 }
@@ -345,7 +345,6 @@ body {
     line-height: 1.6;
     min-height: 0; /* 确保flex子元素可以正确滚动 */
     /* 移动端触摸滚动优化 */
-    -webkit-overflow-scrolling: touch; /* iOS惯性滚动 */
     overscroll-behavior: contain; /* 防止滚动链传递 */
     touch-action: pan-y; /* 只允许垂直滚动 */
 }
@@ -369,15 +368,16 @@ body {
     background: rgba(139, 92, 246, 0.6);
 }
 
-/* F1区滚动条样式 - Firefox */
+/* F1区滚动条样式 */
 .story-area {
+    /* Firefox only - graceful degradation for other browsers */
     scrollbar-width: thin;
     scrollbar-color: rgba(139, 92, 246, 0.4) rgba(255, 255, 255, 0.05);
 }
 
 .story-text {
     margin-bottom: 12px;
-    animation: fadeIn 0.5s;
+    animation: fadeIn 0.5s; /* 保留0.5秒动画，更优雅 */
 }
 
 .story-text p {
@@ -411,6 +411,52 @@ body {
     transform: scale(0.98);
 }
 
+/* 预览状态 - 触感式效果（仿佛被触摸） */
+.story-choice.preview {
+    transform: translateY(1px);  /* 轻微按下 */
+    box-shadow:
+        0 2px 8px rgba(139, 92, 246, 0.3),    /* 外发光 */
+        inset 0 1px 3px rgba(0,0,0,0.2);      /* 内阴影（按下感） */
+    background: rgba(139, 92, 246, 0.15);     /* 微微变色 */
+    border-bottom-color: #8b92f6;
+    color: #c7d2fe;
+    /* PWA触感反馈优化 */
+    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* PWA模式下增强触感效果 */
+@media (display-mode: standalone) {
+    .story-choice.preview {
+        transform: translateY(1.5px);  /* PWA模式更明显的按下感 */
+        box-shadow:
+            0 3px 12px rgba(139, 92, 246, 0.4),
+            inset 0 2px 4px rgba(0,0,0,0.25);
+    }
+}
+
+/* 确认选中状态 - 真正选中（更强的触感） */
+.story-choice.selected {
+    transform: translateY(2px);  /* 更深按下 */
+    box-shadow:
+        0 4px 15px rgba(240, 147, 251, 0.5),  /* 强发光 */
+        inset 0 2px 5px rgba(0,0,0,0.3);      /* 深内阴影 */
+    background: rgba(240, 147, 251, 0.25);
+    border-bottom-color: #f093fb;
+    color: #f093fb;
+    /* PWA触感反馈优化 */
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* PWA模式下确认状态增强 */
+@media (display-mode: standalone) {
+    .story-choice.selected {
+        transform: translateY(3px);  /* PWA模式更深的确认感 */
+        box-shadow:
+            0 5px 20px rgba(240, 147, 251, 0.6),
+            inset 0 3px 6px rgba(0,0,0,0.35);
+    }
+}
+
 /* ==================== 多选系统样式 ==================== */
 /* 多选容器 */
 .multi-choice-container {
@@ -432,7 +478,9 @@ body {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
+    -webkit-user-select: none;
     user-select: none;
+    position: relative; /* 为::after伪元素提供定位上下文 */
 }
 
 .multi-choice-item:hover {
@@ -444,6 +492,14 @@ body {
     background: rgba(139, 92, 246, 0.2);
     border-color: rgba(139, 92, 246, 0.5);
     color: #f093fb;
+}
+
+/* 多选确认状态 - 更强的视觉效果 */
+.multi-choice-item.confirmed {
+    background: rgba(240, 147, 251, 0.3);
+    border-color: rgba(240, 147, 251, 0.7);
+    color: #f093fb;
+    box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3);
 }
 
 /* 自定义复选框 */
@@ -533,6 +589,23 @@ body {
     color: #94a3b8;
     margin-top: 4px;
     font-style: italic;
+}
+
+/* 初始状态条宽度 */
+#healthBar {
+    width: 100%;
+}
+
+#moodBar {
+    width: 50%;
+}
+
+#moneyBar {
+    width: 100%;
+}
+
+#energyBar {
+    width: 80%;
 }
 
 /* 选项块 - 用于多个选项 */
@@ -697,68 +770,109 @@ body {
     transition: opacity 0.3s ease;
 }
 
-.story-text {
-    animation: fadeIn 0.3s ease;
-}
+/* 删除重复的.story-text和fadeIn定义 */
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* 场景控制区 */
+/* 场景控制区 - PWA风格 */
 .scene-control-area {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
-    padding: 10px;
-    background: rgba(30, 30, 45, 0.95);
+    justify-content: center;
+    padding: 15px 20px;
+    background: rgba(26, 26, 46, 0.95);
     border-top: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 15px 15px 0 0;
 }
 
 .control-btn {
-    padding: 8px 16px;
-    border-radius: 20px;
-    background: rgba(139, 92, 246, 0.2);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    color: #e4e4e7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 25px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.8), rgba(147, 51, 234, 0.8));
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
     cursor: pointer;
-    font-size: 13px;
-    transition: all 0.3s;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
     outline: none;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    backdrop-filter: blur(10px);
+    min-width: 80px;
 }
 
 .control-btn:hover:not(.disabled) {
-    background: rgba(139, 92, 246, 0.3);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(147, 51, 234, 0.9));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .control-btn:active:not(.disabled) {
-    transform: scale(0.95);
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.5);
 }
 
 .control-btn.disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
+    background: rgba(100, 100, 120, 0.3);
+    box-shadow: none;
+    transform: none !important;
 }
 
-/* 放大镜按钮特殊样式 */
+/* 继续按钮预览就绪状态 - 微微发光提示 */
+.control-btn.preview-ready {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+    animation: subtle-ready-pulse 2s ease infinite;
+    /* PWA触感反馈优化 */
+    transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+@keyframes subtle-ready-pulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+    }
+}
+
+/* PWA模式下继续按钮增强效果 */
+@media (display-mode: standalone) {
+    .control-btn.preview-ready {
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+        transform: translateY(-1px);  /* PWA模式轻微上浮 */
+    }
+
+    @keyframes subtle-ready-pulse {
+        0%, 100% {
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1px);
+        }
+        50% {
+            box-shadow: 0 0 18px rgba(139, 92, 246, 0.7);
+            transform: translateY(-0.5px);
+        }
+    }
+}
+
+/* 放大镜按钮特殊样式 - PWA风格 */
 .zoom-btn {
-    padding: 8px 12px;
-    font-size: 16px;
-    background: rgba(240, 147, 251, 0.2);
-    border-color: rgba(240, 147, 251, 0.3);
+    padding: 12px 16px;
+    font-size: 18px;
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.8), rgba(236, 72, 153, 0.8));
+    border-color: rgba(255, 255, 255, 0.2);
     position: relative;
+    min-width: 60px;
 }
 
-.zoom-btn:hover {
-    background: rgba(240, 147, 251, 0.3);
+.zoom-btn:hover:not(.disabled) {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.9), rgba(236, 72, 153, 0.9));
+    box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
 }
 
 .zoom-btn.has-content {
@@ -800,8 +914,13 @@ body {
 
 .reset-hint {
     font-size: 11px;
-    color: #94a3b8;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 10px;
     margin-left: auto;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* 选项选中状态 */
@@ -811,54 +930,7 @@ body {
     transform: translateX(5px);
 }
 
-/* 多选样式 */
-.multi-choice-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    margin: 8px 0;
-    background: rgba(139, 92, 246, 0.1);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.multi-choice-item:hover {
-    background: rgba(139, 92, 246, 0.15);
-}
-
-.multi-choice-item.selected {
-    background: rgba(139, 92, 246, 0.25);
-    border: 1px solid rgba(139, 92, 246, 0.4);
-}
-
-.multi-choice-item input[type="checkbox"] {
-    margin-right: 10px;
-    accent-color: #8b92f6;
-}
-
-.multi-choice-confirm {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    margin-top: 15px;
-    background: linear-gradient(135deg, #8b92f6, #f093fb);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.multi-choice-confirm:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
-}
-
-.multi-choice-confirm:active {
-    transform: scale(0.98);
-}
+/* 删除重复的多选样式 - 保留上方更完整的版本 */
 
 /* 临时提示样式 */
 @keyframes tipFadeInOut {
@@ -890,8 +962,10 @@ body {
     }
 
     .story-area {
-        scrollbar-width: none; /* Firefox移动端 */
-        -ms-overflow-style: none; /* IE和旧Edge */
+        /* Firefox移动端隐藏滚动条 */
+        scrollbar-width: none;
+        /* IE和旧Edge隐藏滚动条 */
+        -ms-overflow-style: none;
     }
 
     /* D区移动端滚动条隐藏 */
@@ -1068,10 +1142,4 @@ body {
     75% { filter: drop-shadow(0 0 10px #ff8000); }
 }
 
-/* 临时提示样式 */
-@keyframes tipFadeInOut {
-    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-    20% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    80% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-}
+/* 删除重复的tipFadeInOut动画 - 保留上方的版本 */

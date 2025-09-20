@@ -293,7 +293,7 @@ function enterReality() {
             health: 100,
             mood: 50,
             money: 100,
-            location: 'school',
+            location: 'awakening_room',
             relationships: {}
         },
         npcs: characterData.enabledNPCs,

@@ -2,15 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <!-- PWA配置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Reality">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#1a1a2e">
     <meta name="format-detection" content="telephone=no">
+    <!-- Theme color for PWA (not supported in all browsers) -->
+    <meta name="theme-color" content="#1a1a2e">
 
     <!-- PWA manifest -->
     <link rel="manifest" href="manifest.json">
@@ -76,28 +77,28 @@
                                 <div class="stat-item">
                                     <span class="stat-label">体力</span>
                                     <div class="stat-bar">
-                                        <div class="stat-fill" id="healthBar" style="width: 100%;"></div>
+                                        <div class="stat-fill" id="healthBar"></div>
                                     </div>
                                     <span class="stat-value" id="healthValue">100</span>
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-label">心情</span>
                                     <div class="stat-bar">
-                                        <div class="stat-fill mood" id="moodBar" style="width: 50%;"></div>
+                                        <div class="stat-fill mood" id="moodBar"></div>
                                     </div>
                                     <span class="stat-value" id="moodValue">50</span>
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-label">金钱</span>
                                     <div class="stat-bar">
-                                        <div class="stat-fill money" id="moneyBar" style="width: 100%;"></div>
+                                        <div class="stat-fill money" id="moneyBar"></div>
                                     </div>
                                     <span class="stat-value" id="moneyValue">100</span>
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-label">精力</span>
                                     <div class="stat-bar">
-                                        <div class="stat-fill energy" id="energyBar" style="width: 80%;"></div>
+                                        <div class="stat-fill energy" id="energyBar"></div>
                                     </div>
                                     <span class="stat-value" id="energyValue">80</span>
                                 </div>
@@ -157,7 +158,7 @@
     <!-- 加载游戏脚本 -->
     <script src="js/pages/game-main.js"></script>
     <!-- 加载原有的游戏逻辑 -->
-    <script src="js/core/game.js"></script>
+    <script src="js/core/game-engine.js"></script>
     <!-- 加载AI配置 -->
     <script src="js/ai/ai-config.js"></script>
     <script src="js/ai/ai-npc-system.js"></script>
@@ -169,6 +170,15 @@
             if (typeof AnimationEffects !== 'undefined') {
                 AnimationEffects.init();
                 AnimationEffects.createGameAnimations();
+            }
+
+            // 确保F2管理器正确初始化
+            if (window.f2Manager) {
+                console.log('F2管理器已创建:', window.f2Manager);
+                // 确保切换到场景模式
+                window.f2Manager.switchToSceneMode();
+            } else {
+                console.warn('F2管理器未找到，可能初始化失败');
             }
 
             // 加载初始场景

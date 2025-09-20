@@ -77,7 +77,7 @@
                         health: 100,
                         mood: 50,
                         money: 100,
-                        location: 'school'
+                        location: 'awakening_room'
                     }
                 };
             }
