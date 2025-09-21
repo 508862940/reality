@@ -228,6 +228,12 @@ class SceneManager {
      * 选择选项（单选）- 现在只进行预览，不立即确认
      */
     selectChoice(element) {
+        // 检查是否点击的是已预览的选项（取消预览）
+        if (element.classList.contains('preview')) {
+            this.cancelPreview();
+            return;
+        }
+
         // 移除其他预览状态
         this.storyArea.querySelectorAll('.story-choice').forEach(choice => {
             choice.classList.remove('preview', 'selected');
@@ -244,6 +250,9 @@ class SceneManager {
         };
         this.isPreviewMode = true;
 
+        // 显示预览提示
+        this.showNotice(`已预览选项，点击继续确认或再次点击取消预览`);
+
         // 暂不更新插图（预留接口，放大镜点击时再显示）
         // if (window.illustrationManager && this.previewChoice) {
         //     window.illustrationManager.updateByChoice(this.previewChoice, index);
@@ -252,6 +261,33 @@ class SceneManager {
         // 更新继续按钮状态（预览可用）
         const checkResult = this.canProceedToNext();
         this.updateContinueButton(checkResult.canProceed, checkResult.mode);
+    }
+
+    /**
+     * 取消预览状态
+     */
+    cancelPreview() {
+        // 清除预览状态
+        this.storyArea.querySelectorAll('.story-choice').forEach(choice => {
+            choice.classList.remove('preview', 'selected');
+        });
+
+        // 重置预览变量
+        this.previewChoice = null;
+        this.isPreviewMode = false;
+        this.currentChoice = null;
+
+        // 更新继续按钮状态
+        const checkResult = this.canProceedToNext();
+        this.updateContinueButton(checkResult.canProceed, checkResult.mode);
+
+        // 清除插图预览
+        if (window.illustrationManager) {
+            window.illustrationManager.clear();
+        }
+
+        // 显示提示
+        this.showNotice('已取消预览，可以重新选择');
     }
 
     /**
