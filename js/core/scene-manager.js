@@ -13,6 +13,17 @@ class SceneManager {
         this.canReset = true;
         this.lastSceneSnapshot = null;
 
+        // 状态更新系统
+        this.sceneState = {
+            status: 'loading',      // loading, ready, previewing, confirmed, transitioning
+            choiceType: null,       // single, multi, text, none
+            selectedCount: 0,       // 当前选择数量
+            minChoices: 0,          // 最小选择数
+            maxChoices: 0,          // 最大选择数
+            canProceed: false,      // 是否可以继续
+            hasConflicts: false     // 是否有冲突
+        };
+
         // 场景容器
         this.storyArea = null;
         this.isTransitioning = false;
@@ -44,6 +55,9 @@ class SceneManager {
      */
     loadScene(sceneData) {
         if (this.isTransitioning) return;
+
+        // 更新状态为加载中
+        this.updateSceneState({ status: 'loading' });
 
         this.currentScene = sceneData;
         this.currentChoice = null;
@@ -80,7 +94,10 @@ class SceneManager {
             this.buildScene(sceneData);
 
             // 淡入新内容
-            this.fadeIn();
+            this.fadeIn(() => {
+                // 场景加载完成，更新状态为就绪
+                this.updateSceneState({ status: 'ready' });
+            });
         });
     }
 
@@ -211,15 +228,19 @@ class SceneManager {
                     checkbox.checked = true;
                     choice.classList.add('selected');
 
-                    // 更新插图显示
+                    // 更新多选预览插图
                     const choiceData = this.currentScene.choices[parseInt(choice.dataset.index)];
                     if (window.illustrationManager && choiceData) {
-                        window.illustrationManager.updateByChoice(choiceData, parseInt(choice.dataset.index));
+                        // 多选场景支持累积预览
+                        this.updateMultiChoicePreview();
                     }
                 }
 
                 // 更新计数和按钮状态
                 this.updateMultiChoiceState();
+
+                // 更新多选预览状态
+                this.updateMultiChoicePreview();
             });
         });
     }
@@ -250,17 +271,18 @@ class SceneManager {
         };
         this.isPreviewMode = true;
 
-        // 显示预览提示
-        this.showNotice(`已预览选项，点击继续确认或再次点击取消预览`);
+        // 更新状态为预览模式
+        this.updateSceneState({
+            status: 'previewing',
+            selectedCount: 1
+        });
+
+        // 静默预览，保持沉浸感
 
         // 暂不更新插图（预留接口，放大镜点击时再显示）
         // if (window.illustrationManager && this.previewChoice) {
         //     window.illustrationManager.updateByChoice(this.previewChoice, index);
         // }
-
-        // 更新继续按钮状态（预览可用）
-        const checkResult = this.canProceedToNext();
-        this.updateContinueButton(checkResult.canProceed, checkResult.mode);
     }
 
     /**
@@ -277,17 +299,18 @@ class SceneManager {
         this.isPreviewMode = false;
         this.currentChoice = null;
 
-        // 更新继续按钮状态
-        const checkResult = this.canProceedToNext();
-        this.updateContinueButton(checkResult.canProceed, checkResult.mode);
+        // 更新状态为就绪
+        this.updateSceneState({
+            status: 'ready',
+            selectedCount: 0
+        });
 
         // 清除插图预览
         if (window.illustrationManager) {
             window.illustrationManager.clear();
         }
 
-        // 显示提示
-        this.showNotice('已取消预览，可以重新选择');
+        // 静默取消，保持沉浸感
     }
 
     /**
@@ -364,6 +387,52 @@ class SceneManager {
         } else {
             // 隐藏警告
             warningArea.style.display = 'none';
+        }
+    }
+
+    /**
+     * 更新多选预览
+     */
+    updateMultiChoicePreview() {
+        // 获取当前选中的所有项目
+        const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+        const selectedChoices = [];
+
+        selectedItems.forEach(item => {
+            const index = parseInt(item.dataset.index);
+            if (this.currentScene.choices[index]) {
+                selectedChoices.push(this.currentScene.choices[index]);
+            }
+        });
+
+        // 如果有选择，进入预览模式
+        if (selectedChoices.length > 0) {
+            this.previewChoice = selectedChoices;
+            this.isPreviewMode = true;
+
+            // 更新状态为预览模式
+            this.updateSceneState({
+                status: 'previewing',
+                selectedCount: selectedChoices.length
+            });
+
+            // 渐进式插图预览（可选：显示合并效果）
+            if (window.illustrationManager) {
+                window.illustrationManager.updateByMultiChoice(selectedChoices);
+            }
+        } else {
+            // 没有选择时清除预览
+            this.previewChoice = null;
+            this.isPreviewMode = false;
+
+            this.updateSceneState({
+                status: 'ready',
+                selectedCount: 0
+            });
+
+            if (window.illustrationManager) {
+                window.illustrationManager.clear();
+            }
         }
     }
 
@@ -462,6 +531,12 @@ class SceneManager {
         this.isPreviewMode = false;
         this.currentChoice = null;
 
+        // 更新状态为就绪
+        this.updateSceneState({
+            status: 'ready',
+            selectedCount: 0
+        });
+
         // 重新显示确认按钮
         const confirmBtn = document.getElementById('multiConfirmBtn');
         if (confirmBtn) {
@@ -472,156 +547,150 @@ class SceneManager {
         // 更新按钮状态
         this.updateMultiChoiceState();
 
-        // 显示提示
-        this.showNotice('已清除选择，可以重新选择啦 (◕‿◡)');
+        // 静默重置，保持沉浸感
     }
 
     /**
-     * 确认多选（预览阶段）
+     * 确认多选（预览阶段）- 现在主要用于隐藏确认按钮
      */
     confirmMultiChoice() {
-        const selected = [];
-        const checkboxes = this.storyArea.querySelectorAll('.multi-choice-item input:checked');
-
-        checkboxes.forEach(checkbox => {
-            const item = checkbox.parentElement;
-            const index = parseInt(item.dataset.index);
-            selected.push(this.currentScene.choices[index]);
-        });
-
-        // 多选允许0选择（灵活性）
-        // if (selected.length === 0) {
-        //     this.showNotice('请至少选择一项');
-        //     return;
-        // }
-
-        // 设置为预览状态
-        this.previewChoice = selected.length > 0 ? selected : null;
-        this.isPreviewMode = true;
-
-        // 暂不更新插图（预留接口）
-        // if (window.illustrationManager && selected.length > 0) {
-        //     window.illustrationManager.updateByMultiChoice(selected);
-        // }
-
-        // 更新继续按钮为预览状态
-        const checkResult = this.canProceedToNext();
-        this.updateContinueButton(checkResult.canProceed, checkResult.mode);
-
+        // 直接使用当前的预览状态（由updateMultiChoicePreview管理）
         // 隐藏多选确认按钮，等待F2继续按钮确认
         const confirmBtn = document.getElementById('multiConfirmBtn');
         if (confirmBtn) {
             confirmBtn.style.display = 'none';
         }
 
-        // 显示预览提示
-        const selectedCount = selected.length;
-        if (selectedCount > 0) {
-            this.showNotice(`已选择 ${selectedCount} 项，点击继续确认`);
-        } else {
-            this.showNotice('未选择任何项，点击继续跳过');
+        // 确保已进入预览模式（如果有选择的话）
+        if (!this.isPreviewMode && this.storyArea.querySelectorAll('.multi-choice-item.selected').length > 0) {
+            this.updateMultiChoicePreview();
         }
+
+        // 静默预览，保持沉浸感
+        // 预览状态通过视觉反馈传达给用户
     }
 
-    /**
-     * 确认预览选择
-     */
-    confirmPreviewChoice() {
-        // 多选场景允许无选择
-        if (!this.previewChoice && !this.storyArea.querySelector('.multi-choice-container')) {
-            this.showNotice('请先选择一个选项');
-            return false;
-        }
-
-        // 将预览选择转为确认选择
-        this.currentChoice = this.previewChoice;
-        this.isPreviewMode = false;
-
-        // 处理单选场景
-        const previewElement = this.storyArea.querySelector('.story-choice.preview');
-        if (previewElement) {
-            // 更新视觉状态：preview → selected
-            previewElement.classList.remove('preview');
-            previewElement.classList.add('selected');
-
-            // 更新单选插图
-            if (window.illustrationManager && this.currentChoice) {
-                const index = Array.from(this.storyArea.querySelectorAll('.story-choice')).indexOf(previewElement);
-                window.illustrationManager.updateByChoice(this.currentChoice, index);
-            }
-        }
-
-        // 处理多选场景
-        const multiContainer = this.storyArea.querySelector('.multi-choice-container');
-        if (multiContainer) {
-            // 标记所有选中项为确认状态
-            const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
-            selectedItems.forEach(item => {
-                item.classList.add('confirmed');
-            });
-
-            // 更新多选插图
-            if (window.illustrationManager && this.currentChoice && Array.isArray(this.currentChoice)) {
-                window.illustrationManager.updateByMultiChoice(this.currentChoice);
-            }
-        }
-
-        return true;
-    }
 
     /**
-     * 确认预览选择
+     * 确认预览选择 - 完整的确认执行机制
      * @returns {boolean} 是否成功确认
      */
     confirmPreviewChoice() {
+        // 检查是否在预览模式
         if (!this.isPreviewMode) {
-            return true; // 非预览模式直接返回true
-        }
-
-        if (!this.previewChoice) {
-            this.showNotice('没有预览选择');
+            // 如果不在预览模式但有确认的选择，可以直接继续
+            if (this.currentChoice) {
+                return true;
+            }
             return false;
         }
 
-        // 单选情况：将预览选择转为正式选择
-        if (!Array.isArray(this.previewChoice)) {
-            // 更新视觉状态：从preview变为selected
-            this.storyArea.querySelectorAll('.story-choice').forEach(choice => {
-                choice.classList.remove('preview');
-                if (choice.dataset.index == this.previewChoice.index ||
-                    choice.textContent.includes(this.previewChoice.text)) {
-                    choice.classList.add('selected');
-                }
-            });
-
-            // 设置当前选择
-            this.currentChoice = this.previewChoice;
-        }
-        // 多选情况
-        else {
-            this.currentChoice = this.previewChoice;
+        // 多选场景允许无选择（0选择也可确认）
+        if (!this.previewChoice && this.currentScene.multiChoice) {
+            // 0选择的多选场景
+            this.currentChoice = [];
+            this.isPreviewMode = false;
+            this.previewChoice = null;
+            return true;
         }
 
-        // 退出预览模式
+        // 单选场景必须有预览选择
+        if (!this.previewChoice && !this.currentScene.multiChoice) {
+            return false;
+        }
+
+        // 执行选择确认
+        if (Array.isArray(this.previewChoice)) {
+            // 多选确认
+            this.confirmMultiPreview();
+        } else {
+            // 单选确认
+            this.confirmSinglePreview();
+        }
+
+        // 设置为确认状态
+        this.currentChoice = this.previewChoice;
         this.isPreviewMode = false;
         this.previewChoice = null;
 
+        // 更新状态为确认模式
+        this.updateSceneState({
+            status: 'confirmed',
+            selectedCount: Array.isArray(this.currentChoice) ? this.currentChoice.length : 1
+        });
+
         return true;
+    }
+
+    /**
+     * 确认单选预览
+     */
+    confirmSinglePreview() {
+        // 找到预览的选项并切换为确认状态
+        const previewElement = this.storyArea.querySelector('.story-choice.preview');
+        if (previewElement) {
+            previewElement.classList.remove('preview');
+            previewElement.classList.add('selected', 'confirmed');
+
+            // 更新插图显示
+            if (window.illustrationManager && this.previewChoice) {
+                const index = parseInt(previewElement.dataset.index);
+                window.illustrationManager.updateByChoice(this.previewChoice, index);
+            }
+        }
+    }
+
+    /**
+     * 确认多选预览
+     */
+    confirmMultiPreview() {
+        // 标记所有选中项为确认状态
+        const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+        selectedItems.forEach(item => {
+            item.classList.add('confirmed');
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'none'; // 确认后不可再修改
+        });
+
+        // 禁用未选中的项目
+        const unselectedItems = this.storyArea.querySelectorAll('.multi-choice-item:not(.selected)');
+        unselectedItems.forEach(item => {
+            item.style.opacity = '0.3';
+            item.style.pointerEvents = 'none';
+        });
+
+        // 隐藏重新选择按钮（确认后不可重新选择）
+        const resetBtn = document.getElementById('multiResetBtn');
+        if (resetBtn) {
+            resetBtn.style.display = 'none';
+        }
+
+        // 更新多选插图
+        if (window.illustrationManager && Array.isArray(this.previewChoice) && this.previewChoice.length > 0) {
+            window.illustrationManager.updateByMultiChoice(this.previewChoice);
+        }
     }
 
     /**
      * 继续到下一场景
      */
     proceedToNext() {
+        // 更新状态为转换中
+        this.updateSceneState({ status: 'transitioning' });
+
         // 如果处于预览模式，先确认预览选择
         if (this.isPreviewMode) {
             if (!this.confirmPreviewChoice()) {
+                // 确认失败，恢复状态
+                this.updateSceneState({ status: 'previewing' });
                 return;
             }
         }
 
+        // 静默处理，如果没有选择，直接返回
         if (!this.currentChoice) {
-            this.showNotice('请先做出选择');
+            // 恢复状态
+            this.updateSceneState({ status: 'ready' });
             return;
         }
 
@@ -642,46 +711,117 @@ class SceneManager {
                 this.loadScene(nextScene);
             }
         } else {
-            this.showNotice('场景加载失败');
+            // 静默处理场景加载失败
+            console.warn('场景加载失败:', this.currentChoice);
         }
     }
 
     /**
-     * 重置当前场景
+     * 重置当前场景 - 简化重置系统
      */
     resetScene() {
         if (!this.canReset) {
-            this.showNotice('本场景不可重置');
-            return;
+            return; // 静默处理，不可重置时直接返回
         }
 
         if (!this.lastSceneSnapshot) {
-            this.showNotice('没有可重置的内容');
-            return;
+            return; // 静默处理，没有快照时直接返回
         }
 
-        // 只能重置一次
+        console.log('重置场景开始 - 当前状态:', this.sceneState.status);
+
+        // 执行完全重置
+        this.performFullReset();
+
+        // 重置计数管理
         this.canReset = false;
 
-        // 清空插图选择
-        if (window.illustrationManager) {
-            // 重新设置场景插图
-            const illustrations = window.getSceneIllustrations ?
-                window.getSceneIllustrations(this.lastSceneSnapshot.id) :
-                this.lastSceneSnapshot.illustrations;
+        // 通知F2管理器重置状态变化
+        if (window.f2Manager) {
+            window.f2Manager.resetState();
+        }
 
-            if (illustrations) {
-                window.illustrationManager.setSceneIllustrations({
-                    ...this.lastSceneSnapshot,
-                    illustrations: illustrations
-                });
+        console.log('重置场景完成');
+    }
+
+    /**
+     * 执行完全重置
+     */
+    performFullReset() {
+        console.log('执行完全重置...');
+
+        // 清除所有状态
+        this.clearAllStates();
+
+        // 重新加载场景（使用快照）
+        this.loadScene(this.lastSceneSnapshot);
+
+        console.log('完全重置执行完毕');
+    }
+
+
+    /**
+     * 清除所有状态
+     */
+    clearAllStates() {
+        console.log('清除所有状态...');
+
+        // 清除选择状态
+        this.currentChoice = null;
+        this.previewChoice = null;
+        this.isPreviewMode = false;
+
+        // 重置状态系统
+        this.sceneState = {
+            status: 'loading',
+            choiceType: null,
+            selectedCount: 0,
+            minChoices: 0,
+            maxChoices: 0,
+            canProceed: false,
+            hasConflicts: false
+        };
+
+        // 清除插图
+        if (window.illustrationManager) {
+            window.illustrationManager.clear();
+        }
+
+        // 清除DOM中的选择状态
+        if (this.storyArea) {
+            // 清除单选状态
+            const singleChoices = this.storyArea.querySelectorAll('.story-choice');
+            singleChoices.forEach(choice => {
+                choice.classList.remove('preview', 'selected', 'confirmed');
+            });
+
+            // 清除多选状态
+            const multiChoices = this.storyArea.querySelectorAll('.multi-choice-item');
+            multiChoices.forEach(item => {
+                item.classList.remove('selected', 'confirmed');
+                item.style.opacity = '';
+                item.style.pointerEvents = '';
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+            });
+
+            // 重新显示多选确认按钮
+            const confirmBtn = document.getElementById('multiConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.style.display = 'block';
+                confirmBtn.disabled = true;
+            }
+
+            // 清除冲突警告
+            const warningArea = document.getElementById('conflictWarning');
+            if (warningArea) {
+                warningArea.style.display = 'none';
             }
         }
 
-        // 恢复场景
-        this.loadScene(this.lastSceneSnapshot);
-
-        this.showNotice('已重置到选择前');
+        console.log('所有状态已清除');
     }
 
     /**
@@ -835,6 +975,114 @@ class SceneManager {
         const noticeText = document.getElementById('noticeText');
         if (noticeText) {
             noticeText.textContent = `💡 ${message}`;
+        }
+    }
+
+    /**
+     * 更新场景状态系统
+     * @param {Object} updates - 要更新的状态属性
+     */
+    updateSceneState(updates = {}) {
+        // 合并状态更新
+        Object.assign(this.sceneState, updates);
+
+        // 根据场景类型自动检测状态
+        if (this.currentScene) {
+            // 检测选择类型
+            if (this.currentScene.multiChoice) {
+                this.sceneState.choiceType = 'multi';
+                this.sceneState.minChoices = this.currentScene.minChoices || 0;
+                this.sceneState.maxChoices = this.currentScene.maxChoices || this.currentScene.choices.length;
+            } else if (this.currentScene.choices && this.currentScene.choices.length > 0) {
+                this.sceneState.choiceType = 'single';
+                this.sceneState.minChoices = 1;
+                this.sceneState.maxChoices = 1;
+            } else {
+                this.sceneState.choiceType = 'text';
+                this.sceneState.minChoices = 0;
+                this.sceneState.maxChoices = 0;
+            }
+
+            // 计算当前选择数量
+            this.sceneState.selectedCount = this.getSelectedCount();
+
+            // 检测冲突状态
+            if (this.sceneState.choiceType === 'multi') {
+                const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+                const conflictResult = this.checkSmartConflicts(selectedItems);
+                this.sceneState.hasConflicts = conflictResult.hasConflict;
+            }
+        }
+
+        // 更新继续按钮状态
+        this.updateContinueButtonFromState();
+
+        // 调用状态变化回调
+        this.onSceneStateChange();
+    }
+
+    /**
+     * 获取当前选择数量
+     * @returns {number} 选择数量
+     */
+    getSelectedCount() {
+        if (this.sceneState.choiceType === 'single') {
+            return this.isPreviewMode || this.currentChoice ? 1 : 0;
+        } else if (this.sceneState.choiceType === 'multi') {
+            const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+            return selectedItems.length;
+        }
+        return 0;
+    }
+
+    /**
+     * 根据状态更新继续按钮
+     */
+    updateContinueButtonFromState() {
+        let canProceed = false;
+        let mode = 'disabled';
+
+        switch (this.sceneState.status) {
+            case 'ready':
+                if (this.sceneState.choiceType === 'text') {
+                    canProceed = true;
+                    mode = 'normal';
+                } else if (this.sceneState.choiceType === 'multi' && this.sceneState.selectedCount === 0) {
+                    canProceed = true;  // 多选允许0选择
+                    mode = 'normal';
+                }
+                break;
+
+            case 'previewing':
+                if (this.sceneState.selectedCount >= this.sceneState.minChoices &&
+                    this.sceneState.selectedCount <= this.sceneState.maxChoices &&
+                    !this.sceneState.hasConflicts) {
+                    canProceed = true;
+                    mode = 'preview';
+                }
+                break;
+
+            case 'confirmed':
+                canProceed = true;
+                mode = 'confirmed';
+                break;
+        }
+
+        this.sceneState.canProceed = canProceed;
+        this.updateContinueButton(canProceed, mode);
+    }
+
+    /**
+     * 状态变化回调
+     */
+    onSceneStateChange() {
+        // 可以在这里添加状态变化的副作用
+        // 例如：更新UI、触发动画、发送分析数据等
+        console.debug('Scene state updated:', this.sceneState);
+
+        // 更新F2管理器的状态指示
+        if (window.f2Manager) {
+            window.f2Manager.onSceneStateChange(this.sceneState);
         }
     }
 

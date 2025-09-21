@@ -311,16 +311,28 @@ class F2Manager {
      * 重置状态
      */
     resetState() {
+        console.log('F2Manager 重置状态...');
+
         this.resetCount = 0;
         this.continueEnabled = false;
-        this.updateContinueButton(false);
+
+        // 重置继续按钮状态
+        const continueBtn = document.getElementById('continueBtn');
+        if (continueBtn) {
+            this.resetContinueButtonStyles(continueBtn);
+            continueBtn.classList.add('disabled');
+            continueBtn.classList.remove('preview-ready', 'confirmed');
+            continueBtn.style.opacity = '0.5';
+        }
 
         // 重置提示文本
         const resetHint = document.getElementById('resetHint');
         if (resetHint) {
-            resetHint.textContent = '本回合可重置';
+            resetHint.textContent = '可重置';
             resetHint.style.color = '#94a3b8';
         }
+
+        console.log('F2Manager 状态已重置');
     }
 
     /**
@@ -504,6 +516,83 @@ class F2Manager {
         if (window.sceneManager) {
             window.sceneManager.endAIDialogue();
         }
+    }
+
+    /**
+     * 响应场景状态变化
+     * @param {Object} sceneState - 场景状态对象
+     */
+    onSceneStateChange(sceneState) {
+        // 根据场景状态更新F2区域的UI
+        const continueBtn = document.getElementById('continueBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        if (!continueBtn || !resetBtn) return;
+
+        // 先清除所有内联样式，让CSS类生效
+        this.resetContinueButtonStyles(continueBtn);
+
+        // 根据状态更新按钮样式和行为
+        switch (sceneState.status) {
+            case 'loading':
+                continueBtn.classList.add('disabled');
+                continueBtn.classList.remove('preview-ready', 'confirmed');
+                continueBtn.style.opacity = '0.3';
+                resetBtn.style.opacity = '0.3';
+                break;
+
+            case 'ready':
+                continueBtn.classList.remove('preview-ready', 'confirmed');
+                if (sceneState.choiceType === 'text' ||
+                   (sceneState.choiceType === 'multi' && sceneState.selectedCount === 0)) {
+                    continueBtn.classList.remove('disabled');
+                    continueBtn.style.opacity = '1';
+                } else {
+                    continueBtn.classList.add('disabled');
+                    continueBtn.style.opacity = '0.5';
+                }
+                resetBtn.style.opacity = '1';
+                break;
+
+            case 'previewing':
+                continueBtn.classList.remove('confirmed');
+                if (sceneState.canProceed) {
+                    continueBtn.classList.remove('disabled');
+                    continueBtn.classList.add('preview-ready');
+                    continueBtn.style.opacity = '1';
+                } else {
+                    continueBtn.classList.add('disabled');
+                    continueBtn.classList.remove('preview-ready');
+                    continueBtn.style.opacity = '0.5';
+                }
+                break;
+
+            case 'confirmed':
+                continueBtn.classList.remove('disabled', 'preview-ready');
+                continueBtn.classList.add('confirmed');
+                continueBtn.style.opacity = '1';
+                break;
+
+            case 'transitioning':
+                continueBtn.classList.add('disabled');
+                continueBtn.classList.remove('preview-ready', 'confirmed');
+                continueBtn.style.opacity = '0.3';
+                resetBtn.style.opacity = '0.3';
+                break;
+        }
+
+        // 调试日志
+        console.debug('F2Manager state updated:', sceneState);
+    }
+
+    /**
+     * 重置继续按钮的内联样式
+     */
+    resetContinueButtonStyles(continueBtn) {
+        // 清除可能影响样式的内联属性
+        continueBtn.style.background = '';
+        continueBtn.style.transform = '';
+        continueBtn.style.boxShadow = '';
     }
 }
 
