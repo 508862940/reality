@@ -107,6 +107,10 @@ class F2Manager {
                         <span class="quick-icon">⚡</span>
                         <span class="quick-text">自动模式</span>
                     </button>
+                    <button class="quick-menu-item" data-action="testAdvanceTime">
+                        <span class="quick-icon">⏰</span>
+                        <span class="quick-text">+30分钟</span>
+                    </button>
                 </div>
             </div>
         `;
@@ -443,6 +447,23 @@ class F2Manager {
     toggleAutoMode() {
         // TODO: 实现自动模式
         this.showTip('自动模式开发中');
+        this.closeQuickMenu();
+    }
+
+    /**
+     * 时间测试：推进30分钟
+     */
+    testAdvanceTime() {
+        if (window.timeSystem) {
+            window.timeSystem.advanceTime(30);
+            // 更新时间显示
+            if (window.updateLocationTime) {
+                window.updateLocationTime();
+            }
+            this.showTip('时间推进 +30分钟');
+        } else {
+            this.showTip('时间系统未加载');
+        }
         this.closeQuickMenu();
     }
 

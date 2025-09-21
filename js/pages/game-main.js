@@ -322,16 +322,6 @@ function setupEventListeners() {
         });
     }
 
-    // 时间测试按钮
-    const testTimeBtn = document.getElementById('testTimeBtn');
-    if (testTimeBtn) {
-        testTimeBtn.addEventListener('click', function() {
-            if (window.timeSystem) {
-                window.timeSystem.advanceTime(30);
-                updateLocationTime();
-            }
-        });
-    }
 }
 
 // 开始游戏
