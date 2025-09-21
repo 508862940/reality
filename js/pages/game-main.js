@@ -129,20 +129,26 @@ function updateLocationTime() {
 
     document.getElementById('currentLocation').textContent = locationNames[location] || location;
 
-    // 更新时间
-    const time = gameState.gameTime;
-    const weekdays = {
-        'Monday': '星期一',
-        'Tuesday': '星期二',
-        'Wednesday': '星期三',
-        'Thursday': '星期四',
-        'Friday': '星期五',
-        'Saturday': '星期六',
-        'Sunday': '星期日'
-    };
+    // 更新时间（使用TimeSystem）
+    if (window.timeSystem) {
+        const timeStr = window.timeSystem.formatTime('icon');
+        document.getElementById('currentTime').textContent = timeStr;
+    } else {
+        // 备用方案：使用旧的时间系统
+        const time = gameState.gameTime;
+        const weekdays = {
+            'Monday': '星期一',
+            'Tuesday': '星期二',
+            'Wednesday': '星期三',
+            'Thursday': '星期四',
+            'Friday': '星期五',
+            'Saturday': '星期六',
+            'Sunday': '星期日'
+        };
 
-    const timeStr = `${weekdays[time.weekday] || time.weekday} ${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
-    document.getElementById('currentTime').textContent = timeStr;
+        const timeStr = `${weekdays[time.weekday] || time.weekday} ${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+        document.getElementById('currentTime').textContent = timeStr;
+    }
 
     // 更新场景
     updateScenePreview(location);
@@ -312,6 +318,17 @@ function setupEventListeners() {
         aiInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendAIMessage();
+            }
+        });
+    }
+
+    // 时间测试按钮
+    const testTimeBtn = document.getElementById('testTimeBtn');
+    if (testTimeBtn) {
+        testTimeBtn.addEventListener('click', function() {
+            if (window.timeSystem) {
+                window.timeSystem.advanceTime(30);
+                updateLocationTime();
             }
         });
     }

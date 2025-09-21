@@ -394,6 +394,8 @@ class SceneManager {
      * 更新多选预览
      */
     updateMultiChoicePreview() {
+        console.log('📝 小纸条：更新多选预览开始');
+
         // 获取当前选中的所有项目
         const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
         const selectedChoices = [];
@@ -405,35 +407,40 @@ class SceneManager {
             }
         });
 
+        console.log(`📝 小纸条：多选发现 ${selectedChoices.length} 个选择`);
+
+        // 统一状态更新：避免重复调用
+        const newState = {
+            selectedCount: selectedChoices.length
+        };
+
         // 如果有选择，进入预览模式
         if (selectedChoices.length > 0) {
+            console.log('📝 小纸条：多选进入预览模式');
             this.previewChoice = selectedChoices;
             this.isPreviewMode = true;
 
-            // 更新状态为预览模式
-            this.updateSceneState({
-                status: 'previewing',
-                selectedCount: selectedChoices.length
-            });
+            newState.status = 'previewing';
 
             // 渐进式插图预览（可选：显示合并效果）
             if (window.illustrationManager) {
                 window.illustrationManager.updateByMultiChoice(selectedChoices);
             }
         } else {
+            console.log('📝 小纸条：多选无选择，回到就绪状态');
             // 没有选择时清除预览
             this.previewChoice = null;
             this.isPreviewMode = false;
 
-            this.updateSceneState({
-                status: 'ready',
-                selectedCount: 0
-            });
+            newState.status = 'ready';
 
             if (window.illustrationManager) {
                 window.illustrationManager.clear();
             }
         }
+
+        // 一次性状态更新，避免多次回调
+        this.updateSceneState(newState);
     }
 
     /**
@@ -700,6 +707,10 @@ class SceneManager {
             choice: this.currentChoice
         });
 
+        // 📝 小纸条：应用选择结果到游戏状态
+        console.log('📝 小纸条：准备应用选择结果到游戏状态');
+        this.applyChoiceResults(this.currentChoice, this.currentScene);
+
         // 获取下一场景
         const nextScene = this.getNextScene(this.currentChoice);
 
@@ -720,28 +731,35 @@ class SceneManager {
      * 重置当前场景 - 简化重置系统
      */
     resetScene() {
+        console.log('📝 小纸条：重置按钮被点击了！');
+
         if (!this.canReset) {
+            console.log('❌ 小纸条：不能重置，canReset =', this.canReset);
             return; // 静默处理，不可重置时直接返回
         }
 
         if (!this.lastSceneSnapshot) {
+            console.log('❌ 小纸条：没有场景快照，无法重置');
             return; // 静默处理，没有快照时直接返回
         }
 
-        console.log('重置场景开始 - 当前状态:', this.sceneState.status);
+        console.log('📝 小纸条：重置开始 - 当前状态:', this.sceneState.status);
+        console.log('📝 小纸条：重置开始 - 当前选择:', this.currentChoice);
 
         // 执行完全重置
         this.performFullReset();
 
         // 重置计数管理
         this.canReset = false;
+        console.log('📝 小纸条：重置计数已设为false，下次不能再重置');
 
         // 通知F2管理器重置状态变化
         if (window.f2Manager) {
+            console.log('📝 小纸条：通知F2Manager重置状态');
             window.f2Manager.resetState();
         }
 
-        console.log('重置场景完成');
+        console.log('✅ 小纸条：重置场景完成');
     }
 
     /**
@@ -983,10 +1001,21 @@ class SceneManager {
      * @param {Object} updates - 要更新的状态属性
      */
     updateSceneState(updates = {}) {
+        const oldStatus = this.sceneState.status;
+        const oldSelectedCount = this.sceneState.selectedCount;
+
         // 合并状态更新
         Object.assign(this.sceneState, updates);
 
-        // 根据场景类型自动检测状态
+        // 📝 小纸条：状态变化了
+        if (oldStatus !== this.sceneState.status) {
+            console.log(`📝 小纸条：场景状态变化 ${oldStatus} → ${this.sceneState.status}`);
+        }
+        if (updates.selectedCount !== undefined) {
+            console.log(`📝 小纸条：选择数量变化 → ${this.sceneState.selectedCount}`);
+        }
+
+        // 根据场景类型自动检测状态（仅在没有明确传值时）
         if (this.currentScene) {
             // 检测选择类型
             if (this.currentScene.multiChoice) {
@@ -1003,11 +1032,13 @@ class SceneManager {
                 this.sceneState.maxChoices = 0;
             }
 
-            // 计算当前选择数量
-            this.sceneState.selectedCount = this.getSelectedCount();
+            // 只在没有明确传递selectedCount时才重新计算
+            if (!updates.hasOwnProperty('selectedCount')) {
+                this.sceneState.selectedCount = this.getSelectedCount();
+            }
 
             // 检测冲突状态
-            if (this.sceneState.choiceType === 'multi') {
+            if (this.sceneState.choiceType === 'multi' && this.storyArea) {
                 const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
                 const conflictResult = this.checkSmartConflicts(selectedItems);
                 this.sceneState.hasConflicts = conflictResult.hasConflict;
@@ -1017,8 +1048,10 @@ class SceneManager {
         // 更新继续按钮状态
         this.updateContinueButtonFromState();
 
-        // 调用状态变化回调
-        this.onSceneStateChange();
+        // 调用状态变化回调（防止循环调用）
+        if (oldStatus !== this.sceneState.status || oldSelectedCount !== this.sceneState.selectedCount) {
+            this.onSceneStateChange();
+        }
     }
 
     /**
@@ -1193,6 +1226,89 @@ class SceneManager {
                     message: '场景未加载',
                     mode: 'disabled'
                 };
+        }
+    }
+
+    /**
+     * 应用选择结果到游戏状态
+     * @param {Object} choice - 选择对象
+     * @param {Object} scene - 当前场景
+     */
+    applyChoiceResults(choice, scene) {
+        console.log('📝 小纸条：开始应用选择结果', choice);
+
+        try {
+            // 处理属性变化效果
+            if (choice.effect) {
+                this.applyEffects(choice.effect);
+            }
+
+            // 处理时间消耗
+            if (choice.timeCost) {
+                this.updateGameTime(choice.timeCost);
+            }
+
+            // 处理物品获得/失去
+            if (choice.items) {
+                this.updateInventory(choice.items);
+            }
+
+            // 处理技能变化
+            if (choice.skills) {
+                this.updateSkills(choice.skills);
+            }
+
+            console.log('✅ 小纸条：选择结果应用完成');
+        } catch (error) {
+            console.error('❌ 应用选择结果时出错:', error);
+        }
+    }
+
+    /**
+     * 应用属性效果
+     * @param {Object} effects - 效果对象
+     */
+    applyEffects(effects) {
+        console.log('应用属性效果:', effects);
+        // 这里可以调用游戏引擎的属性更新方法
+        if (window.gameEngine && window.gameEngine.updateStats) {
+            window.gameEngine.updateStats(effects);
+        }
+    }
+
+    /**
+     * 更新游戏时间
+     * @param {number} minutes - 消耗的分钟数
+     */
+    updateGameTime(minutes) {
+        console.log(`时间流逝 ${minutes} 分钟`);
+        // 这里可以调用时间系统的更新方法
+        if (window.timeSystem && window.timeSystem.advance) {
+            window.timeSystem.advance(minutes);
+        }
+    }
+
+    /**
+     * 更新背包
+     * @param {Array} items - 物品变化数组
+     */
+    updateInventory(items) {
+        console.log('更新背包:', items);
+        // 这里可以调用背包系统的更新方法
+        if (window.inventorySystem && window.inventorySystem.updateItems) {
+            window.inventorySystem.updateItems(items);
+        }
+    }
+
+    /**
+     * 更新技能
+     * @param {Object} skills - 技能变化对象
+     */
+    updateSkills(skills) {
+        console.log('更新技能:', skills);
+        // 这里可以调用技能系统的更新方法
+        if (window.skillSystem && window.skillSystem.updateSkills) {
+            window.skillSystem.updateSkills(skills);
         }
     }
 

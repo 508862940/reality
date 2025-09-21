@@ -523,18 +523,30 @@ class F2Manager {
      * @param {Object} sceneState - 场景状态对象
      */
     onSceneStateChange(sceneState) {
+        // 📝 小纸条：场景状态变化了
+        console.log('📝 小纸条：F2Manager收到状态变化通知');
+        console.log('   当前状态:', sceneState.status);
+        console.log('   选择类型:', sceneState.choiceType);
+        console.log('   已选数量:', sceneState.selectedCount);
+        console.log('   能否继续:', sceneState.canProceed);
+
         // 根据场景状态更新F2区域的UI
         const continueBtn = document.getElementById('continueBtn');
         const resetBtn = document.getElementById('resetBtn');
 
-        if (!continueBtn || !resetBtn) return;
+        if (!continueBtn || !resetBtn) {
+            console.log('❌ 小纸条：找不到继续按钮或重置按钮！');
+            return;
+        }
 
         // 先清除所有内联样式，让CSS类生效
         this.resetContinueButtonStyles(continueBtn);
+        console.log('🧹 小纸条：已清除按钮内联样式');
 
         // 根据状态更新按钮样式和行为
         switch (sceneState.status) {
             case 'loading':
+                console.log('⏳ 小纸条：按钮设置为加载状态（灰色禁用）');
                 continueBtn.classList.add('disabled');
                 continueBtn.classList.remove('preview-ready', 'confirmed');
                 continueBtn.style.opacity = '0.3';
@@ -542,12 +554,15 @@ class F2Manager {
                 break;
 
             case 'ready':
+                console.log('✅ 小纸条：按钮设置为就绪状态');
                 continueBtn.classList.remove('preview-ready', 'confirmed');
                 if (sceneState.choiceType === 'text' ||
                    (sceneState.choiceType === 'multi' && sceneState.selectedCount === 0)) {
+                    console.log('   → 文本场景或0选择多选，按钮可用（正常色）');
                     continueBtn.classList.remove('disabled');
                     continueBtn.style.opacity = '1';
                 } else {
+                    console.log('   → 需要选择的场景，按钮禁用（灰色）');
                     continueBtn.classList.add('disabled');
                     continueBtn.style.opacity = '0.5';
                 }
@@ -555,12 +570,15 @@ class F2Manager {
                 break;
 
             case 'previewing':
+                console.log('👀 小纸条：按钮设置为预览状态');
                 continueBtn.classList.remove('confirmed');
                 if (sceneState.canProceed) {
+                    console.log('   → 预览可继续，按钮变蓝色（preview-ready）');
                     continueBtn.classList.remove('disabled');
                     continueBtn.classList.add('preview-ready');
                     continueBtn.style.opacity = '1';
                 } else {
+                    console.log('   → 预览不可继续，按钮保持灰色');
                     continueBtn.classList.add('disabled');
                     continueBtn.classList.remove('preview-ready');
                     continueBtn.style.opacity = '0.5';
@@ -568,12 +586,14 @@ class F2Manager {
                 break;
 
             case 'confirmed':
+                console.log('🎯 小纸条：按钮设置为确认状态（绿色）');
                 continueBtn.classList.remove('disabled', 'preview-ready');
                 continueBtn.classList.add('confirmed');
                 continueBtn.style.opacity = '1';
                 break;
 
             case 'transitioning':
+                console.log('🔄 小纸条：按钮设置为转换状态（禁用）');
                 continueBtn.classList.add('disabled');
                 continueBtn.classList.remove('preview-ready', 'confirmed');
                 continueBtn.style.opacity = '0.3';

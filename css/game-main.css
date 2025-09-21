@@ -135,6 +135,23 @@ body {
     font-size: 14px;
 }
 
+/* 临时测试按钮样式 */
+.test-time-button {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 2px 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    color: #e4e4e7;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.test-time-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 /* C区 - 景色预览 */
 .area-c {
     height: 60px;
@@ -976,25 +993,39 @@ body {
     transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
+/* 紫色呼吸动画 - 保持发光强度变化 */
 @keyframes subtle-ready-pulse {
     0%, 100% {
         box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+        transform: scale(1);
     }
     50% {
-        box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+        box-shadow: 0 0 16px rgba(139, 92, 246, 0.7);
+        transform: scale(1.02);
     }
 }
 
 /* PWA模式下继续按钮增强效果 */
 @media (display-mode: standalone) {
     .control-btn.preview-ready {
-        box-shadow: 0 0 12px rgba(139, 92, 246, 0.5) !important;
-        transform: translateY(-1px) !important;  /* PWA模式轻微上浮 */
+        /* 移除固定transform，让动画正常播放 */
     }
 
     .control-btn.confirmed {
         box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4) !important;
         transform: translateY(-2px) !important;  /* PWA模式更明显上浮 */
+    }
+
+    /* PWA模式下的呼吸动画增强版 */
+    @keyframes subtle-ready-pulse {
+        0%, 100% {
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1px) scale(1);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+            transform: translateY(-0.5px) scale(1.03);
+        }
     }
 }
 
@@ -1014,16 +1045,6 @@ body {
     }
 }
 
-@keyframes subtle-ready-pulse {
-        0%, 100% {
-            box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
-            transform: translateY(-1px);
-        }
-        50% {
-            box-shadow: 0 0 18px rgba(139, 92, 246, 0.7);
-            transform: translateY(-0.5px);
-        }
-    }
 
     /* PWA模式下增加更多间距防止误触 */
     .scene-control-area {
