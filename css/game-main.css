@@ -129,10 +129,23 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.time-info {
+    min-width: fit-content;
 }
 
 .location-icon, .time-icon {
     font-size: 14px;
+}
+
+/* 确保时间文本不换行 */
+#currentTime, #currentLocation {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* 临时测试按钮样式 */
@@ -146,6 +159,7 @@ body {
     color: #e4e4e7;
     cursor: pointer;
     transition: background 0.2s;
+    flex-shrink: 0;
 }
 
 .test-time-button:hover {
