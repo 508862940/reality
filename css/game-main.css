@@ -1196,6 +1196,37 @@ body {
     text-align: center;
 }
 
+/* 多选按钮区域 */
+.multi-choice-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: center;
+}
+
+.multi-choice-reset {
+    background: linear-gradient(135deg, #6b7280, #9ca3af);
+    border: none;
+    border-radius: 20px;
+    padding: 10px 20px;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.multi-choice-reset:hover {
+    background: linear-gradient(135deg, #9ca3af, #d1d5db);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.multi-choice-reset:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
 /* ==================== 插图系统样式 ==================== */
 .illustration-container {
     display: none;

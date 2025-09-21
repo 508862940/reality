@@ -142,11 +142,16 @@ class SceneManager {
                     `;
                 });
 
-                // 多选确认按钮
+                // 多选确认按钮区域
                 html += `
-                    <button class="multi-choice-confirm" id="multiConfirmBtn" onclick="sceneManager.confirmMultiChoice()" disabled>
-                        ✓ 确认选择
-                    </button>
+                    <div class="multi-choice-buttons">
+                        <button class="multi-choice-confirm" id="multiConfirmBtn" onclick="sceneManager.confirmMultiChoice()" disabled>
+                            ✓ 确认选择
+                        </button>
+                        <button class="multi-choice-reset" id="multiResetBtn" onclick="sceneManager.resetMultiChoice()" title="重新选择">
+                            🔄 重新选择
+                        </button>
+                    </div>
                 `;
 
                 html += '</div>'; // 关闭multi-choice-container
@@ -382,6 +387,45 @@ class SceneManager {
                 item.style.pointerEvents = 'auto';
             });
         }
+    }
+
+    /**
+     * 重新选择多选项
+     */
+    resetMultiChoice() {
+        // 清除所有选择
+        const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+        selectedItems.forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            item.classList.remove('selected');
+        });
+
+        // 恢复所有选项可用状态
+        const allItems = this.storyArea.querySelectorAll('.multi-choice-item');
+        allItems.forEach(item => {
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'auto';
+        });
+
+        // 隐藏冲突警告
+        const warningArea = document.getElementById('conflictWarning');
+        if (warningArea) {
+            warningArea.style.display = 'none';
+        }
+
+        // 重置插图
+        if (window.illustrationManager) {
+            window.illustrationManager.clearIllustrations();
+        }
+
+        // 更新按钮状态
+        this.updateMultiChoiceState();
+
+        // 显示提示
+        this.showNotice('已清除选择，可以重新选择啦 (◕‿◕)');
     }
 
     /**
