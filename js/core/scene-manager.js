@@ -285,6 +285,48 @@ class SceneManager {
     }
 
     /**
+     * 显示冲突警告
+     * @param {Object} conflictResult - 冲突检测结果
+     */
+    showConflictWarning(conflictResult) {
+        // 获取或创建警告区域
+        let warningArea = document.getElementById('conflictWarning');
+
+        if (!warningArea) {
+            // 创建警告区域元素
+            warningArea = document.createElement('div');
+            warningArea.id = 'conflictWarning';
+            warningArea.className = 'conflict-warning';
+
+            // 插入到多选容器中
+            const multiChoiceContainer = this.storyArea.querySelector('.multi-choice-container');
+            if (multiChoiceContainer) {
+                multiChoiceContainer.appendChild(warningArea);
+            }
+        }
+
+        if (conflictResult.hasConflict) {
+            // 显示警告
+            warningArea.textContent = `⚠️ ${conflictResult.message}`;
+            warningArea.style.display = 'block';
+            warningArea.style.cssText = `
+                display: block;
+                background: rgba(239, 68, 68, 0.1);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                border-radius: 6px;
+                padding: 10px;
+                margin: 10px 0;
+                color: #fbbf24;
+                font-size: 12px;
+                animation: shake 0.5s ease-in-out;
+            `;
+        } else {
+            // 隐藏警告
+            warningArea.style.display = 'none';
+        }
+    }
+
+    /**
      * 更新多选状态
      */
     updateMultiChoiceState() {

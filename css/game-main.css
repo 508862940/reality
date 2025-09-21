@@ -1176,6 +1176,26 @@ body {
     }
 }
 
+/* 冲突警告震动动画 */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* 冲突警告样式 */
+.conflict-warning {
+    display: none;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 10px;
+    margin: 10px 0;
+    color: #fbbf24;
+    font-size: 12px;
+    text-align: center;
+}
+
 /* ==================== 插图系统样式 ==================== */
 .illustration-container {
     display: none;
