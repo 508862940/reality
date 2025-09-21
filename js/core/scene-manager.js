@@ -231,9 +231,12 @@ class SceneManager {
         // 标记为预览状态（触感式效果）
         element.classList.add('preview');
 
-        // 记录预览选择
+        // 记录预览选择（包含索引信息）
         const index = parseInt(element.dataset.index);
-        this.previewChoice = this.currentScene.choices[index];
+        this.previewChoice = {
+            ...this.currentScene.choices[index],
+            index: index  // 保存索引以便后续使用
+        };
         this.isPreviewMode = true;
 
         // 暂不更新插图（预留接口，放大镜点击时再显示）
@@ -244,6 +247,41 @@ class SceneManager {
         // 更新继续按钮状态（预览可用）
         const checkResult = this.canProceedToNext();
         this.updateContinueButton(checkResult.canProceed, checkResult.mode);
+    }
+
+    /**
+     * 检查智能冲突
+     * @param {NodeList} selectedItems - 选中的项目
+     * @returns {Object} 冲突检测结果
+     */
+    checkSmartConflicts(selectedItems) {
+        // 如果场景没有定义冲突规则，返回无冲突
+        if (!this.currentScene.conflicts) {
+            return { hasConflict: false, message: '' };
+        }
+
+        // 获取选中项的索引
+        const selectedIndices = Array.from(selectedItems).map(item =>
+            parseInt(item.dataset.index)
+        );
+
+        // 检查每个冲突规则
+        for (const conflict of this.currentScene.conflicts) {
+            // 检查是否同时选中了冲突的选项
+            const conflictingIndices = conflict.indices || [];
+            const selectedConflicting = conflictingIndices.filter(idx =>
+                selectedIndices.includes(idx)
+            );
+
+            if (selectedConflicting.length > 1) {
+                return {
+                    hasConflict: true,
+                    message: conflict.message || '这些选项不能同时选择'
+                };
+            }
+        }
+
+        return { hasConflict: false, message: '' };
     }
 
     /**
@@ -393,6 +431,46 @@ class SceneManager {
                 window.illustrationManager.updateByMultiChoice(this.currentChoice);
             }
         }
+
+        return true;
+    }
+
+    /**
+     * 确认预览选择
+     * @returns {boolean} 是否成功确认
+     */
+    confirmPreviewChoice() {
+        if (!this.isPreviewMode) {
+            return true; // 非预览模式直接返回true
+        }
+
+        if (!this.previewChoice) {
+            this.showNotice('没有预览选择');
+            return false;
+        }
+
+        // 单选情况：将预览选择转为正式选择
+        if (!Array.isArray(this.previewChoice)) {
+            // 更新视觉状态：从preview变为selected
+            this.storyArea.querySelectorAll('.story-choice').forEach(choice => {
+                choice.classList.remove('preview');
+                if (choice.dataset.index == this.previewChoice.index ||
+                    choice.textContent.includes(this.previewChoice.text)) {
+                    choice.classList.add('selected');
+                }
+            });
+
+            // 设置当前选择
+            this.currentChoice = this.previewChoice;
+        }
+        // 多选情况
+        else {
+            this.currentChoice = this.previewChoice;
+        }
+
+        // 退出预览模式
+        this.isPreviewMode = false;
+        this.previewChoice = null;
 
         return true;
     }
