@@ -421,11 +421,23 @@ class SceneManager {
             window.illustrationManager.clear();
         }
 
+        // 清除预览状态
+        this.previewChoice = null;
+        this.isPreviewMode = false;
+        this.currentChoice = null;
+
+        // 重新显示确认按钮
+        const confirmBtn = document.getElementById('multiConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.style.display = 'block';
+            confirmBtn.disabled = true; // 初始禁用，等待重新选择
+        }
+
         // 更新按钮状态
         this.updateMultiChoiceState();
 
         // 显示提示
-        this.showNotice('已清除选择，可以重新选择啦 (◕‿◕)');
+        this.showNotice('已清除选择，可以重新选择啦 (◕‿◡)');
     }
 
     /**
