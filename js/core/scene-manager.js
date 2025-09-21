@@ -418,7 +418,7 @@ class SceneManager {
 
         // 重置插图
         if (window.illustrationManager) {
-            window.illustrationManager.clearIllustrations();
+            window.illustrationManager.clear();
         }
 
         // 更新按钮状态
