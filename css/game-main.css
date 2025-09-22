@@ -68,7 +68,7 @@ body {
 
 /* 上部主要内容区 */
 .upper-main {
-    flex: 1;
+    height: calc(100% - 30px); /* 减去E区30px的高度 */
     display: flex;
     padding: 10px;
     gap: 10px;
