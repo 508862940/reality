@@ -68,7 +68,8 @@ body {
 
 /* 上部主要内容区 */
 .upper-main {
-    height: calc(100% - 30px); /* 减去E区30px的高度 */
+    flex: 1;
+    min-height: 0; /* 防止flex子元素溢出 */
     display: flex;
     padding: 10px;
     gap: 10px;
@@ -332,6 +333,8 @@ body {
 /* E区 - 提醒区域 */
 .area-e {
     height: 30px;
+    min-height: 30px; /* 确保不被压缩 */
+    flex-shrink: 0; /* 防止被压缩 */
     background: rgba(239, 68, 68, 0.1);
     border-top: 1px solid rgba(239, 68, 68, 0.3);
     display: flex;
