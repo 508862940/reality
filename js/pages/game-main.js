@@ -724,11 +724,15 @@ function deactivateAIMode() {
     // }
 }
 
-// 保存游戏状态
+// 保存游戏状态（用于自动保存）
 async function saveGameState() {
     try {
-        // 优先保存到IndexedDB
-        if (window.Database && window.Database.db) {
+        // 使用新的SaveSystem进行自动存档
+        if (window.saveSystem) {
+            await window.saveSystem.autoSave();
+            console.log('✅ 自动存档完成');
+        } else if (window.Database && window.Database.db) {
+            // 降级到旧的数据库方法
             await window.Database.saveGameState(gameState);
             console.log('✅ 游戏状态已保存到IndexedDB');
         } else {
@@ -826,22 +830,20 @@ async function confirmReturnToMenu() {
 // 快速存档
 async function quickSave() {
     try {
-        // 使用时间戳作为存档ID
-        const saveId = `save_${Date.now()}`;
-        const saveData = {
-            id: saveId,
-            name: `快速存档 - ${new Date().toLocaleString('zh-CN')}`,
-            ...gameState,
-            timestamp: Date.now(),
-            location: gameState.character.location || 'unknown',
-            playTime: '00:00' // 后续可以实现游戏时长统计
-        };
-
-        // 保存到IndexedDB
-        if (window.Database && window.Database.db) {
-            await window.Database.db.gameState.put(saveData);
+        // 使用新的SaveSystem进行快速存档
+        if (window.saveSystem) {
+            const saveData = await window.saveSystem.quickSave();
             showNotification('⚡ 快速存档成功！');
+            console.log('✅ 快速存档完成:', saveData.id);
         } else {
+            // 降级到旧方法
+            const saveId = `save_${Date.now()}`;
+            const saveData = {
+                id: saveId,
+                name: `快速存档 - ${new Date().toLocaleString('zh-CN')}`,
+                ...gameState,
+                timestamp: Date.now()
+            };
             localStorage.setItem(saveId, JSON.stringify(saveData));
             showNotification('⚡ 快速存档成功（本地）！');
         }
@@ -919,7 +921,7 @@ async function loadSavesList() {
 }
 
 // 读取存档
-async function loadSave(saveId) {
+async function loadSaveGame(saveId) {
     try {
         let saveData;
 
@@ -956,7 +958,7 @@ async function loadSave(saveId) {
 }
 
 // 删除存档
-async function deleteSave(saveId) {
+async function deleteSaveGame(saveId) {
     if (!confirm('确定要删除这个存档吗？')) return;
 
     try {
@@ -998,6 +1000,6 @@ function showNotification(message, type = 'success') {
 window.quickSave = quickSave;
 window.showSaveLoadDialog = showSaveLoadDialog;
 window.hideSaveLoadDialog = hideSaveLoadDialog;
-window.loadSave = loadSave;
-window.deleteSave = deleteSave;
+window.loadSaveGame = loadSaveGame;
+window.deleteSaveGame = deleteSaveGame;
 window.loadSavesList = loadSavesList;

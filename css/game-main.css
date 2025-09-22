@@ -59,7 +59,7 @@ body {
 
 /* 上半部分容器 */
 .upper-section {
-    height: 45vh;
+    height: 50vh; /* 从45vh增加到50vh，给ABCD更多空间 */
     display: flex;
     flex-direction: column;
     background: linear-gradient(to bottom, #2d3561, #1a1a2e);
@@ -155,7 +155,7 @@ body {
 
 /* C区 - 景色预览 */
 .area-c {
-    height: 60px;
+    height: 80px; /* 增加到80px，为像素画场景预留更多空间 */
     background: linear-gradient(to right, #4a5568, #2d3748);
     border-radius: 8px;
     display: flex;

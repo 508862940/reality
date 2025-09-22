@@ -5,12 +5,23 @@ const Database = {
     // 初始化数据库
     init() {
         this.db = new Dexie('realityGameDB');
+
+        // 版本1：初始结构
         this.db.version(1).stores({
             gameState: '&id',           // 游戏状态
             apiConfig: '&id',           // API配置
             characterData: '&id',       // 角色数据
             saveSlots: '&id, timestamp' // 存档槽位
         });
+
+        // 版本2：改进的存档表结构
+        this.db.version(2).stores({
+            gameState: '&id',           // 游戏状态（当前进度）
+            apiConfig: '&id',           // API配置
+            characterData: '&id',       // 角色数据
+            saveSlots: '&id, type, slot, timestamp' // 存档槽位（增加type和slot索引）
+        });
+
         return this.db;
     },
 

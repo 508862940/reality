@@ -298,3 +298,109 @@
 - 90% 脚本型NPC（背景人物）
 - 8% 功能型NPC（商店、任务等）
 - 2% API驱动NPC（重要角色，深度对话）
+
+## 💾 存档系统设计方案
+
+### 存档类型（三层结构）
+1. **自动存档 (Auto Save)**
+   - 每5分钟自动保存
+   - 切换场景时自动保存
+   - 只保留最新的1个
+   - 存储位置：`type: 'auto'`
+
+2. **快速存档 (Quick Save)**
+   - F5键或快捷按钮一键保存
+   - 保留最近3个快速存档
+   - 循环覆盖最旧的
+   - 存储位置：`type: 'quick', slot: 0-2`
+
+3. **手动存档 (Manual Save)**
+   - 10个存档槽位
+   - 可命名、可覆盖
+   - 显示截图、时间、进度
+   - 存储位置：`type: 'manual', slot: 0-9`
+
+### 数据库结构
+```javascript
+// IndexedDB 数据库设计
+db.stores({
+    gameState: 'id',                        // 当前游戏状态
+    saves: '++id, type, slot, timestamp',   // 存档数据表
+    apiConfig: 'service',                   // API配置
+    settings: 'key'                         // 游戏设置
+});
+```
+
+### 存档数据格式
+```javascript
+{
+    id: auto_increment,           // 自增ID
+    type: 'auto/quick/manual',    // 存档类型
+    slot: 0-9,                    // 槽位号
+    name: '存档名称',              // 用户定义的名称
+    timestamp: Date.now(),         // 保存时间戳
+
+    // 游戏数据
+    gameData: {
+        character: {},             // 角色数据
+        gameTime: {},              // 游戏时间
+        location: '',              // 当前位置
+        scene: '',                 // 当前场景
+        chapter: 1,                // 章节进度
+        playTime: 0,               // 游戏时长(秒)
+        // ... 其他游戏数据
+    },
+
+    // 元数据
+    metadata: {
+        version: '1.0.0',          // 游戏版本
+        screenshot: '',            // Base64截图(可选)
+        description: ''            // 存档描述
+    }
+}
+```
+
+### 存档系统API
+```javascript
+// js/core/save-system.js
+class SaveSystem {
+    // 基础功能
+    async createSave(type, slot, name)    // 创建存档
+    async loadSave(saveId)                // 读取存档
+    async deleteSave(saveId)              // 删除存档
+    async getSavesList(type)              // 获取存档列表
+
+    // 快捷功能
+    async quickSave()                     // 快速存档
+    async autoSave()                      // 自动存档
+
+    // 高级功能
+    async exportSave(saveId)              // 导出存档为JSON
+    async importSave(file)                // 从文件导入存档
+    async exportAllSaves()                // 导出所有存档
+
+    // 工具功能
+    validateSaveData(data)                // 验证存档格式
+    getSaveInfo(saveId)                   // 获取存档信息
+    renameSave(saveId, newName)          // 重命名存档
+}
+```
+
+### UI界面规划
+- **游戏内快捷栏**：F5快速存档、F9快速读档
+- **D区设置标签页**：快速存档、存档管理入口
+- **存档管理对话框**：完整的存档列表、创建/读取/删除
+- **主菜单存档页**：继续游戏、载入存档、新游戏
+
+### 实现计划
+1. **第一阶段**：基础存档功能（10个手动槽位）
+2. **第二阶段**：快速存档（3个循环槽位）
+3. **第三阶段**：自动存档机制
+4. **第四阶段**：导入/导出功能
+5. **第五阶段**：云同步（未来扩展）
+
+### 注意事项
+- 所有页面共用同一套存档系统
+- menu.html和game-main.html的存档必须互通
+- 存档版本兼容性处理
+- 存档损坏检测和修复
