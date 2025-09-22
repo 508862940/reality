@@ -59,11 +59,11 @@ function startNewGame() {
 }
 
 // 读取存档
-function loadGame() {
+async function loadGame() {
     console.log('打开存档列表...');
 
     // 检查是否有存档
-    const saves = getSaveFiles();
+    const saves = await getSaveFiles();
     if (saves.length === 0) {
         alert('没有找到存档文件！');
         return;
@@ -72,7 +72,9 @@ function loadGame() {
     // 显示存档列表（这里简化处理）
     let saveList = '选择要读取的存档：\n\n';
     saves.forEach((save, index) => {
-        saveList += `${index + 1}. ${save.name} - ${save.date}\n`;
+        const typeIcon = save.type === 'auto' ? '🔄' :
+                        save.type === 'quick' ? '⚡' : '💾';
+        saveList += `${index + 1}. ${typeIcon} ${save.name} - ${save.date}\n`;
     });
 
     const choice = prompt(saveList + '\n输入存档编号：');
@@ -278,23 +280,42 @@ function saveConfig() {
 }
 
 // 获取存档文件
-function getSaveFiles() {
+async function getSaveFiles() {
     const saves = [];
 
-    // 检查localStorage中的存档
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key.startsWith('save_')) {
-            try {
-                const saveData = JSON.parse(localStorage.getItem(key));
+    // 使用新的SaveSystem获取存档
+    if (window.saveSystem) {
+        try {
+            const allSaves = await window.saveSystem.getSavesList();
+            for (const save of allSaves) {
                 saves.push({
-                    id: key,
-                    name: saveData.name || '未命名存档',
-                    date: saveData.date || '未知时间',
-                    data: saveData
+                    id: save.id,
+                    name: save.name || '未命名存档',
+                    date: new Date(save.timestamp).toLocaleString('zh-CN'),
+                    type: save.type,
+                    data: save
                 });
-            } catch (e) {
-                console.error('读取存档失败:', key);
+            }
+            console.log('使用SaveSystem获取到', saves.length, '个存档');
+        } catch (error) {
+            console.error('从SaveSystem获取存档失败:', error);
+        }
+    } else {
+        // 降级到localStorage（兼容旧存档）
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('save_')) {
+                try {
+                    const saveData = JSON.parse(localStorage.getItem(key));
+                    saves.push({
+                        id: key,
+                        name: saveData.name || '未命名存档',
+                        date: saveData.date || '未知时间',
+                        data: saveData
+                    });
+                } catch (e) {
+                    console.error('读取存档失败:', key);
+                }
             }
         }
     }
@@ -303,11 +324,12 @@ function getSaveFiles() {
 }
 
 // 检查存档文件
-function checkSaveFiles() {
-    const saves = getSaveFiles();
+async function checkSaveFiles() {
+    const saves = await getSaveFiles();
     if (saves.length > 0) {
         console.log(`找到 ${saves.length} 个存档文件`);
     }
+    return saves.length > 0;
 }
 
 // 加载存档文件

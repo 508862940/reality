@@ -853,6 +853,29 @@ async function quickSave() {
     }
 }
 
+// 创建手动存档
+async function createManualSave() {
+    try {
+        // 使用新的SaveSystem创建手动存档
+        if (window.saveSystem) {
+            const saveName = prompt('请输入存档名称：', `存档 - ${new Date().toLocaleString('zh-CN')}`);
+            if (saveName === null) return; // 用户取消
+
+            const saveData = await window.saveSystem.createSave('manual', null, saveName);
+            showNotification('💾 存档创建成功！');
+            console.log('✅ 手动存档完成:', saveData.id);
+
+            // 刷新存档列表
+            loadSavesList();
+        } else {
+            showNotification('❌ 存档系统未初始化', 'error');
+        }
+    } catch (error) {
+        console.error('创建存档失败:', error);
+        showNotification('❌ 创建存档失败: ' + error.message, 'error');
+    }
+}
+
 // 显示存档管理对话框
 function showSaveLoadDialog() {
     const dialog = document.getElementById('saveLoadDialog');
@@ -884,39 +907,51 @@ async function loadSavesList() {
         const savesContainer = document.getElementById('savesList');
         if (!savesContainer) return;
 
+        // 使用新的SaveSystem获取存档列表
         let saves = [];
-
-        // 从IndexedDB获取所有存档
-        if (window.Database && window.Database.db) {
+        if (window.saveSystem) {
+            // 获取所有类型的存档
+            saves = await window.saveSystem.getSavesList();
+            console.log('获取存档列表成功，共', saves.length, '个存档');
+        } else if (window.Database && window.Database.db) {
+            // 降级到旧方法
             const allSaves = await window.Database.db.gameState.toArray();
-            saves = allSaves.filter(save => save.id !== 'main'); // 排除主存档
+            saves = allSaves.filter(save => save.id !== 'main');
         }
-
-        // 按时间排序
-        saves.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         // 渲染存档列表
         if (saves.length === 0) {
             savesContainer.innerHTML = '<div class="no-saves">暂无存档</div>';
         } else {
-            savesContainer.innerHTML = saves.map(save => `
-                <div class="save-item" data-id="${save.id}">
-                    <div class="save-info">
-                        <div class="save-name">${save.name || '未命名存档'}</div>
-                        <div class="save-details">
-                            📍 ${save.location || '未知'} |
-                            🕐 ${new Date(save.timestamp || 0).toLocaleString('zh-CN')}
+            savesContainer.innerHTML = saves.map(save => {
+                // 根据存档类型显示不同的图标
+                const typeIcon = save.type === 'auto' ? '🔄' :
+                                save.type === 'quick' ? '⚡' : '💾';
+                const location = save.gameData?.character?.location || save.location || '未知';
+
+                return `
+                    <div class="save-item" data-id="${save.id}">
+                        <div class="save-info">
+                            <div class="save-name">${typeIcon} ${save.name || '未命名存档'}</div>
+                            <div class="save-details">
+                                📍 ${location} |
+                                🕐 ${new Date(save.timestamp || 0).toLocaleString('zh-CN')}
+                            </div>
+                        </div>
+                        <div class="save-actions">
+                            <button class="save-btn" onclick="loadSaveGame('${save.id}')">读取</button>
+                            <button class="save-btn delete" onclick="deleteSaveGame('${save.id}')">删除</button>
                         </div>
                     </div>
-                    <div class="save-actions">
-                        <button class="save-btn" onclick="loadSave('${save.id}')">读取</button>
-                        <button class="save-btn delete" onclick="deleteSave('${save.id}')">删除</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
     } catch (error) {
         console.error('加载存档列表失败:', error);
+        const savesContainer = document.getElementById('savesList');
+        if (savesContainer) {
+            savesContainer.innerHTML = '<div class="no-saves">加载存档失败</div>';
+        }
     }
 }
 
@@ -998,6 +1033,7 @@ function showNotification(message, type = 'success') {
 
 // 立即导出存档系统函数到全局
 window.quickSave = quickSave;
+window.createManualSave = createManualSave;
 window.showSaveLoadDialog = showSaveLoadDialog;
 window.hideSaveLoadDialog = hideSaveLoadDialog;
 window.loadSaveGame = loadSaveGame;
