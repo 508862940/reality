@@ -283,13 +283,7 @@ function updateScenePreview(location) {
 
 // 切换标签页
 function switchTab(tabName) {
-    console.log('切换到标签页:', tabName);
-
-    // 检查gameState是否存在
-    if (!window.gameState || !window.gameState.character) {
-        console.warn('gameState未初始化，无法切换标签页');
-        return;
-    }
+    console.log('🎯 切换到标签页:', tabName);
 
     // 更新按钮状态
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -302,7 +296,18 @@ function switchTab(tabName) {
 
     // 更新内容显示
     const content = getTabContent(tabName);
-    document.getElementById('functionContent').innerHTML = content;
+    const functionContent = document.getElementById('functionContent');
+    if (functionContent) {
+        functionContent.innerHTML = content;
+        console.log('标签页内容已更新:', tabName);
+    } else {
+        console.error('functionContent元素不存在');
+    }
+
+    // 添加事件监听器（延迟执行以确保DOM已更新）
+    setTimeout(() => {
+        addTabEventListeners(tabName);
+    }, 0);
 
     currentTab = tabName;
 }
@@ -407,16 +412,13 @@ function getTabContent(tabName) {
 
     const content = contents[tabName] || '<div>加载中...</div>';
 
-    // 添加事件监听器（如果需要）
-    setTimeout(() => {
-        addTabEventListeners(tabName);
-    }, 0);
-
     return content;
 }
 
 // 为标签页内容添加事件监听器
 function addTabEventListeners(tabName) {
+    console.log('📌 添加事件监听器，标签页:', tabName);
+
     if (tabName === 'map') {
         document.querySelectorAll('.map-location').forEach(item => {
             item.addEventListener('click', function() {
@@ -429,7 +431,9 @@ function addTabEventListeners(tabName) {
     }
 
     if (tabName === 'settings') {
-        document.querySelectorAll('.settings-item').forEach(item => {
+        const settingsItems = document.querySelectorAll('.settings-item');
+        console.log('🔧 找到设置项:', settingsItems.length, '个');
+        settingsItems.forEach(item => {
             item.addEventListener('click', function() {
                 const action = this.getAttribute('data-action');
                 switch(action) {
@@ -469,6 +473,20 @@ function setupEventListeners() {
         });
     }
 
+    // 标签页切换事件
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            console.log('点击标签:', tabName);
+            switchTab(tabName);
+        });
+    });
+
+    // AI发送按钮
+    const aiSendBtn = document.getElementById('aiSendBtn');
+    if (aiSendBtn) {
+        aiSendBtn.addEventListener('click', sendAIMessage);
+    }
 }
 
 // 开始游戏
@@ -737,10 +755,61 @@ function toggleMusic() {
 }
 
 // 返回主菜单
-function returnToMenu() {
-    if (confirm('返回主菜单将保存当前进度，确定要返回吗？')) {
-        saveGameState();
-        // 返回主菜单
+async function returnToMenu() {
+    // 显示自定义确认对话框
+    showReturnMenuDialog();
+}
+
+// 显示返回主菜单确认对话框
+function showReturnMenuDialog() {
+    const dialog = document.getElementById('returnMenuDialog');
+    if (dialog) {
+        dialog.style.display = 'flex';
+        // 添加淡入动画
+        setTimeout(() => {
+            dialog.classList.add('active');
+        }, 10);
+    } else {
+        // 如果对话框不存在，使用默认确认
+        if (confirm('返回主菜单将保存当前进度，确定要返回吗？')) {
+            confirmReturnToMenu();
+        }
+    }
+}
+
+// 隐藏返回主菜单确认对话框
+function hideReturnMenuDialog() {
+    const dialog = document.getElementById('returnMenuDialog');
+    if (dialog) {
+        dialog.classList.remove('active');
+        setTimeout(() => {
+            dialog.style.display = 'none';
+        }, 300);
+    }
+}
+
+// 确认返回主菜单
+async function confirmReturnToMenu() {
+    try {
+        // 显示保存提示
+        const dialog = document.getElementById('returnMenuDialog');
+        if (dialog) {
+            const content = dialog.querySelector('.dialog-content p');
+            if (content) {
+                content.textContent = '正在保存游戏进度...';
+            }
+        }
+
+        // 保存游戏状态
+        await saveGameState();
+
+        // 延迟一下让用户看到保存提示
+        setTimeout(() => {
+            window.location.href = 'menu.html';
+        }, 500);
+    } catch (error) {
+        console.error('保存游戏失败:', error);
+        alert('保存游戏失败，是否仍要返回主菜单？');
         window.location.href = 'menu.html';
     }
 }

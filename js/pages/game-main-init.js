@@ -20,6 +20,12 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('F2管理器未找到，可能初始化失败');
     }
 
+    // 初始化AI对话管理器
+    if (typeof AIDialogueManager !== 'undefined') {
+        window.aiDialogueManager = new AIDialogueManager();
+        console.log('🤖 AI对话管理器已初始化');
+    }
+
     // 加载初始场景
     if (window.sceneManager && window.OpeningScenes) {
         // 使用真实的开场场景

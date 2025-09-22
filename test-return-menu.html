@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试返回主菜单功能</title>
+    <link rel="stylesheet" href="css/game-main.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #1a1a2e;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .test-btn {
+            padding: 10px 20px;
+            background: #8b5cf6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-btn:hover {
+            background: #7c3aed;
+        }
+        .settings-content {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .tab-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            cursor: pointer;
+            color: #e4e4e7;
+            transition: all 0.2s;
+        }
+        .tab-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>测试返回主菜单功能</h1>
+
+        <h2 style="color: #8b5cf6;">D区设置标签页内容预览：</h2>
+        <div class="settings-content">
+            <div class="tab-item" onclick="alert('保存游戏')">💾 保存游戏</div>
+            <div class="tab-item" onclick="alert('音效切换')">🔊 音效: 开启</div>
+            <div class="tab-item" onclick="alert('音乐切换')">🎵 音乐: 开启</div>
+            <div class="tab-item" onclick="testReturnToMenu()">🏠 返回主菜单</div>
+        </div>
+
+        <h2 style="color: #8b5cf6;">直接测试按钮：</h2>
+        <button class="test-btn" onclick="testReturnToMenu()">测试返回主菜单</button>
+        <button class="test-btn" onclick="window.location.href='game-main.html'">进入游戏页面</button>
+        <button class="test-btn" onclick="window.location.href='menu.html'">进入主菜单</button>
+    </div>
+
+    <!-- 返回主菜单确认对话框 -->
+    <div id="returnMenuDialog" class="game-dialog-overlay" style="display: none;">
+        <div class="game-dialog">
+            <div class="dialog-header">
+                <h3>🏠 返回主菜单</h3>
+            </div>
+            <div class="dialog-content">
+                <p>返回主菜单将自动保存当前游戏进度。</p>
+                <p>确定要返回主菜单吗？</p>
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-cancel" onclick="hideReturnMenuDialog()">取消</button>
+                <button class="dialog-btn dialog-btn-confirm" onclick="confirmReturnToMenu()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 测试用的gameState
+        window.gameState = {
+            character: {
+                name: '测试角色',
+                health: 100,
+                mood: 80,
+                money: 200
+            }
+        };
+
+        // 测试返回主菜单
+        function testReturnToMenu() {
+            showReturnMenuDialog();
+        }
+
+        // 显示返回主菜单确认对话框
+        function showReturnMenuDialog() {
+            const dialog = document.getElementById('returnMenuDialog');
+            if (dialog) {
+                dialog.style.display = 'flex';
+                // 添加淡入动画
+                setTimeout(() => {
+                    dialog.classList.add('active');
+                }, 10);
+            }
+        }
+
+        // 隐藏返回主菜单确认对话框
+        function hideReturnMenuDialog() {
+            const dialog = document.getElementById('returnMenuDialog');
+            if (dialog) {
+                dialog.classList.remove('active');
+                setTimeout(() => {
+                    dialog.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        // 确认返回主菜单
+        async function confirmReturnToMenu() {
+            const dialog = document.getElementById('returnMenuDialog');
+            if (dialog) {
+                const content = dialog.querySelector('.dialog-content p');
+                if (content) {
+                    content.textContent = '正在保存游戏进度...';
+                }
+            }
+
+            // 模拟保存
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 跳转到主菜单
+            alert('将跳转到主菜单！');
+            window.location.href = 'menu.html';
+        }
+    </script>
+</body>
+</html>

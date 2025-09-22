@@ -119,6 +119,9 @@
             <!-- AI模式指示器 -->
             <div class="ai-mode-indicator" id="aiModeIndicator">AI对话模式</div>
 
+            <!-- AI对话结束按钮 -->
+            <button class="end-ai-btn" id="endAIBtn" onclick="window.aiDialogueManager.endAIDialogue()" style="display: none;">结束对话</button>
+
             <!-- F1区 - 剧情文本和选项混合 -->
             <div class="story-area" id="storyArea">
                 <!-- 剧情内容将动态加载 -->
@@ -144,6 +147,8 @@
     <!-- 数据库和API管理 -->
     <script src="js/core/database.js"></script>
     <script src="js/api/api-state.js"></script>
+    <!-- 响应式系统（魔法系统） -->
+    <script src="js/core/reactive-system.js"></script>
     <!-- 时间系统 -->
     <script src="js/core/time-system.js"></script>
     <!-- 加载动画系统 -->
@@ -152,11 +157,15 @@
     <script src="js/core/scene-manager.js"></script>
     <!-- 加载F2区管理器 -->
     <script src="js/core/f2-manager.js"></script>
+    <!-- 加载AI对话管理器 -->
+    <script src="js/core/ai-dialogue-manager.js"></script>
     <!-- 加载插图系统 -->
     <script src="js/data/scene-illustrations.js"></script>
     <script src="js/core/illustration-manager.js"></script>
     <!-- 加载开场场景数据 -->
     <script src="js/data/scenes/opening.js"></script>
+    <!-- 加载AI测试场景 -->
+    <script src="js/data/scenes/test-ai-scene.js"></script>
     <!-- 加载游戏脚本 -->
     <script src="js/pages/game-main.js"></script>
     <!-- 加载游戏主界面初始化 -->
@@ -168,5 +177,22 @@
     <script src="js/ai/ai-npc-system.js"></script>
     <!-- 加载高级游戏系统（如果需要） -->
     <!-- <script src="js/core/advanced-game.js"></script> -->
+
+    <!-- 返回主菜单确认对话框 -->
+    <div id="returnMenuDialog" class="game-dialog-overlay" style="display: none;">
+        <div class="game-dialog">
+            <div class="dialog-header">
+                <h3>🏠 返回主菜单</h3>
+            </div>
+            <div class="dialog-content">
+                <p>返回主菜单将自动保存当前游戏进度。</p>
+                <p>确定要返回主菜单吗？</p>
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-cancel" onclick="hideReturnMenuDialog()">取消</button>
+                <button class="dialog-btn dialog-btn-confirm" onclick="confirmReturnToMenu()">确定</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

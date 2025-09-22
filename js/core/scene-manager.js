@@ -1417,18 +1417,34 @@ class SceneManager {
 
             // 更新gameState中的角色属性
             if (window.gameState && window.gameState.character) {
+                // 🎯 使用响应式系统（如果存在）
+                const targetState = window.reactiveGameState || window.gameState.character;
+
                 Object.keys(effectsToApply).forEach(stat => {
-                    const currentValue = window.gameState.character[stat] || 0;
+                    const currentValue = targetState[stat] || 0;
                     const newValue = currentValue + effectsToApply[stat];
-                    window.gameState.character[stat] = Math.max(0, newValue); // 确保不为负数
+
+                    // 更新数据 - 如果是响应式，UI会自动更新！
+                    targetState[stat] = Math.max(0, newValue);
+
+                    // 同步到原始gameState（保持数据一致）
+                    if (window.reactiveGameState && window.gameState.character) {
+                        window.gameState.character[stat] = targetState[stat];
+                    }
+
                     const change = effectsToApply[stat];
                     const sign = change >= 0 ? '+' : '';
-                    console.log(`📝 小纸条：${stat} ${currentValue} → ${window.gameState.character[stat]} (${sign}${change})`);
+                    console.log(`📝 小纸条：${stat} ${currentValue} → ${targetState[stat]} (${sign}${change})`);
                 });
 
-                // 更新UI显示 - PWA模式下直接操作DOM
-                console.log(`📝 小纸条：更新UI前 gameState.character.mood = ${window.gameState.character.mood}`);
-                this.directUpdateDOM();
+                // 🎯 如果有响应式系统，就不需要手动更新了！
+                if (!window.reactiveGameState) {
+                    // 只有在没有响应式系统时才手动更新
+                    console.log(`📝 小纸条：无响应式系统，手动更新UI`);
+                    this.directUpdateDOM();
+                } else {
+                    console.log(`✨ 响应式系统已自动更新UI！`);
+                }
 
                 // 保存游戏状态
                 if (window.saveGameState) {

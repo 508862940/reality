@@ -1539,3 +1539,267 @@ body {
 .settings-item:hover {
     color: var(--ui-primary);
 }
+
+/* 游戏对话框样式 */
+.game-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(3px);
+}
+
+.game-dialog-overlay.active {
+    opacity: 1;
+}
+
+.game-dialog {
+    background: linear-gradient(135deg, #2d3561, #1a1a2e);
+    border-radius: 16px;
+    padding: 0;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.game-dialog-overlay.active .game-dialog {
+    transform: scale(1);
+}
+
+.dialog-header {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dialog-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dialog-content {
+    padding: 20px;
+    color: #e4e4e7;
+}
+
+.dialog-content p {
+    margin: 10px 0;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.dialog-content p:first-child {
+    margin-top: 0;
+}
+
+.dialog-content p:last-child {
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+.dialog-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dialog-btn {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.dialog-btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #a1a1aa;
+}
+
+.dialog-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.dialog-btn-confirm {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: #fff;
+}
+
+.dialog-btn-confirm:hover {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+}
+
+.dialog-btn:active {
+    transform: translateY(0);
+}
+
+/* 移动端适配 */
+@media (max-width: 430px) {
+    .game-dialog {
+        width: 85%;
+        max-width: none;
+    }
+
+    .dialog-header h3 {
+        font-size: 16px;
+    }
+
+    .dialog-content p {
+        font-size: 13px;
+    }
+}
+
+/* ==================== AI对话样式 ==================== */
+
+/* AI对话消息样式 */
+.dialogue-message {
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 12px;
+    animation: messageSlideIn 0.3s ease;
+    word-wrap: break-word;
+}
+
+.player-message {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    color: #fff;
+    margin-left: 20%;
+    text-align: right;
+}
+
+.npc-message {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    margin-right: 20%;
+}
+
+.dialogue-name {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.dialogue-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 思考指示器（三个点动画） */
+.typing-indicator {
+    padding: 12px;
+    margin: 8px 0;
+    display: inline-block;
+}
+
+.typing-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #8b5cf6;
+    margin: 0 3px;
+    animation: typingBounce 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* AI结束对话按钮 */
+.end-ai-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    background: rgba(239, 68, 68, 0.8);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 100;
+}
+
+.end-ai-btn:hover {
+    background: rgba(239, 68, 68, 1);
+    transform: scale(1.05);
+}
+
+/* AI模式指示器激活状态 */
+.ai-mode-indicator.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* AI输入区域动画 */
+.ai-input-area.active {
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
