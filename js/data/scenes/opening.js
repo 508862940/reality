@@ -31,19 +31,22 @@ const OpeningScenes = {
                 id: 'get_up',
                 text: '→ 起床洗漱',
                 target: 'morning_routine',
-                effects: { energy: -5, spirit: +5 }
+                effects: { energy: -5, spirit: +5 },
+                timeCost: 15  // 起床洗漱15分钟
             },
             {
                 id: 'sleep_more',
                 text: '→ 再睡一会',
                 target: 'oversleep',
-                effects: { energy: +10, mood: +5 }
+                effects: { energy: +10, mood: +5 },
+                timeCost: 30  // 再睡30分钟
             },
             {
                 id: 'check_phone',
                 text: '→ 查看手机',
                 target: 'phone_check',
-                effects: { spirit: -5 }
+                effects: { spirit: -5 },
+                timeCost: 5   // 查看手机5分钟
             }
         ],
 
@@ -192,43 +195,60 @@ const OpeningScenes = {
                 id: 'phone',
                 text: '📱 手机',
                 value: 'phone',
-                description: '保持联系的必需品'
+                description: '保持联系的必需品',
+                effects: { mood: +2, spirit: +1 }  // 带上手机感觉安心
             },
             {
                 id: 'wallet',
                 text: '💳 钱包',
                 value: 'wallet',
-                description: '里面有身份证和少量现金'
+                description: '里面有身份证和少量现金',
+                effects: { mood: +1 }  // 带上钱包有备无患
             },
             {
                 id: 'keys',
                 text: '🔑 钥匙',
                 value: 'keys',
-                description: '公寓和信箱的钥匙'
+                description: '公寓和信箱的钥匙',
+                effects: { spirit: +2 }  // 确保能回家
             },
             {
                 id: 'medicine',
                 text: '💊 药瓶',
                 value: 'medicine',
-                description: '无标签的小药瓶，似乎很重要'
+                description: '无标签的小药瓶，似乎很重要',
+                effects: { spirit: +5, mood: -2 }  // 药瓶让你安心但也有些担忧
             },
             {
                 id: 'notebook',
                 text: '📝 笔记本',
                 value: 'notebook',
-                description: '里面写着一些你看不懂的笔记'
+                description: '里面写着一些你看不懂的笔记',
+                effects: { spirit: -3 }  // 神秘笔记让你困惑
             },
             {
                 id: 'umbrella',
                 text: '☂️ 雨伞',
                 value: 'umbrella',
-                description: '天气看起来可能会下雨'
+                description: '天气看起来可能会下雨',
+                effects: { mood: +1, energy: -1 }  // 带伞安心但有点累赘
             }
         ],
 
         // 多选参数
-        minChoices: 1,    // 最少选择1个
+        minChoices: 0,    // 最少选择0个（允许什么都不拿）
         maxChoices: 3,    // 最多选择3个
+
+        // 时间消耗配置
+        actionTimeCost: 5,    // 整理背包动作本身耗时5分钟
+        itemTimeCost: 2,      // 每个物品额外耗时2分钟
+
+        // 0选择效果
+        zeroChoiceEffect: {
+            description: '你仔细整理了一遍背包，思考了一会，最终决定什么都不带。',
+            timeCost: 3,  // 额外思考时间3分钟
+            effects: { mood: -5 }  // 纠结了一下，心情-5
+        },
 
         // 插图数据
         illustrations: {
@@ -265,7 +285,7 @@ const OpeningScenes = {
 
         text: [
             '你仔细整理了一下要带的物品。',
-            '背包里现在有：{selectedItems}',
+            '{selectedItemsDescription}',
             '感觉今天应该足够应付了。'
         ],
 
@@ -273,7 +293,8 @@ const OpeningScenes = {
             {
                 id: 'leave_with_items',
                 text: '→ 出门',
-                target: 'street_scene'
+                target: 'street_scene',
+                timeCost: 2  // 出门2分钟
             }
         ]
     },

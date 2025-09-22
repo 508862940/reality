@@ -63,13 +63,13 @@
                     <!-- D区 - 功能面板 -->
                     <div class="area-d">
                         <div class="function-tabs">
-                            <div class="tab-btn active" data-tab="status" onclick="switchTab('status')" title="状态">📊</div>
-                            <div class="tab-btn" data-tab="inventory" onclick="switchTab('inventory')" title="背包">🎒</div>
-                            <div class="tab-btn" data-tab="map" onclick="switchTab('map')" title="地图">🗺️</div>
-                            <div class="tab-btn" data-tab="skills" onclick="switchTab('skills')" title="属性">⭐</div>
-                            <div class="tab-btn" data-tab="social" onclick="switchTab('social')" title="社交">👥</div>
-                            <div class="tab-btn" data-tab="journal" onclick="switchTab('journal')" title="日志">📖</div>
-                            <div class="tab-btn" data-tab="settings" onclick="switchTab('settings')" title="设置">⚙️</div>
+                            <div class="tab-btn active" data-tab="status" title="状态">📊</div>
+                            <div class="tab-btn" data-tab="inventory" title="背包">🎒</div>
+                            <div class="tab-btn" data-tab="map" title="地图">🗺️</div>
+                            <div class="tab-btn" data-tab="skills" title="属性">⭐</div>
+                            <div class="tab-btn" data-tab="social" title="社交">👥</div>
+                            <div class="tab-btn" data-tab="journal" title="日志">📖</div>
+                            <div class="tab-btn" data-tab="settings" title="设置">⚙️</div>
                         </div>
                         <div class="function-content" id="functionContent">
                             <!-- 默认显示状态内容 -->
@@ -131,7 +131,7 @@
             <div class="ai-input-area" id="aiInputArea">
                 <div class="ai-input-wrapper">
                     <input type="text" class="ai-input" id="aiInput" placeholder="输入你想说的话..." />
-                    <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()">
+                    <button class="ai-send-btn" id="aiSendBtn">
                         ➤
                     </button>
                 </div>
@@ -159,6 +159,8 @@
     <script src="js/data/scenes/opening.js"></script>
     <!-- 加载游戏脚本 -->
     <script src="js/pages/game-main.js"></script>
+    <!-- 加载游戏主界面初始化 -->
+    <script src="js/pages/game-main-init.js"></script>
     <!-- 加载原有的游戏逻辑 -->
     <script src="js/core/game-engine.js"></script>
     <!-- 加载AI配置 -->
@@ -166,34 +168,5 @@
     <script src="js/ai/ai-npc-system.js"></script>
     <!-- 加载高级游戏系统（如果需要） -->
     <!-- <script src="js/core/advanced-game.js"></script> -->
-    <script>
-        // 初始化动画效果
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof AnimationEffects !== 'undefined') {
-                AnimationEffects.init();
-                AnimationEffects.createGameAnimations();
-            }
-
-            // 确保F2管理器正确初始化
-            if (window.f2Manager) {
-                console.log('F2管理器已创建:', window.f2Manager);
-                // 确保切换到场景模式
-                window.f2Manager.switchToSceneMode();
-            } else {
-                console.warn('F2管理器未找到，可能初始化失败');
-            }
-
-            // 加载初始场景
-            if (window.sceneManager && window.OpeningScenes) {
-                // 使用真实的开场场景
-                const openingScene = window.OpeningScenes.awakening;
-
-                // 加载场景
-                setTimeout(() => {
-                    sceneManager.loadScene(openingScene);
-                }, 500);
-            }
-        });
-    </script>
 </body>
 </html>

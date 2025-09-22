@@ -24,6 +24,14 @@ class SceneManager {
             hasConflicts: false     // 是否有冲突
         };
 
+        // 持久化选择状态（解决场景切换丢失问题）
+        this.persistentChoiceState = {
+            selectedItems: [],       // 已选择的物品数据
+            choiceEffects: {},       // 选择产生的效果
+            choiceDescription: '',   // 选择描述文本
+            timeCost: 0             // 时间消耗
+        };
+
         // 场景容器
         this.storyArea = null;
         this.isTransitioning = false;
@@ -119,10 +127,14 @@ class SceneManager {
         if (sceneData.text) {
             if (Array.isArray(sceneData.text)) {
                 sceneData.text.forEach(paragraph => {
-                    html += `<p>${paragraph}</p>`;
+                    // 替换模板变量
+                    const processedParagraph = this.processTextTemplate(paragraph);
+                    html += `<p>${processedParagraph}</p>`;
                 });
             } else {
-                html += `<p>${sceneData.text}</p>`;
+                // 替换模板变量
+                const processedText = this.processTextTemplate(sceneData.text);
+                html += `<p>${processedText}</p>`;
             }
         }
 
@@ -138,11 +150,19 @@ class SceneManager {
                 html += '<div class="multi-choice-container">';
 
                 // 多选提示
-                const minChoices = sceneData.minChoices || 1;
+                const minChoices = sceneData.minChoices !== undefined ? sceneData.minChoices : 1;
                 const maxChoices = sceneData.maxChoices || sceneData.choices.length;
+
+                let hintText;
+                if (minChoices === 0) {
+                    hintText = `可选择 0-${maxChoices} 个选项（可以什么都不选）`;
+                } else {
+                    hintText = `请选择 ${minChoices}-${maxChoices} 个选项`;
+                }
+
                 html += `
                     <div class="multi-choice-hint">
-                        请选择 ${minChoices}-${maxChoices} 个选项
+                        ${hintText}
                         (<span class="selected-count" id="selectedCount">0</span>/${maxChoices})
                     </div>
                 `;
@@ -160,10 +180,13 @@ class SceneManager {
                 });
 
                 // 多选确认按钮区域
+                const initialDisabled = minChoices > 0 ? 'disabled' : '';
+                const initialText = minChoices === 0 ? '✓ 确认不带任何物品' : '✓ 确认选择';
+
                 html += `
                     <div class="multi-choice-buttons">
-                        <button class="multi-choice-confirm" id="multiConfirmBtn" onclick="sceneManager.confirmMultiChoice()" disabled>
-                            ✓ 确认选择
+                        <button class="multi-choice-confirm" id="multiConfirmBtn" onclick="sceneManager.confirmMultiChoice()" ${initialDisabled}>
+                            ${initialText}
                         </button>
                         <button class="multi-choice-reset" id="multiResetBtn" onclick="sceneManager.resetMultiChoice()" title="重新选择">
                             🔄 重新选择
@@ -449,7 +472,7 @@ class SceneManager {
     updateMultiChoiceState() {
         const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
         const selectedCount = selectedItems.length;
-        const minChoices = this.currentScene.minChoices || 1;
+        const minChoices = this.currentScene.minChoices !== undefined ? this.currentScene.minChoices : 1;
         const maxChoices = this.currentScene.maxChoices || this.currentScene.choices.length;
 
         // 智能冲突检测
@@ -471,10 +494,18 @@ class SceneManager {
                 confirmBtn.textContent = `⚠️ ${conflictResult.message}`;
                 confirmBtn.style.background = 'rgba(239, 68, 68, 0.3)';
             } else if (isValid) {
-                confirmBtn.textContent = `✓ 确认选择 (${selectedCount})`;
+                if (selectedCount === 0 && minChoices === 0) {
+                    confirmBtn.textContent = `✓ 确认不带任何物品`;
+                } else {
+                    confirmBtn.textContent = `✓ 确认选择 (${selectedCount})`;
+                }
                 confirmBtn.style.background = 'linear-gradient(135deg, #8b92f6, #f093fb)';
             } else if (selectedCount < minChoices) {
-                confirmBtn.textContent = `请选择至少 ${minChoices} 项`;
+                if (minChoices === 0) {
+                    confirmBtn.textContent = `✓ 可以不选择任何物品`;
+                } else {
+                    confirmBtn.textContent = `请选择至少 ${minChoices} 项`;
+                }
                 confirmBtn.style.background = 'rgba(255, 255, 255, 0.1)';
             } else {
                 confirmBtn.textContent = `最多只能选择 ${maxChoices} 项`;
@@ -561,20 +592,75 @@ class SceneManager {
      * 确认多选（预览阶段）- 现在主要用于隐藏确认按钮
      */
     confirmMultiChoice() {
-        // 直接使用当前的预览状态（由updateMultiChoicePreview管理）
         // 隐藏多选确认按钮，等待F2继续按钮确认
         const confirmBtn = document.getElementById('multiConfirmBtn');
         if (confirmBtn) {
             confirmBtn.style.display = 'none';
         }
 
-        // 确保已进入预览模式（如果有选择的话）
-        if (!this.isPreviewMode && this.storyArea.querySelectorAll('.multi-choice-item.selected').length > 0) {
-            this.updateMultiChoicePreview();
+        // 获取当前选择
+        const selectedItems = this.storyArea.querySelectorAll('.multi-choice-item.selected');
+        const selectedChoices = [];
+
+        selectedItems.forEach(item => {
+            const index = parseInt(item.dataset.index);
+            if (this.currentScene.choices[index]) {
+                selectedChoices.push(this.currentScene.choices[index]);
+            }
+        });
+
+        // 保存到持久化状态
+        this.persistentChoiceState.selectedItems = [...selectedChoices];
+
+        // 计算选择效果
+        let choiceEffects = {};
+        if (selectedChoices.length === 0 && this.currentScene.zeroChoiceEffect?.effects) {
+            choiceEffects = { ...this.currentScene.zeroChoiceEffect.effects };
+        } else {
+            selectedChoices.forEach(choice => {
+                if (choice.effects) {
+                    Object.keys(choice.effects).forEach(key => {
+                        choiceEffects[key] = (choiceEffects[key] || 0) + choice.effects[key];
+                    });
+                }
+            });
+        }
+        this.persistentChoiceState.choiceEffects = choiceEffects;
+
+        // 生成选择描述
+        if (selectedChoices.length === 0) {
+            this.persistentChoiceState.choiceDescription = this.currentScene.zeroChoiceEffect?.description || '什么都没有选择';
+        } else {
+            const itemNames = selectedChoices.map(choice => {
+                // 优先使用description，否则清理text
+                if (choice.description) {
+                    return choice.description;
+                }
+                // 使用更安全的emoji移除方式
+                let cleanText = choice.text;
+                // 移除所有emoji（Unicode emoji范围）
+                cleanText = cleanText.replace(/[\u{1F300}-\u{1F9FF}]/gu, '');
+                // 移除箭头符号
+                cleanText = cleanText.replace(/→/g, '');
+                // 移除多余空格
+                cleanText = cleanText.trim();
+                return cleanText;
+            }).join('、');
+            this.persistentChoiceState.choiceDescription = `你带上了：${itemNames}`;
         }
 
-        // 静默预览，保持沉浸感
-        // 预览状态通过视觉反馈传达给用户
+        // 设置预览状态（0选择也要设置）
+        this.previewChoice = selectedChoices;
+        this.isPreviewMode = true;
+
+        // 更新状态为预览模式
+        this.updateSceneState({
+            status: 'previewing',
+            selectedCount: selectedChoices.length
+        });
+
+        console.log('📝 小纸条：多选确认完成，进入预览模式，选择数量:', selectedChoices.length);
+        console.log('📝 小纸条：选择描述:', this.persistentChoiceState.choiceDescription);
     }
 
 
@@ -593,7 +679,8 @@ class SceneManager {
         }
 
         // 多选场景允许无选择（0选择也可确认）
-        if (!this.previewChoice && this.currentScene.multiChoice) {
+        if (this.currentScene.multiChoice &&
+            (!this.previewChoice || (Array.isArray(this.previewChoice) && this.previewChoice.length === 0))) {
             // 0选择的多选场景
             this.currentChoice = [];
             this.isPreviewMode = false;
@@ -710,6 +797,18 @@ class SceneManager {
         // 📝 小纸条：应用选择结果到游戏状态
         console.log('📝 小纸条：准备应用选择结果到游戏状态');
         this.applyChoiceResults(this.currentChoice, this.currentScene);
+
+        // 🔥 立即强制更新UI，不等待场景切换
+        // PWA和网页版都使用forceUpdateUI
+        this.forceUpdateUI();
+
+        // 触发自定义事件，通知其他系统UI已更新
+        window.dispatchEvent(new CustomEvent('gameStateUpdated', {
+            detail: {
+                character: window.gameState?.character,
+                time: window.timeSystem?.currentTime
+            }
+        }));
 
         // 获取下一场景
         const nextScene = this.getNextScene(this.currentChoice);
@@ -889,15 +988,25 @@ class SceneManager {
     getMultiChoiceScene(choices) {
         // 如果当前场景是选择物品场景，跳转到特定结果场景
         if (this.currentScene.id === 'select_items') {
-            const selectedItems = choices.map(c => c.text).join('、');
-
             // 获取预定义的结果场景
             if (window.OpeningScenes && window.OpeningScenes.items_selected) {
                 const resultScene = JSON.parse(JSON.stringify(window.OpeningScenes.items_selected));
 
+                // 生成描述文本
+                let itemsDescription;
+                if (choices.length === 0) {
+                    // 0选择的情况
+                    itemsDescription = this.currentScene.zeroChoiceEffect?.description ||
+                        '你思考了一会，最终决定什么都不带。';
+                } else {
+                    // 有选择的情况
+                    const selectedItems = choices.map(c => c.text).join('、');
+                    itemsDescription = `背包里现在有：${selectedItems}`;
+                }
+
                 // 替换文本中的占位符
                 resultScene.text = resultScene.text.map(text =>
-                    text.replace('{selectedItems}', selectedItems)
+                    text.replace('{selectedItemsDescription}', itemsDescription)
                 );
 
                 return resultScene;
@@ -1238,14 +1347,15 @@ class SceneManager {
         console.log('📝 小纸条：开始应用选择结果', choice);
 
         try {
-            // 处理属性变化效果
-            if (choice.effect) {
-                this.applyEffects(choice.effect);
-            }
+            // 处理时间消耗（优先处理，因为其他效果可能依赖时间）
+            this.calculateAndApplyTimeCost(choice, scene);
 
-            // 处理时间消耗
-            if (choice.timeCost) {
-                this.updateGameTime(choice.timeCost);
+            // 处理属性变化效果
+            if (choice.effects ||
+                (Array.isArray(choice) && choice.some(c => c.effects)) ||
+                (Array.isArray(choice) && choice.length === 0 && scene.zeroChoiceEffect?.effects) ||
+                (Array.isArray(choice) && Object.keys(this.persistentChoiceState.choiceEffects).length > 0)) {
+                this.applyEffects(choice);
             }
 
             // 处理物品获得/失去
@@ -1266,13 +1376,75 @@ class SceneManager {
 
     /**
      * 应用属性效果
-     * @param {Object} effects - 效果对象
+     * @param {Object|Array} choice - 选择对象或选择数组
      */
-    applyEffects(effects) {
-        console.log('应用属性效果:', effects);
-        // 这里可以调用游戏引擎的属性更新方法
-        if (window.gameEngine && window.gameEngine.updateStats) {
-            window.gameEngine.updateStats(effects);
+    applyEffects(choice) {
+        console.log('应用属性效果:', choice);
+
+        let effectsToApply = {};
+
+        // 优先使用持久化状态的效果（多选场景已经计算过）
+        if (Array.isArray(choice) && Object.keys(this.persistentChoiceState.choiceEffects).length > 0) {
+            effectsToApply = { ...this.persistentChoiceState.choiceEffects };
+            console.log('📝 小纸条：使用持久化选择效果:', effectsToApply);
+        } else if (Array.isArray(choice)) {
+            // 多选场景 - 重新计算（后备方案）
+            if (choice.length === 0) {
+                // 0选择的效果
+                if (this.currentScene.zeroChoiceEffect && this.currentScene.zeroChoiceEffect.effects) {
+                    effectsToApply = this.currentScene.zeroChoiceEffect.effects;
+                }
+            } else {
+                // 合并多个选择的效果
+                choice.forEach(item => {
+                    if (item.effects) {
+                        Object.keys(item.effects).forEach(key => {
+                            effectsToApply[key] = (effectsToApply[key] || 0) + item.effects[key];
+                        });
+                    }
+                });
+            }
+        } else {
+            // 单选场景
+            if (choice.effects) {
+                effectsToApply = choice.effects;
+            }
+        }
+
+        // 应用合并后的效果
+        if (Object.keys(effectsToApply).length > 0) {
+            console.log('最终应用的效果:', effectsToApply);
+
+            // 更新gameState中的角色属性
+            if (window.gameState && window.gameState.character) {
+                Object.keys(effectsToApply).forEach(stat => {
+                    const currentValue = window.gameState.character[stat] || 0;
+                    const newValue = currentValue + effectsToApply[stat];
+                    window.gameState.character[stat] = Math.max(0, newValue); // 确保不为负数
+                    const change = effectsToApply[stat];
+                    const sign = change >= 0 ? '+' : '';
+                    console.log(`📝 小纸条：${stat} ${currentValue} → ${window.gameState.character[stat]} (${sign}${change})`);
+                });
+
+                // 更新UI显示 - PWA模式下直接操作DOM
+                console.log(`📝 小纸条：更新UI前 gameState.character.mood = ${window.gameState.character.mood}`);
+                this.directUpdateDOM();
+
+                // 保存游戏状态
+                if (window.saveGameState) {
+                    window.saveGameState();
+                }
+            }
+
+            // 备用方案：调用gameEngine
+            if (window.gameEngine && window.gameEngine.updateStats) {
+                window.gameEngine.updateStats(effectsToApply);
+            }
+
+            // 应用效果后清理持久化状态（避免影响下个场景）
+            if (Array.isArray(choice) && Object.keys(this.persistentChoiceState.choiceEffects).length > 0) {
+                this.clearPersistentChoiceState();
+            }
         }
     }
 
@@ -1282,9 +1454,14 @@ class SceneManager {
      */
     updateGameTime(minutes) {
         console.log(`时间流逝 ${minutes} 分钟`);
-        // 这里可以调用时间系统的更新方法
-        if (window.timeSystem && window.timeSystem.advance) {
-            window.timeSystem.advance(minutes);
+        // 调用时间系统推进时间
+        if (window.timeSystem && window.timeSystem.advanceTime) {
+            window.timeSystem.advanceTime(minutes);
+
+            // 更新界面显示
+            if (window.updateLocationTime) {
+                window.updateLocationTime();
+            }
         }
     }
 
@@ -1313,6 +1490,53 @@ class SceneManager {
     }
 
     /**
+     * 计算并应用时间消耗
+     * @param {Object|Array} choice - 选择对象或选择数组（多选）
+     * @param {Object} scene - 当前场景
+     */
+    calculateAndApplyTimeCost(choice, scene) {
+        let totalTimeCost = 0;
+
+        if (Array.isArray(choice)) {
+            // 多选场景的时间计算
+            console.log('📝 小纸条：计算多选场景时间消耗');
+
+            // 基础动作时间（例如整理背包的动作本身）
+            if (scene.actionTimeCost) {
+                totalTimeCost += scene.actionTimeCost;
+                console.log(`📝 小纸条：基础动作时间 +${scene.actionTimeCost}分钟`);
+            }
+
+            if (choice.length === 0) {
+                // 0选择的额外时间消耗
+                if (scene.zeroChoiceEffect && scene.zeroChoiceEffect.timeCost) {
+                    totalTimeCost += scene.zeroChoiceEffect.timeCost;
+                    console.log(`📝 小纸条：0选择思考时间 +${scene.zeroChoiceEffect.timeCost}分钟`);
+                }
+            } else {
+                // 每个物品的额外时间
+                if (scene.itemTimeCost) {
+                    const itemTime = choice.length * scene.itemTimeCost;
+                    totalTimeCost += itemTime;
+                    console.log(`📝 小纸条：${choice.length}个物品时间 +${itemTime}分钟`);
+                }
+            }
+        } else {
+            // 单选场景的时间消耗
+            if (choice.timeCost) {
+                totalTimeCost = choice.timeCost;
+                console.log(`📝 小纸条：单选时间消耗 +${totalTimeCost}分钟`);
+            }
+        }
+
+        // 应用时间消耗
+        if (totalTimeCost > 0) {
+            this.updateGameTime(totalTimeCost);
+            console.log(`📝 小纸条：总时间消耗 ${totalTimeCost}分钟`);
+        }
+    }
+
+    /**
      * 更新继续按钮状态
      * @param {boolean} enabled - 是否启用
      * @param {string} mode - 模式：'preview' 或 'confirmed'
@@ -1322,6 +1546,215 @@ class SceneManager {
         if (window.f2Manager) {
             window.f2Manager.updateContinueButton(enabled, mode);
         }
+    }
+
+    /**
+     * 处理文本模板替换
+     * @param {string} text - 原始文本
+     * @returns {string} 处理后的文本
+     */
+    processTextTemplate(text) {
+        let processedText = text;
+
+        // 替换选择描述模板
+        if (processedText.includes('{selectedItemsDescription}')) {
+            const description = this.persistentChoiceState.choiceDescription || '什么都没有带';
+            processedText = processedText.replace('{selectedItemsDescription}', description);
+        }
+
+        return processedText;
+    }
+
+    /**
+     * 清理持久化状态（在合适的时机调用）
+     */
+    clearPersistentChoiceState() {
+        this.persistentChoiceState = {
+            selectedItems: [],
+            choiceEffects: {},
+            choiceDescription: '',
+            timeCost: 0
+        };
+        console.log('📝 小纸条：持久化选择状态已清理');
+    }
+
+    /**
+     * 直接更新DOM - 适用于PWA环境
+     */
+    directUpdateDOM() {
+        console.log('🎯 PWA模式 - 直接更新DOM元素');
+
+        // 如果当前不在状态标签页，需要先切换或更新内容
+        const currentTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
+
+        if (currentTab === 'status') {
+            // 在状态页，直接更新状态条
+            this.updateStatusBars();
+        } else {
+            // 不在状态页，需要更新当前标签页的HTML内容
+            this.refreshCurrentTabContent(currentTab);
+        }
+
+        // 总是更新B区时间和位置
+        this.updateTimeAndLocation();
+    }
+
+    /**
+     * 更新状态条
+     */
+    updateStatusBars() {
+        if (!window.gameState?.character) return;
+
+        const char = window.gameState.character;
+
+        // 批量更新所有状态条
+        const stats = [
+            { id: 'health', value: char.health || 100, isPercent: true },
+            { id: 'mood', value: char.mood || 50, isPercent: true },
+            { id: 'money', value: char.money || 0, isPercent: false },
+            { id: 'energy', value: char.energy || 80, isPercent: true },
+            { id: 'spirit', value: char.spirit, isPercent: true }
+        ];
+
+        stats.forEach(stat => {
+            if (stat.value === undefined) return;
+
+            const bar = document.getElementById(`${stat.id}Bar`);
+            const text = document.getElementById(`${stat.id}Value`);
+
+            if (bar && text) {
+                const width = stat.isPercent ? stat.value : Math.min(100, stat.value / 10);
+                bar.style.width = `${width}%`;
+                text.textContent = stat.value;
+                console.log(`✅ 更新${stat.id}: ${stat.value}`);
+            }
+        });
+    }
+
+    /**
+     * 刷新当前标签页内容
+     */
+    refreshCurrentTabContent(tabName) {
+        if (!tabName) return;
+
+        const content = document.getElementById('functionContent');
+        if (!content) return;
+
+        // 这里应该调用生成标签页内容的函数
+        // 但为了避免跨文件调用，直接更新关键数据
+        console.log(`📝 刷新${tabName}标签页内容`);
+    }
+
+    /**
+     * 更新时间和位置
+     */
+    updateTimeAndLocation() {
+        // 更新时间
+        if (window.timeSystem) {
+            const timeEl = document.getElementById('currentTime');
+            if (timeEl) {
+                const timeStr = window.timeSystem.formatTime('icon');
+                timeEl.textContent = timeStr;
+                console.log(`✅ 更新时间: ${timeStr}`);
+            }
+        }
+
+        // 更新位置
+        if (window.gameState?.character?.location) {
+            const locEl = document.getElementById('currentLocation');
+            if (locEl) {
+                locEl.textContent = window.gameState.character.location;
+                console.log(`✅ 更新位置: ${window.gameState.character.location}`);
+            }
+        }
+    }
+
+    /**
+     * 强制更新UI - 直接操作DOM
+     */
+    forceUpdateUI() {
+        // 检测是否在PWA模式
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                      window.navigator.standalone ||
+                      document.referrer.includes('android-app://');
+
+        console.log(isPWA ? '📱 PWA模式 - 强制更新UI' : '🌐 网页模式 - 强制更新UI');
+
+        // 直接更新D区状态条
+        if (window.gameState && window.gameState.character) {
+            const char = window.gameState.character;
+
+            // 更新体力条
+            const healthBar = document.getElementById('healthBar');
+            const healthValue = document.getElementById('healthValue');
+            if (healthBar && healthValue) {
+                const health = char.health || 0;
+                healthBar.style.width = health + '%';
+                healthValue.textContent = health;
+                console.log(`✅ 更新体力: ${health}`);
+            }
+
+            // 更新心情条
+            const moodBar = document.getElementById('moodBar');
+            const moodValue = document.getElementById('moodValue');
+            if (moodBar && moodValue) {
+                const mood = char.mood || 0;
+                moodBar.style.width = mood + '%';
+                moodValue.textContent = mood;
+                console.log(`✅ 更新心情: ${mood}`);
+            }
+
+            // 更新金钱条
+            const moneyBar = document.getElementById('moneyBar');
+            const moneyValue = document.getElementById('moneyValue');
+            if (moneyBar && moneyValue) {
+                const money = char.money || 0;
+                moneyBar.style.width = Math.min(100, money / 10) + '%';
+                moneyValue.textContent = money;
+                console.log(`✅ 更新金钱: ${money}`);
+            }
+
+            // 更新精力条
+            const energyBar = document.getElementById('energyBar');
+            const energyValue = document.getElementById('energyValue');
+            if (energyBar && energyValue) {
+                const energy = char.energy || 0;
+                energyBar.style.width = energy + '%';
+                energyValue.textContent = energy;
+                console.log(`✅ 更新精力: ${energy}`);
+            }
+
+            // 更新精神条（如果有）
+            const spiritBar = document.getElementById('spiritBar');
+            const spiritValue = document.getElementById('spiritValue');
+            if (spiritBar && spiritValue && char.spirit !== undefined) {
+                spiritBar.style.width = char.spirit + '%';
+                spiritValue.textContent = char.spirit;
+                console.log(`✅ 更新精神: ${char.spirit}`);
+            }
+        }
+
+        // 更新B区时间位置
+        if (window.timeSystem) {
+            const currentTime = document.getElementById('currentTime');
+            if (currentTime) {
+                const timeStr = window.timeSystem.formatTime('icon');
+                currentTime.textContent = timeStr;
+                console.log(`✅ 更新时间: ${timeStr}`);
+            }
+        }
+
+        // 更新位置
+        if (window.gameState && window.gameState.character) {
+            const currentLocation = document.getElementById('currentLocation');
+            if (currentLocation) {
+                const location = window.gameState.character.location || '未知地点';
+                currentLocation.textContent = location;
+                console.log(`✅ 更新位置: ${location}`);
+            }
+        }
+
+        console.log('🔥 UI强制更新完成');
     }
 }
 

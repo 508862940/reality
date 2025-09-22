@@ -1498,3 +1498,44 @@ body {
 }
 
 /* 删除重复的tipFadeInOut动画 - 保留上方的版本 */
+
+/* 标签页内容样式 - 替换内联样式 */
+.tab-item-container {
+    padding: 5px;
+}
+
+.tab-item {
+    margin-bottom: 8px;
+}
+
+.tab-item:last-child {
+    margin-bottom: 0;
+}
+
+.small-text {
+    font-size: 12px;
+}
+
+.micro-text {
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.map-location {
+    margin-left: 10px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.map-location:hover {
+    color: var(--ui-primary);
+}
+
+.settings-item {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.settings-item:hover {
+    color: var(--ui-primary);
+}

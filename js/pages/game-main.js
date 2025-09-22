@@ -11,48 +11,116 @@ let aiModeActive = false;
 
 // 初始化游戏
 window.addEventListener('DOMContentLoaded', function() {
-    // 加载游戏状态
-    loadGameState();
-
-    // 初始化界面
-    initializeUI();
-
-    // 初始化游戏逻辑
-    if (typeof initGame === 'function') {
-        initGame();  // 调用原有的game.js中的初始化函数
-    }
-
-    // 绑定输入事件
-    setupEventListeners();
-
-    // 开始游戏
-    startGame();
+    initializeGame();
 });
 
+// 异步初始化游戏主函数
+async function initializeGame() {
+    try {
+        console.log('📝 小纸条：开始异步初始化游戏...');
+
+        // 1. 先异步加载gameState
+        await loadGameState();
+
+        // 2. 确保gameState不为null
+        if (!gameState || !gameState.character) {
+            console.log('📝 小纸条：gameState为空，使用默认值');
+            gameState = getDefaultGameState();
+        }
+
+        // 3. 将gameState设置为全局变量，供其他模块使用
+        window.gameState = gameState;
+
+        console.log('📝 小纸条：gameState初始化完成:', gameState);
+        console.log('📝 小纸条：window.gameState已设置:', window.gameState);
+
+        // 3. 然后初始化UI
+        initializeUI();
+
+        // 4. 绑定输入事件
+        setupEventListeners();
+
+        // 5. 导出函数供其他模块使用（必须在startGame之前）
+        window.updateGameUI = updateStatus;  // 改名避免冲突
+        window.updateLocationTime = updateLocationTime;  // 导出位置时间更新函数
+        window.saveGameState = saveGameState;  // 导出游戏保存函数
+        window.switchTab = switchTab;
+        console.log('📝 小纸条：导出函数到window对象完成');
+
+        // 6. 开始游戏
+        startGame();
+
+        console.log('📝 小纸条：游戏初始化完成');
+
+    } catch (error) {
+        console.error('游戏初始化失败:', error);
+        // 出错时使用默认状态
+        gameState = getDefaultGameState();
+        window.gameState = gameState; // 同步到全局
+        initializeUI();
+        setupEventListeners();
+        startGame();
+    }
+}
+
+// 获取默认游戏状态
+function getDefaultGameState() {
+    return {
+        character: {
+            name: '默认角色',
+            health: 100,
+            mood: 50,
+            money: 100,
+            energy: 80,
+            location: 'awakening_room'
+        },
+        gameTime: {
+            day: 1,
+            hour: 8,
+            minute: 0,
+            weekday: 'Monday'
+        }
+    };
+}
+
 // 加载游戏状态
-function loadGameState() {
-    const savedState = localStorage.getItem('gameState');
-    if (savedState) {
-        gameState = JSON.parse(savedState);
-        console.log('加载游戏状态:', gameState);
-    } else {
-        // 如果没有保存的状态，使用默认值
-        gameState = {
-            character: {
-                name: '默认角色',
-                health: 100,
-                mood: 50,
-                money: 100,
-                energy: 80,
-                location: 'awakening_room'
-            },
-            gameTime: {
-                day: 1,
-                hour: 8,
-                minute: 0,
-                weekday: 'Monday'
+async function loadGameState() {
+    try {
+        // 优先从IndexedDB加载
+        if (window.Database && window.Database.db) {
+            const savedState = await window.Database.loadGameState();
+            if (savedState) {
+                gameState = savedState;
+                window.gameState = gameState; // 同步到全局
+                console.log('✅ 从IndexedDB加载游戏状态:', gameState);
+                return;
             }
-        };
+        }
+
+        // 降级到localStorage（迁移旧数据）
+        const localSavedState = localStorage.getItem('gameState');
+        if (localSavedState) {
+            gameState = JSON.parse(localSavedState);
+            window.gameState = gameState; // 同步到全局
+            console.log('🔄 从localStorage迁移游戏状态:', gameState);
+
+            // 迁移到IndexedDB
+            if (window.Database && window.Database.db) {
+                await window.Database.saveGameState(gameState);
+                localStorage.removeItem('gameState');
+                console.log('✅ 游戏状态已迁移到IndexedDB');
+            }
+            return;
+        }
+    } catch (error) {
+        console.error('加载游戏状态失败:', error);
+    }
+
+    // 如果没有加载到状态，使用默认值
+    if (!gameState) {
+        console.log('📝 小纸条：使用默认游戏状态');
+        gameState = getDefaultGameState();
+        window.gameState = gameState; // 同步到全局
     }
 
     // 同步到原有的gameData（如果存在）
@@ -66,6 +134,14 @@ function loadGameState() {
 
 // 初始化界面
 function initializeUI() {
+    // 检查gameState是否已初始化
+    if (!gameState || !gameState.character) {
+        console.error('❌ gameState未初始化，无法初始化UI');
+        return;
+    }
+
+    console.log('📝 小纸条：开始初始化UI，gameState.character.mood =', gameState.character.mood);
+
     // 更新角色名称
     document.getElementById('characterName').textContent = gameState.character.name || '角色';
 
@@ -81,11 +157,24 @@ function initializeUI() {
 
 // 更新状态显示
 function updateStatus() {
-    // 更新状态条
-    updateStatBar('health', gameState.character.health || 100);
-    updateStatBar('mood', gameState.character.mood || 50);
-    updateStatBar('money', gameState.character.money || 100);
-    updateStatBar('energy', gameState.character.energy || 80);
+    console.log(`🎯 UI更新：updateStatus被调用！！！`);
+    console.log(`🎯 UI更新：当前mood = ${gameState.character.mood}`);
+
+    // 如果当前在状态标签页，更新状态条
+    if (currentTab === 'status') {
+        console.log(`📝 小纸条：当前在状态页面，更新状态条`);
+        updateStatBar('health', gameState.character.health || 100);
+        updateStatBar('mood', gameState.character.mood || 50);
+        updateStatBar('money', gameState.character.money || 100);
+        updateStatBar('energy', gameState.character.energy || 80);
+    } else {
+        console.log(`📝 小纸条：当前不在状态页面 (${currentTab})，刷新标签页内容`);
+        // 如果不在状态页面，刷新当前标签页内容以确保数据最新
+        if (currentTab) {
+            const content = getTabContent(currentTab);
+            document.getElementById('functionContent').innerHTML = content;
+        }
+    }
 
     // 同步到原有系统（如果存在）
     if (typeof updateCharacterPanel === 'function') {
@@ -95,8 +184,12 @@ function updateStatus() {
 
 // 更新状态条
 function updateStatBar(stat, value) {
+    console.log(`📝 小纸条：updateStatBar(${stat}, ${value})`);
+
     const bar = document.getElementById(stat + 'Bar');
     const valueText = document.getElementById(stat + 'Value');
+
+    console.log(`📝 小纸条：找到元素 ${stat}Bar:`, !!bar, `${stat}Value:`, !!valueText);
 
     if (bar) {
         // 限制值在0-100之间（金钱除外）
@@ -105,11 +198,14 @@ function updateStatBar(stat, value) {
             displayValue = Math.max(0, Math.min(100, value));
         }
 
-        bar.style.width = (stat === 'money' ? Math.min(100, value / 10) : displayValue) + '%';
+        const width = (stat === 'money' ? Math.min(100, value / 10) : displayValue) + '%';
+        bar.style.width = width;
+        console.log(`📝 小纸条：设置 ${stat}Bar 宽度为 ${width}`);
     }
 
     if (valueText) {
         valueText.textContent = value;
+        console.log(`📝 小纸条：设置 ${stat}Value 文本为 ${value}`);
     }
 }
 
@@ -187,6 +283,14 @@ function updateScenePreview(location) {
 
 // 切换标签页
 function switchTab(tabName) {
+    console.log('切换到标签页:', tabName);
+
+    // 检查gameState是否存在
+    if (!window.gameState || !window.gameState.character) {
+        console.warn('gameState未初始化，无法切换标签页');
+        return;
+    }
+
     // 更新按钮状态
     document.querySelectorAll('.tab-btn').forEach(btn => {
         if (btn.dataset.tab === tabName) {
@@ -240,68 +344,111 @@ function getTabContent(tabName) {
         `,
         'inventory': `
             <div class="tab-content">
-                <div style="padding: 5px;">
-                    <div style="margin-bottom: 8px;">📚 教科书 x3</div>
-                    <div style="margin-bottom: 8px;">✏️ 笔记本 x2</div>
-                    <div style="margin-bottom: 8px;">🍎 苹果 x1</div>
-                    <div style="margin-bottom: 8px;">💰 金钱: ¥${gameState.character.money}</div>
+                <div class="tab-item-container">
+                    <div class="tab-item">📚 教科书 x3</div>
+                    <div class="tab-item">✏️ 笔记本 x2</div>
+                    <div class="tab-item">🍎 苹果 x1</div>
+                    <div class="tab-item">💰 金钱: ¥${gameState.character.money}</div>
                 </div>
             </div>
         `,
         'map': `
             <div class="tab-content">
-                <div style="padding: 5px; font-size: 12px;">
-                    <div style="margin-bottom: 6px;">📍 当前: ${document.getElementById('currentLocation').textContent}</div>
-                    <div style="margin-bottom: 4px;">可前往:</div>
-                    <div style="margin-left: 10px; cursor: pointer;" onclick="goToLocation('classroom')">• 教室</div>
-                    <div style="margin-left: 10px; cursor: pointer;" onclick="goToLocation('playground')">• 操场</div>
-                    <div style="margin-left: 10px; cursor: pointer;" onclick="goToLocation('cafeteria')">• 食堂</div>
-                    <div style="margin-left: 10px; cursor: pointer;" onclick="goToLocation('town')">• 小镇</div>
+                <div class="tab-item-container small-text">
+                    <div class="tab-item">📍 当前: ${document.getElementById('currentLocation').textContent}</div>
+                    <div class="tab-item">可前往:</div>
+                    <div class="tab-item map-location" data-location="classroom">• 教室</div>
+                    <div class="tab-item map-location" data-location="playground">• 操场</div>
+                    <div class="tab-item map-location" data-location="cafeteria">• 食堂</div>
+                    <div class="tab-item map-location" data-location="town">• 小镇</div>
                 </div>
             </div>
         `,
         'skills': `
             <div class="tab-content">
-                <div style="padding: 5px; font-size: 12px;">
-                    <div style="margin-bottom: 6px;">智力: ⭐⭐⭐☆☆</div>
-                    <div style="margin-bottom: 6px;">体力: ⭐⭐⭐⭐☆</div>
-                    <div style="margin-bottom: 6px;">魅力: ⭐⭐⭐☆☆</div>
-                    <div style="margin-bottom: 6px;">勇气: ⭐⭐☆☆☆</div>
+                <div class="tab-item-container small-text">
+                    <div class="tab-item">智力: ⭐⭐⭐☆☆</div>
+                    <div class="tab-item">体力: ⭐⭐⭐⭐☆</div>
+                    <div class="tab-item">魅力: ⭐⭐⭐☆☆</div>
+                    <div class="tab-item">勇气: ⭐⭐☆☆☆</div>
                 </div>
             </div>
         `,
         'social': `
             <div class="tab-content">
-                <div style="padding: 5px; font-size: 12px;">
-                    <div style="margin-bottom: 6px;">林学长: ❤️❤️❤️🤍🤍</div>
-                    <div style="margin-bottom: 6px;">张同学: ❤️❤️🤍🤍🤍</div>
-                    <div style="margin-bottom: 6px;">夜同学: ❤️🤍🤍🤍🤍</div>
-                    <div style="margin-bottom: 6px;">小明: ❤️❤️❤️❤️🤍</div>
+                <div class="tab-item-container small-text">
+                    <div class="tab-item">林学长: ❤️❤️❤️🤍🤍</div>
+                    <div class="tab-item">张同学: ❤️❤️🤍🤍🤍</div>
+                    <div class="tab-item">夜同学: ❤️🤍🤍🤍🤍</div>
+                    <div class="tab-item">小明: ❤️❤️❤️❤️🤍</div>
                 </div>
             </div>
         `,
         'journal': `
             <div class="tab-content">
-                <div style="padding: 5px; font-size: 11px; line-height: 1.4;">
-                    <div style="margin-bottom: 6px;">📅 第${gameState.gameTime.day}天 - ${document.getElementById('currentTime').textContent}</div>
-                    <div style="margin-bottom: 4px;">• 新的一天开始了</div>
-                    <div style="margin-bottom: 4px;">• 准备开始冒险</div>
+                <div class="tab-item-container micro-text">
+                    <div class="tab-item">📅 第${gameState.gameTime.day}天 - ${document.getElementById('currentTime').textContent}</div>
+                    <div class="tab-item">• 新的一天开始了</div>
+                    <div class="tab-item">• 准备开始冒险</div>
                 </div>
             </div>
         `,
         'settings': `
             <div class="tab-content">
-                <div style="padding: 5px; font-size: 12px;">
-                    <div style="margin-bottom: 8px; cursor: pointer;" onclick="saveGame()">💾 保存游戏</div>
-                    <div style="margin-bottom: 8px; cursor: pointer;" onclick="toggleSound()">🔊 音效: 开启</div>
-                    <div style="margin-bottom: 8px; cursor: pointer;" onclick="toggleMusic()">🎵 音乐: 开启</div>
-                    <div style="margin-bottom: 8px; cursor: pointer;" onclick="returnToMenu()">🏠 返回主菜单</div>
+                <div class="tab-item-container small-text">
+                    <div class="tab-item settings-item" data-action="save">💾 保存游戏</div>
+                    <div class="tab-item settings-item" data-action="sound">🔊 音效: 开启</div>
+                    <div class="tab-item settings-item" data-action="music">🎵 音乐: 开启</div>
+                    <div class="tab-item settings-item" data-action="menu">🏠 返回主菜单</div>
                 </div>
             </div>
         `
     };
 
-    return contents[tabName] || '<div>加载中...</div>';
+    const content = contents[tabName] || '<div>加载中...</div>';
+
+    // 添加事件监听器（如果需要）
+    setTimeout(() => {
+        addTabEventListeners(tabName);
+    }, 0);
+
+    return content;
+}
+
+// 为标签页内容添加事件监听器
+function addTabEventListeners(tabName) {
+    if (tabName === 'map') {
+        document.querySelectorAll('.map-location').forEach(item => {
+            item.addEventListener('click', function() {
+                const location = this.getAttribute('data-location');
+                if (typeof goToLocation === 'function') {
+                    goToLocation(location);
+                }
+            });
+        });
+    }
+
+    if (tabName === 'settings') {
+        document.querySelectorAll('.settings-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                switch(action) {
+                    case 'save':
+                        if (typeof saveGame === 'function') saveGame();
+                        break;
+                    case 'sound':
+                        if (typeof toggleSound === 'function') toggleSound();
+                        break;
+                    case 'music':
+                        if (typeof toggleMusic === 'function') toggleMusic();
+                        break;
+                    case 'menu':
+                        if (typeof returnToMenu === 'function') returnToMenu();
+                        break;
+                }
+            });
+        });
+    }
 }
 
 // 初始化标签页内容
@@ -325,6 +472,7 @@ function setupEventListeners() {
 }
 
 // 开始游戏
+
 function startGame() {
     // 显示初始剧情
     const storyArea = document.getElementById('storyArea');
@@ -552,8 +700,22 @@ function deactivateAIMode() {
 }
 
 // 保存游戏状态
-function saveGameState() {
-    localStorage.setItem('gameState', JSON.stringify(gameState));
+async function saveGameState() {
+    try {
+        // 优先保存到IndexedDB
+        if (window.Database && window.Database.db) {
+            await window.Database.saveGameState(gameState);
+            console.log('✅ 游戏状态已保存到IndexedDB');
+        } else {
+            // 降级到localStorage
+            localStorage.setItem('gameState', JSON.stringify(gameState));
+            console.log('💾 游戏状态已保存到localStorage（备用）');
+        }
+    } catch (error) {
+        console.error('保存游戏状态失败:', error);
+        // 出错时使用localStorage备用
+        localStorage.setItem('gameState', JSON.stringify(gameState));
+    }
 }
 
 // 保存游戏

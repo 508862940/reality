@@ -389,7 +389,7 @@ class F2Manager {
     /**
      * 快速存档
      */
-    quickSave() {
+    async quickSave() {
         // 阻止事件冒泡
         if (event) event.stopPropagation();
 
@@ -402,8 +402,23 @@ class F2Manager {
             time: document.getElementById('currentTime')?.textContent || ''
         };
 
-        // 保存到localStorage
-        localStorage.setItem('quickSave', JSON.stringify(saveData));
+        // 保存到IndexedDB（优先）或localStorage（备用）
+        try {
+            if (window.Database && window.Database.db) {
+                await window.Database.db.saveSlots.put({
+                    id: 'quickSave',
+                    data: saveData,
+                    timestamp: Date.now()
+                });
+                console.log('✅ 快速存档已保存到IndexedDB');
+            } else {
+                localStorage.setItem('quickSave', JSON.stringify(saveData));
+                console.log('💾 快速存档已保存到localStorage（备用）');
+            }
+        } catch (error) {
+            console.error('快速存档保存失败:', error);
+            localStorage.setItem('quickSave', JSON.stringify(saveData));
+        }
 
         // 显示提示
         this.showTip('已快速存档');
@@ -413,8 +428,43 @@ class F2Manager {
     /**
      * 读取存档
      */
-    loadSave() {
-        const saveData = localStorage.getItem('quickSave');
+    async loadSave() {
+        let saveData = null;
+
+        try {
+            // 优先从IndexedDB读取
+            if (window.Database && window.Database.db) {
+                const result = await window.Database.db.saveSlots.get('quickSave');
+                if (result) {
+                    saveData = JSON.stringify(result.data);
+                    console.log('✅ 从IndexedDB读取快速存档');
+                }
+            }
+
+            // 降级到localStorage
+            if (!saveData) {
+                saveData = localStorage.getItem('quickSave');
+                if (saveData) {
+                    console.log('🔄 从localStorage读取快速存档');
+
+                    // 迁移到IndexedDB
+                    if (window.Database && window.Database.db) {
+                        const parsed = JSON.parse(saveData);
+                        await window.Database.db.saveSlots.put({
+                            id: 'quickSave',
+                            data: parsed,
+                            timestamp: Date.now()
+                        });
+                        localStorage.removeItem('quickSave');
+                        console.log('✅ 快速存档已迁移到IndexedDB');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('读取快速存档失败:', error);
+            saveData = localStorage.getItem('quickSave');
+        }
+
         if (!saveData) {
             this.showTip('没有找到存档');
             this.closeQuickMenu();
