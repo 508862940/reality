@@ -136,20 +136,40 @@ window.TestAIScenes = TestAIScenes;
 
 // 扩展场景管理器以支持AI对话触发
 if (window.sceneManager) {
-    const originalHandleChoice = window.sceneManager.handleChoice;
+    // 保存原始方法（如果还没保存过）
+    if (!window.sceneManager._originalProceedToNext) {
+        window.sceneManager._originalProceedToNext = window.sceneManager.proceedToNext;
+    }
 
-    window.sceneManager.handleChoice = function(choiceId) {
-        // 获取当前选择
-        const choice = this.currentChoices?.find(c => c.id === choiceId);
+    // 覆盖proceedToNext方法，在其中检查AI对话
+    window.sceneManager.proceedToNext = function() {
+        console.log('🎭 proceedToNext被调用');
+        console.log('🎭 当前选择:', this.currentChoice);
 
-        if (choice && choice.action === 'startAIDialogue') {
-            // 触发AI对话模式
-            console.log('🎭 触发AI对话:', choice.npc);
+        // 检查是否是AI对话选择
+        if (this.currentChoice && this.currentChoice.action === 'startAIDialogue') {
+            console.log('🎭 在proceedToNext中检测到AI对话选择:', this.currentChoice.npc);
+
+            // 应用选择效果（如果有）
+            if (this.currentChoice.effects) {
+                console.log('🎭 应用选择效果:', this.currentChoice.effects);
+                this.applyChoiceResults(this.currentChoice, this.currentScene);
+            }
+
+            // 强制更新UI
+            this.forceUpdateUI();
+
+            // 保存对话前的场景内容
+            const storyArea = document.getElementById('storyArea');
+            if (storyArea) {
+                const existingContent = storyArea.innerHTML;
+                storyArea.setAttribute('data-before-ai', existingContent);
+            }
 
             // 初始化NPC（如果有响应式系统）
-            if (window.createReactiveNPC && !window.reactiveNPCs?.[choice.npc]) {
-                const npcState = this.currentScene?.npcState?.[choice.npc] || {};
-                window.createReactiveNPC(choice.npc, {
+            if (window.createReactiveNPC && !window.reactiveNPCs?.[this.currentChoice.npc]) {
+                const npcState = this.currentScene?.npcState?.[this.currentChoice.npc] || {};
+                window.createReactiveNPC(this.currentChoice.npc, {
                     affection: npcState.affection || 0,
                     mood: npcState.mood || 'neutral',
                     state: 'talking'
@@ -158,19 +178,23 @@ if (window.sceneManager) {
 
             // 开启AI对话
             if (window.aiDialogueManager) {
-                window.aiDialogueManager.startAIDialogue(choice.npc, choice.context || {});
+                window.aiDialogueManager.startAIDialogue(this.currentChoice.npc, this.currentChoice.context || {});
             }
 
-            // 应用效果
-            if (choice.effects) {
-                this.applyEffects(choice.effects);
-            }
+            // 更新场景状态为AI对话模式
+            this.updateSceneState({
+                status: 'ai_dialogue',
+                selectedCount: 1,
+                canProceed: false
+            });
 
+            console.log('🎭 AI对话模式已开启');
             return; // 不执行原始的场景跳转
         }
 
         // 调用原始方法
-        return originalHandleChoice.call(this, choiceId);
+        console.log('🎭 调用原始proceedToNext方法');
+        return this._originalProceedToNext.call(this);
     };
 }
 

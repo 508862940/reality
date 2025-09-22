@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试D区设置标签页</title>
+    <link rel="stylesheet" href="css/game-main.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .test-area {
+            width: 300px;
+            height: 400px;
+            border: 2px solid #8b5cf6;
+            margin: 20px 0;
+        }
+        .test-btn {
+            padding: 10px 20px;
+            background: #8b5cf6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>D区设置标签页测试</h1>
+
+    <h2>测试按钮：</h2>
+    <button class="test-btn" onclick="testSettings()">模拟设置标签页内容</button>
+    <button class="test-btn" onclick="clearContent()">清空内容</button>
+    <button class="test-btn" onclick="showHTML()">显示HTML源码</button>
+
+    <h2>D区模拟容器：</h2>
+    <div class="test-area">
+        <div class="area-d" style="height: 100%;">
+            <div class="function-content" id="functionContent" style="height: 100%; background: rgba(255,255,255,0.1);">
+                <p>初始内容 - 点击上面的按钮测试</p>
+            </div>
+        </div>
+    </div>
+
+    <h2>纯HTML测试（不走JS）：</h2>
+    <div class="test-area">
+        <div class="function-content" style="height: 100%; background: rgba(255,255,255,0.1);">
+            <div class="tab-content">
+                <div class="tab-item-container small-text">
+                    <div class="tab-item settings-item" data-action="save">💾 保存游戏</div>
+                    <div class="tab-item settings-item" data-action="sound">🔊 音效: 开启</div>
+                    <div class="tab-item settings-item" data-action="music">🎵 音乐: 开启</div>
+                    <div class="tab-item settings-item" data-action="menu">🏠 返回主菜单</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="output" style="background: rgba(255,255,255,0.1); padding: 10px; margin-top: 20px; font-family: monospace; font-size: 12px;"></div>
+
+    <script>
+        function testSettings() {
+            const content = `
+                <div class="tab-content">
+                    <div class="tab-item-container small-text">
+                        <div class="tab-item settings-item" data-action="save">💾 保存游戏</div>
+                        <div class="tab-item settings-item" data-action="sound">🔊 音效: 开启</div>
+                        <div class="tab-item settings-item" data-action="music">🎵 音乐: 开启</div>
+                        <div class="tab-item settings-item" data-action="menu">🏠 返回主菜单</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('functionContent').innerHTML = content;
+            log('✅ 设置内容已插入到functionContent');
+
+            // 检查元素
+            const items = document.querySelectorAll('.settings-item');
+            log(`🔧 找到设置项: ${items.length} 个`);
+
+            // 检查样式
+            const tabContent = document.querySelector('#functionContent .tab-content');
+            if (tabContent) {
+                const styles = window.getComputedStyle(tabContent);
+                log(`📐 .tab-content 样式:`);
+                log(`   display: ${styles.display}`);
+                log(`   visibility: ${styles.visibility}`);
+                log(`   opacity: ${styles.opacity}`);
+                log(`   height: ${styles.height}`);
+            }
+        }
+
+        function clearContent() {
+            document.getElementById('functionContent').innerHTML = '<p>内容已清空</p>';
+            log('🧹 内容已清空');
+        }
+
+        function showHTML() {
+            const html = document.getElementById('functionContent').innerHTML;
+            log('📄 当前HTML内容:');
+            log(html);
+        }
+
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += message + '<br>';
+            console.log(message);
+        }
+    </script>
+</body>
+</html>

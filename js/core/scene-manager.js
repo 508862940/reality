@@ -810,6 +810,12 @@ class SceneManager {
             }
         }));
 
+        // 检查当前状态是否是AI对话模式
+        if (this.sceneState.status === 'ai_dialogue') {
+            console.log('🎭 当前在AI对话模式，跳过场景跳转');
+            return;
+        }
+
         // 获取下一场景
         const nextScene = this.getNextScene(this.currentChoice);
 
@@ -824,6 +830,24 @@ class SceneManager {
             // 静默处理场景加载失败
             console.warn('场景加载失败:', this.currentChoice);
         }
+    }
+
+    /**
+     * 结束AI对话模式
+     */
+    endAIDialogue() {
+        console.log('🎭 场景管理器：结束AI对话模式');
+
+        // 恢复到ready状态
+        this.updateSceneState({
+            status: 'ready',
+            selectedCount: 0,
+            canProceed: false
+        });
+
+        // 清除AI对话相关的选择
+        this.currentChoice = null;
+        this.selectedChoiceId = null;
     }
 
     /**

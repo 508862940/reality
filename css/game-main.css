@@ -271,9 +271,10 @@ body {
 }
 
 .tab-content {
-    display: none;
+    display: block;
 }
 
+/* 状态标签页的特殊样式（如果需要） */
 .tab-content#statusContent {
     display: block;
 }

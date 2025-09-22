@@ -61,6 +61,12 @@ class AIDialogueManager {
             window.f2Manager.switchToAIMode();
         }
 
+        // 显示结束对话按钮
+        const endBtn = document.getElementById('endAIBtn');
+        if (endBtn) {
+            endBtn.style.display = 'block';
+        }
+
         // 显示NPC的开场白
         this.showNPCGreeting(npcName, context);
     }
@@ -375,11 +381,45 @@ class AIDialogueManager {
             window.f2Manager.switchToSceneMode();
         }
 
-        // 清除对话区的AI对话内容
+        // 通知场景管理器AI对话结束
+        if (window.sceneManager) {
+            window.sceneManager.endAIDialogue();
+        }
+
+        // 恢复之前的场景内容或显示默认内容
         const storyArea = document.getElementById('storyArea');
         if (storyArea) {
+            // 清除AI对话内容
             const dialogueMessages = storyArea.querySelectorAll('.dialogue-message');
             dialogueMessages.forEach(msg => msg.remove());
+
+            // 清除思考指示器
+            const typingIndicator = storyArea.querySelector('.typing-indicator');
+            if (typingIndicator) typingIndicator.remove();
+
+            // 恢复之前的内容或显示默认提示
+            const beforeContent = storyArea.getAttribute('data-before-ai');
+            if (beforeContent) {
+                storyArea.innerHTML = beforeContent;
+                storyArea.removeAttribute('data-before-ai');
+            } else if (window.sceneManager && window.sceneManager.currentScene) {
+                // 重新显示当前场景内容
+                window.sceneManager.displayScene(window.sceneManager.currentScene);
+            } else {
+                // 显示默认的返回提示
+                storyArea.innerHTML = `
+                    <div class="story-text fade-in">
+                        <p>对话结束了。</p>
+                        <p>你回到了之前的场景。</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 隐藏结束对话按钮
+        const endBtn = document.getElementById('endAIBtn');
+        if (endBtn) {
+            endBtn.style.display = 'none';
         }
     }
 
