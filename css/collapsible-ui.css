@@ -103,7 +103,7 @@
     transition: all 0.3s ease;
 }
 
-.upper-section.collapsed .reminder-bar {
+.upper-section.collapsed .area-e {
     position: absolute;
     top: 0;
     left: 0;

@@ -66,7 +66,7 @@ class CollapsibleUI {
             // 适配安全区域（iPhone刘海屏）
             document.documentElement.style.setProperty(
                 '--safe-area-top',
-                'env(safe-area-inset-top, 20px)'
+                'env(safe-area-inset-top, 0px)'
             );
 
             // 优化触摸响应
@@ -161,7 +161,7 @@ class CollapsibleUI {
      */
     setupTouchSupport() {
         // 在E区（提醒栏）添加滑动检测
-        const reminderBar = document.querySelector('.reminder-bar');
+        const reminderBar = document.querySelector('.area-e');
         if (!reminderBar) return;
 
         let startY = 0;

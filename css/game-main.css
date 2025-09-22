@@ -30,7 +30,7 @@ body {
 /* PWA灵动岛适配 */
 .game-container.pwa-safe-container {
     /* 内容区域微调 */
-    padding-top: calc(var(--dynamic-padding-top, 0px) + 10px);
+    padding-top: var(--dynamic-padding-top, 0px);
 }
 
 /* 调整顶部状态栏位置 */
