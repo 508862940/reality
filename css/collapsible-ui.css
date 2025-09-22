@@ -90,8 +90,8 @@
 }
 
 .upper-section.collapsed {
-    height: 60px !important;
-    min-height: 60px !important;
+    height: 30px !important; /* 只显示E区的30px高度 */
+    min-height: 30px !important;
 }
 
 /* 折叠时只显示E区提醒栏 */
@@ -108,7 +108,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: 30px; /* 匹配折叠高度 */
     background: linear-gradient(to right,
         rgba(30, 30, 45, 0.95),
         rgba(40, 40, 60, 0.95));
@@ -124,13 +124,13 @@
 }
 
 .lower-section.expanded {
-    height: calc(100vh - 60px) !important;
-    max-height: calc(100vh - 60px) !important;
+    height: calc(100vh - 30px) !important; /* 折叠后F区占据除了E区30px外的全部空间 */
+    max-height: calc(100vh - 30px) !important;
 }
 
 /* F1区在展开模式下的优化 */
 .lower-section.expanded .story-area {
-    height: calc(100vh - 180px);
+    height: calc(100vh - 150px); /* 调整为更合理的高度 */
     max-height: none;
     overflow-y: auto;
 }
@@ -189,11 +189,11 @@
     }
 
     .upper-section.collapsed {
-        height: 50px !important;
+        height: 30px !important; /* 移动端也是30px */
     }
 
     .lower-section.expanded {
-        height: calc(100vh - 50px) !important;
+        height: calc(100vh - 30px) !important;
     }
 }
 

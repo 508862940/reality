@@ -993,3 +993,11 @@ function showNotification(message, type = 'success') {
         alert(message);
     }
 }
+
+// 立即导出存档系统函数到全局
+window.quickSave = quickSave;
+window.showSaveLoadDialog = showSaveLoadDialog;
+window.hideSaveLoadDialog = hideSaveLoadDialog;
+window.loadSave = loadSave;
+window.deleteSave = deleteSave;
+window.loadSavesList = loadSavesList;

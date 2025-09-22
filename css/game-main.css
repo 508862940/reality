@@ -29,8 +29,8 @@ body {
 
 /* PWA灵动岛适配 */
 .game-container.pwa-safe-container {
-    /* 内容区域微调 */
-    padding-top: var(--dynamic-padding-top, 0px);
+    /* 移除顶部padding，让ABCD区域占满 */
+    padding-top: 0;
 }
 
 /* 调整顶部状态栏位置 */
