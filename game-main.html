@@ -24,6 +24,8 @@
     <link rel="stylesheet" href="css/app.css">
     <!-- 游戏主界面样式 -->
     <link rel="stylesheet" href="css/game-main.css">
+    <!-- 可折叠UI样式 -->
+    <link rel="stylesheet" href="css/collapsible-ui.css">
 </head>
 <body>
     <div class="game-container pwa-safe-container">
@@ -170,6 +172,8 @@
     <script src="js/pages/game-main.js"></script>
     <!-- 加载游戏主界面初始化 -->
     <script src="js/pages/game-main-init.js"></script>
+    <!-- 加载可折叠UI系统 -->
+    <script src="js/core/collapsible-ui.js"></script>
     <!-- 加载原有的游戏逻辑 -->
     <script src="js/core/game-engine.js"></script>
     <!-- 加载AI配置 -->
@@ -191,6 +195,29 @@
             <div class="dialog-buttons">
                 <button class="dialog-btn dialog-btn-cancel" onclick="hideReturnMenuDialog()">取消</button>
                 <button class="dialog-btn dialog-btn-confirm" onclick="confirmReturnToMenu()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 存档管理对话框 -->
+    <div id="saveLoadDialog" class="game-dialog-overlay" style="display: none;">
+        <div class="game-dialog save-dialog">
+            <div class="dialog-header">
+                <h3>💾 存档管理</h3>
+                <button class="dialog-close" onclick="hideSaveLoadDialog()">×</button>
+            </div>
+            <div class="dialog-content">
+                <div class="save-actions-bar">
+                    <button class="save-new-btn" onclick="quickSave(); loadSavesList();">
+                        ➕ 新建存档
+                    </button>
+                </div>
+                <div class="saves-list" id="savesList">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            <div class="dialog-buttons">
+                <button class="dialog-btn dialog-btn-cancel" onclick="hideSaveLoadDialog()">关闭</button>
             </div>
         </div>
     </div>

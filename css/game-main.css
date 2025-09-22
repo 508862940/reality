@@ -1804,3 +1804,148 @@ body {
         transform: translateY(0);
     }
 }
+
+/* ==================== 存档管理对话框样式 ==================== */
+.save-dialog {
+    max-width: 500px;
+}
+
+.dialog-close {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.dialog-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.save-actions-bar {
+    margin-bottom: 15px;
+}
+
+.save-new-btn {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-new-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+.saves-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.save-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.save-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.save-info {
+    flex: 1;
+}
+
+.save-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.save-details {
+    font-size: 12px;
+    color: #a1a1aa;
+}
+
+.save-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.save-btn {
+    padding: 6px 12px;
+    background: rgba(139, 92, 246, 0.2);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    color: #fff;
+}
+
+.save-btn.delete {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.save-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.3);
+    color: #fff;
+}
+
+.no-saves {
+    text-align: center;
+    color: #6b7280;
+    padding: 40px;
+    font-size: 14px;
+}
+
+.loading {
+    text-align: center;
+    color: #6b7280;
+    padding: 20px;
+    font-size: 14px;
+}
+
+/* 通知样式 */
+.notice-text.error {
+    color: #ef4444;
+}
+
+.notice-text.success {
+    color: #10b981;
+}

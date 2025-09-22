@@ -1,0 +1,284 @@
+/**
+ * 🎭 可折叠UI样式
+ * 上半部分折叠动画和布局
+ */
+
+/* ==================== 折叠手柄样式 ==================== */
+.collapse-handle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(30, 30, 45, 0.5) 50%,
+        rgba(30, 30, 45, 0.8) 100%);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.collapse-handle:hover {
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(139, 92, 246, 0.2) 50%,
+        rgba(139, 92, 246, 0.3) 100%);
+}
+
+.handle-bar {
+    width: 60px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    position: absolute;
+    top: 8px;
+}
+
+.handle-icon {
+    color: rgba(255, 255, 255, 0.6);
+    transition: transform 0.3s ease;
+}
+
+.collapse-handle:hover .handle-icon {
+    color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+}
+
+/* ==================== 浮动切换按钮 ==================== */
+.floating-toggle-btn {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(30, 30, 45, 0.9);
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.floating-toggle-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: #8b5cf6;
+    color: #fff;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.floating-toggle-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* ==================== 折叠状态样式 ==================== */
+
+/* 上半部分折叠状态 */
+.upper-section {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.upper-section.collapsed {
+    height: 60px !important;
+    min-height: 60px !important;
+}
+
+/* 折叠时只显示E区提醒栏 */
+.upper-section.collapsed .character-area,
+.upper-section.collapsed .info-panel {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+.upper-section.collapsed .reminder-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to right,
+        rgba(30, 30, 45, 0.95),
+        rgba(40, 40, 60, 0.95));
+    border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+}
+
+/* 下半部分展开状态 */
+.lower-section {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lower-section.expanded {
+    height: calc(100vh - 60px) !important;
+    max-height: calc(100vh - 60px) !important;
+}
+
+/* F1区在展开模式下的优化 */
+.lower-section.expanded .story-area {
+    height: calc(100vh - 180px);
+    max-height: none;
+    overflow-y: auto;
+}
+
+.lower-section.expanded .story-text {
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 30px;
+}
+
+.lower-section.expanded .story-choice {
+    padding: 16px 24px;
+    font-size: 15px;
+}
+
+/* ==================== 折叠指示器动画 ==================== */
+.collapsed-indicator {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: rgba(139, 92, 246, 0.2);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 12px;
+    animation: pulse 2s infinite;
+}
+
+.upper-section.collapsed .collapsed-indicator {
+    display: flex;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ==================== 移动端适配 ==================== */
+@media (max-width: 430px) {
+    .floating-toggle-btn {
+        right: 10px;
+        width: 36px;
+        height: 36px;
+    }
+
+    .collapse-handle {
+        height: 30px;
+    }
+
+    .upper-section.collapsed {
+        height: 50px !important;
+    }
+
+    .lower-section.expanded {
+        height: calc(100vh - 50px) !important;
+    }
+}
+
+/* ==================== 触摸滑动提示 ==================== */
+.swipe-hint {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    animation: swipeHint 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes swipeHint {
+    0%, 100% {
+        transform: translateX(-50%) translateY(0);
+        opacity: 0.4;
+    }
+    50% {
+        transform: translateX(-50%) translateY(-5px);
+        opacity: 0.8;
+    }
+}
+
+/* ==================== PWA专属适配 ==================== */
+@media (display-mode: standalone) {
+    /* PWA模式下的特殊样式 */
+    .collapse-handle {
+        height: 40px;  /* 更大的触摸区域 */
+        background: linear-gradient(to bottom,
+            transparent 0%,
+            rgba(139, 92, 246, 0.1) 50%,
+            rgba(139, 92, 246, 0.2) 100%);
+    }
+
+    .upper-section.collapsed {
+        /* 考虑PWA状态栏 */
+        height: calc(60px + env(safe-area-inset-top, 0px)) !important;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    .lower-section.expanded {
+        /* PWA全屏高度计算 */
+        height: calc(100vh - 60px - env(safe-area-inset-top, 0px)) !important;
+    }
+
+    /* 隐藏浮动按钮（触摸手势就够了） */
+    .floating-toggle-btn {
+        display: none;
+    }
+
+    /* 增强触摸反馈 */
+    .collapse-handle:active {
+        background: rgba(139, 92, 246, 0.4);
+    }
+
+    /* 优化滚动性能 */
+    .story-area {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+}
+
+/* ==================== iPhone刘海屏适配 ==================== */
+@supports (padding: env(safe-area-inset-top)) {
+    .upper-section {
+        padding-top: env(safe-area-inset-top, 0);
+    }
+
+    .game-container {
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+}
+
+/* ==================== 深色模式支持 ==================== */
+@media (prefers-color-scheme: dark) {
+    .collapse-handle {
+        background: linear-gradient(to bottom,
+            transparent 0%,
+            rgba(10, 10, 15, 0.5) 50%,
+            rgba(10, 10, 15, 0.9) 100%);
+    }
+}

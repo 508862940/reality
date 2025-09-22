@@ -401,7 +401,8 @@ function getTabContent(tabName) {
         'settings': `
             <div class="tab-content">
                 <div class="tab-item-container small-text">
-                    <div class="tab-item settings-item" data-action="save">💾 保存游戏</div>
+                    <div class="tab-item settings-item" data-action="save-load">💾 存档管理</div>
+                    <div class="tab-item settings-item" data-action="quick-save">⚡ 快速存档</div>
                     <div class="tab-item settings-item" data-action="sound">🔊 音效: 开启</div>
                     <div class="tab-item settings-item" data-action="music">🎵 音乐: 开启</div>
                     <div class="tab-item settings-item" data-action="menu">🏠 返回主菜单</div>
@@ -437,6 +438,12 @@ function addTabEventListeners(tabName) {
             item.addEventListener('click', function() {
                 const action = this.getAttribute('data-action');
                 switch(action) {
+                    case 'save-load':
+                        showSaveLoadDialog();
+                        break;
+                    case 'quick-save':
+                        quickSave();
+                        break;
                     case 'save':
                         if (typeof saveGame === 'function') saveGame();
                         break;
@@ -811,5 +818,178 @@ async function confirmReturnToMenu() {
         console.error('保存游戏失败:', error);
         alert('保存游戏失败，是否仍要返回主菜单？');
         window.location.href = 'menu.html';
+    }
+}
+
+// ==================== 存档系统功能 ====================
+
+// 快速存档
+async function quickSave() {
+    try {
+        // 使用时间戳作为存档ID
+        const saveId = `save_${Date.now()}`;
+        const saveData = {
+            id: saveId,
+            name: `快速存档 - ${new Date().toLocaleString('zh-CN')}`,
+            ...gameState,
+            timestamp: Date.now(),
+            location: gameState.character.location || 'unknown',
+            playTime: '00:00' // 后续可以实现游戏时长统计
+        };
+
+        // 保存到IndexedDB
+        if (window.Database && window.Database.db) {
+            await window.Database.db.gameState.put(saveData);
+            showNotification('⚡ 快速存档成功！');
+        } else {
+            localStorage.setItem(saveId, JSON.stringify(saveData));
+            showNotification('⚡ 快速存档成功（本地）！');
+        }
+    } catch (error) {
+        console.error('快速存档失败:', error);
+        showNotification('❌ 快速存档失败', 'error');
+    }
+}
+
+// 显示存档管理对话框
+function showSaveLoadDialog() {
+    const dialog = document.getElementById('saveLoadDialog');
+    if (dialog) {
+        loadSavesList();
+        dialog.style.display = 'flex';
+        setTimeout(() => {
+            dialog.classList.add('active');
+        }, 10);
+    } else {
+        console.error('存档管理对话框不存在');
+    }
+}
+
+// 隐藏存档管理对话框
+function hideSaveLoadDialog() {
+    const dialog = document.getElementById('saveLoadDialog');
+    if (dialog) {
+        dialog.classList.remove('active');
+        setTimeout(() => {
+            dialog.style.display = 'none';
+        }, 300);
+    }
+}
+
+// 加载存档列表
+async function loadSavesList() {
+    try {
+        const savesContainer = document.getElementById('savesList');
+        if (!savesContainer) return;
+
+        let saves = [];
+
+        // 从IndexedDB获取所有存档
+        if (window.Database && window.Database.db) {
+            const allSaves = await window.Database.db.gameState.toArray();
+            saves = allSaves.filter(save => save.id !== 'main'); // 排除主存档
+        }
+
+        // 按时间排序
+        saves.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        // 渲染存档列表
+        if (saves.length === 0) {
+            savesContainer.innerHTML = '<div class="no-saves">暂无存档</div>';
+        } else {
+            savesContainer.innerHTML = saves.map(save => `
+                <div class="save-item" data-id="${save.id}">
+                    <div class="save-info">
+                        <div class="save-name">${save.name || '未命名存档'}</div>
+                        <div class="save-details">
+                            📍 ${save.location || '未知'} |
+                            🕐 ${new Date(save.timestamp || 0).toLocaleString('zh-CN')}
+                        </div>
+                    </div>
+                    <div class="save-actions">
+                        <button class="save-btn" onclick="loadSave('${save.id}')">读取</button>
+                        <button class="save-btn delete" onclick="deleteSave('${save.id}')">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('加载存档列表失败:', error);
+    }
+}
+
+// 读取存档
+async function loadSave(saveId) {
+    try {
+        let saveData;
+
+        // 从IndexedDB读取
+        if (window.Database && window.Database.db) {
+            saveData = await window.Database.db.gameState.get(saveId);
+        } else {
+            // 从localStorage读取
+            const data = localStorage.getItem(saveId);
+            if (data) {
+                saveData = JSON.parse(data);
+            }
+        }
+
+        if (saveData) {
+            // 恢复游戏状态
+            gameState = saveData;
+            window.gameState = gameState;
+
+            // 刷新UI
+            initializeUI();
+            updateStatus();
+            updateLocationTime();
+
+            hideSaveLoadDialog();
+            showNotification('✅ 存档读取成功！');
+        } else {
+            showNotification('❌ 存档不存在', 'error');
+        }
+    } catch (error) {
+        console.error('读取存档失败:', error);
+        showNotification('❌ 读取存档失败', 'error');
+    }
+}
+
+// 删除存档
+async function deleteSave(saveId) {
+    if (!confirm('确定要删除这个存档吗？')) return;
+
+    try {
+        // 从IndexedDB删除
+        if (window.Database && window.Database.db) {
+            await window.Database.db.gameState.delete(saveId);
+        } else {
+            // 从localStorage删除
+            localStorage.removeItem(saveId);
+        }
+
+        loadSavesList(); // 刷新列表
+        showNotification('🗑️ 存档已删除');
+    } catch (error) {
+        console.error('删除存档失败:', error);
+        showNotification('❌ 删除存档失败', 'error');
+    }
+}
+
+// 显示通知
+function showNotification(message, type = 'success') {
+    // 使用E区提醒栏显示通知
+    const noticeText = document.getElementById('noticeText');
+    if (noticeText) {
+        noticeText.textContent = message;
+        noticeText.className = `notice-text ${type}`;
+
+        // 3秒后恢复默认
+        setTimeout(() => {
+            noticeText.className = 'notice-text';
+        }, 3000);
+    } else {
+        // 降级使用alert
+        alert(message);
     }
 }

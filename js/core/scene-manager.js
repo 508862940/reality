@@ -769,16 +769,24 @@ class SceneManager {
      * 继续到下一场景
      */
     proceedToNext() {
+        console.log('🎭 [原始] proceedToNext被调用');
+        console.log('🎭 [原始] isPreviewMode:', this.isPreviewMode);
+        console.log('🎭 [原始] previewChoice:', this.previewChoice);
+        console.log('🎭 [原始] currentChoice:', this.currentChoice);
+
         // 更新状态为转换中
         this.updateSceneState({ status: 'transitioning' });
 
         // 如果处于预览模式，先确认预览选择
         if (this.isPreviewMode) {
+            console.log('🎭 [原始] 进入预览确认流程');
             if (!this.confirmPreviewChoice()) {
+                console.log('🎭 [原始] 预览确认失败');
                 // 确认失败，恢复状态
                 this.updateSceneState({ status: 'previewing' });
                 return;
             }
+            console.log('🎭 [原始] 预览确认成功，currentChoice:', this.currentChoice);
         }
 
         // 静默处理，如果没有选择，直接返回
