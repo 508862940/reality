@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沉浸式对话效果演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', 'PingFang SC', monospace;
+            background: #0f0f23;
+            color: #e4e4e7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 600px;
+            width: 100%;
+            background: #1a1a2e;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .demo-header {
+            background: linear-gradient(135deg, #2d3561, #1a1a2e);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .demo-header h1 {
+            font-size: 20px;
+            color: #f093fb;
+            margin-bottom: 8px;
+        }
+
+        .demo-header p {
+            font-size: 12px;
+            color: #8b92f6;
+        }
+
+        /* 对话区域 */
+        .dialogue-area {
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+            background: #0f0f23;
+            line-height: 1.8;
+        }
+
+        /* 对话条目 */
+        .dialogue-entry {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* 说话者 */
+        .dialogue-speaker {
+            color: #8b92f6;
+            font-weight: bold;
+            display: inline;
+        }
+
+        .dialogue-speaker.player {
+            color: #f093fb;
+        }
+
+        /* 对话内容块 - 包含动作和文字 */
+        .dialogue-content {
+            margin-left: 0;
+            margin-top: 8px;
+        }
+
+        /* 动作行 */
+        .dialogue-action {
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 4px 0;
+        }
+
+        /* 对话文字行 */
+        .dialogue-text {
+            color: #e4e4e7;
+            margin: 4px 0;
+        }
+
+        /* 分隔线 */
+        .dialogue-separator {
+            margin: 16px 0;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+            opacity: 0.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 输入区 */
+        .input-area {
+            padding: 15px;
+            background: rgba(20, 16, 37, 0.98);
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: #0f0f23;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 15px;
+            color: #8b92f6;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: rgba(139, 92, 246, 0.4);
+            color: #f093fb;
+        }
+
+        /* 提示 */
+        .tip {
+            padding: 10px;
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 3px solid #8b92f6;
+            margin: 15px;
+            font-size: 12px;
+            color: #8b92f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>✨ 沉浸式对话演示</h1>
+            <p>文字冒险风格 - 动作与对话分行显示</p>
+        </div>
+
+        <div class="mode-switcher">
+            <button class="mode-btn active" onclick="showExample(1)">示例1：纯对话</button>
+            <button class="mode-btn" onclick="showExample(2)">示例2：对话+动作</button>
+            <button class="mode-btn" onclick="showExample(3)">示例3：复杂对话</button>
+        </div>
+
+        <div class="dialogue-area" id="dialogueArea">
+            <!-- 默认示例 -->
+        </div>
+
+        <div class="input-area">
+            <input type="text" class="input-field" id="inputField" placeholder="输入消息...（使用 *动作* 格式）">
+            <button class="send-btn" onclick="sendMessage()">发送</button>
+        </div>
+
+        <div class="tip">
+            💡 格式说明：使用 *星号* 包裹动作描述，如："*看着你* 你好吗？"
+        </div>
+    </div>
+
+    <script>
+        // 示例数据
+        const examples = {
+            1: [
+                { speaker: 'Zero', content: '你醒了？感觉怎么样？', type: 'npc' },
+                { speaker: '你', content: '我...感觉有些恍惚', type: 'player' },
+                { speaker: 'Zero', content: '别担心，这很正常。', type: 'npc' }
+            ],
+            2: [
+                { speaker: 'Zero', content: '*摸了摸你的头* 好不好？', type: 'npc' },
+                { speaker: '你', content: '*微微点头* 好多了，谢谢...', type: 'player' },
+                { speaker: 'Zero', content: '*露出一丝罕见的微笑* 那就好。我一直在这里。', type: 'npc' }
+            ],
+            3: [
+                { speaker: 'Zero', content: '*沉默地看着窗外，金色的瞳孔倒映着城市的霓虹* 新京市...从来没有真正的夜晚。', type: 'npc' },
+                { speaker: '你', content: '*走到他身边* 你在想什么？', type: 'player' },
+                { speaker: 'Zero', content: '*转过头看着你，眼神中有一丝复杂的情绪* 在想...如果有一天，我们能离开这里。*停顿了一下* 你会想去哪里？', type: 'npc' }
+            ]
+        };
+
+        // 解析消息
+        function parseMessage(text) {
+            const parts = {
+                actions: [],
+                dialogue: ''
+            };
+
+            // 匹配所有 *动作*
+            const actionMatches = text.match(/\*([^*]+)\*/g);
+            if (actionMatches) {
+                parts.actions = actionMatches.map(match => match.replace(/\*/g, ''));
+                // 移除动作部分，保留对话
+                parts.dialogue = text.replace(/\*[^*]+\*/g, '').trim();
+            } else {
+                parts.dialogue = text;
+            }
+
+            return parts;
+        }
+
+        // 创建对话HTML
+        function createDialogueHTML(speaker, content, type) {
+            const parsed = parseMessage(content);
+            const speakerClass = type === 'player' ? 'player' : '';
+
+            let html = `<div class="dialogue-entry">`;
+
+            // 说话者标识
+            html += `<span class="dialogue-speaker ${speakerClass}">${speaker}></span>`;
+
+            // 内容块
+            html += `<div class="dialogue-content">`;
+
+            // 先显示动作（如果有）
+            parsed.actions.forEach(action => {
+                html += `<div class="dialogue-action">*${action}*</div>`;
+            });
+
+            // 再显示对话（如果有）
+            if (parsed.dialogue) {
+                html += `<div class="dialogue-text">${parsed.dialogue}</div>`;
+            }
+
+            html += `</div></div>`;
+
+            // 玩家消息后加分隔线
+            if (type === 'player') {
+                html += `<div class="dialogue-separator"></div>`;
+            }
+
+            return html;
+        }
+
+        // 显示示例
+        function showExample(num) {
+            const dialogueArea = document.getElementById('dialogueArea');
+            dialogueArea.innerHTML = '';
+
+            examples[num].forEach(item => {
+                dialogueArea.innerHTML += createDialogueHTML(item.speaker, item.content, item.type);
+            });
+
+            // 更新按钮状态
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('inputField');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const dialogueArea = document.getElementById('dialogueArea');
+
+            // 添加玩家消息
+            dialogueArea.innerHTML += createDialogueHTML('你', text, 'player');
+
+            // 模拟NPC回复
+            setTimeout(() => {
+                const responses = [
+                    '*点了点头* 我明白了。',
+                    '...嗯。',
+                    '*看着你* 继续说。',
+                    '*沉默了一会* 或许你是对的。'
+                ];
+                const response = responses[Math.floor(Math.random() * responses.length)];
+                dialogueArea.innerHTML += createDialogueHTML('Zero', response, 'npc');
+                dialogueArea.scrollTop = dialogueArea.scrollHeight;
+            }, 1000);
+
+            input.value = '';
+            dialogueArea.scrollTop = dialogueArea.scrollHeight;
+        }
+
+        // 初始化
+        showExample(2);
+
+        // 回车发送
+        document.getElementById('inputField').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>

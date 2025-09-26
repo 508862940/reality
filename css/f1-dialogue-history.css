@@ -1,4 +1,4 @@
-/* F1区域 - AI对话历史样式 (基于优化版UI设计) */
+/* F1区域 - AI对话历史样式 (沉浸式文字冒险风格) */
 
 /* ==================== 对话历史容器 ==================== */
 .dialogue-history-area {
@@ -6,26 +6,24 @@
     width: 100%;
     flex: 1; /* 占用剩余空间，而不是100%高度 */
     min-height: 0; /* 允许收缩 */
-    padding: 16px;
+    padding: 20px;
     overflow-y: auto;
     overflow-x: hidden;
-    background: rgba(15, 12, 26, 0.95); /* 深色毛玻璃背景 */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: #0f0f23; /* 与故事区域一致的背景 */
     /* 优化滚动 */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     /* 保持与story-area一致的滚动条样式 */
     scrollbar-width: thin;
     scrollbar-color: rgba(139, 92, 246, 0.3) rgba(255, 255, 255, 0.05);
+    /* 文字冒险风格 */
+    font-family: 'Courier New', monospace;
+    line-height: 1.8;
 }
 
 /* AI模式激活时显示 */
 .dialogue-history-area.active {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch; /* 确保子元素正确对齐 */
+    display: block; /* 改为block，让内容自然流动 */
 }
 
 /* Webkit滚动条 - 与story-area保持一致 */
@@ -47,7 +45,9 @@
     background: rgba(139, 92, 246, 0.6);
 }
 
-/* ==================== 对话气泡样式 (优化版设计) ==================== */
+/* ==================== 混合对话样式 ==================== */
+
+/* 气泡样式 - 用于纯对话 */
 .chat-bubble {
     max-width: 75%;
     padding: 12px 16px;
@@ -59,36 +59,99 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     font-size: 14px;
     line-height: 1.5;
-    margin-bottom: 8px; /* 添加底部间距 */
-    display: block; /* 确保是块级元素 */
+    margin-bottom: 12px;
+    display: block;
 }
 
-/* NPC消息 - 左侧 (淡紫色背景) */
+/* NPC消息气泡 */
 .chat-bubble.npc {
     align-self: flex-start;
     background: rgba(139, 92, 246, 0.15);
     color: #e4e4e7;
     border-bottom-left-radius: 4px;
     border: 1px solid rgba(139, 92, 246, 0.2);
-    position: relative; /* 为星星标记提供定位上下文 */
 }
 
-/* 玩家消息 - 右侧 (鲜艳渐变) */
+/* 玩家消息气泡 */
 .chat-bubble.player {
     align-self: flex-end;
     background: linear-gradient(135deg, #8b5cf6, #f093fb);
     color: white;
     border-bottom-right-radius: 4px;
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-    margin-left: auto; /* 推到右边 */
+    margin-left: auto;
     margin-right: 0;
 }
 
-/* 动作描述 */
-.chat-action {
+/* 沉浸式样式 - 用于带动作的对话 */
+.dialogue-entry {
+    margin-bottom: 16px;
+    animation: textFadeIn 0.3s ease;
+    color: #e4e4e7;
+    font-size: 14px;
+}
+
+@keyframes bubbleFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 说话者标识 */
+.dialogue-speaker {
+    color: #8b92f6;
+    font-weight: bold;
+    display: inline;
+}
+
+/* 玩家说话者标识 */
+.dialogue-speaker.player {
+    color: #f093fb;
+}
+
+/* 内容块 - 包含动作和对话 */
+.dialogue-content {
+    margin-left: 0;
+    margin-top: 6px;
+}
+
+/* 对话文本 */
+.dialogue-text {
+    color: #e4e4e7;
+    margin: 4px 0;
+}
+
+/* 动作描述 - 斜体灰色 */
+.dialogue-action {
     font-style: italic;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    display: block;
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+/* 分隔线样式 */
+.dialogue-separator {
+    margin: 12px 0;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    opacity: 0.5;
+}
+
+/* 文字淡入动画 */
+@keyframes textFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* API消息的小星星标记 */

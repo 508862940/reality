@@ -12,26 +12,38 @@ class GameBootstrap {
     }
 
     /**
-     * 检查是否有存档
+     * 检查是否有存档（优先自动存档）
      */
-    hasSavedGame() {
-        // 先检查localStorage
+    async hasSavedGame() {
+        // 优先检查IndexedDB中的自动存档
+        if (window.saveSystem) {
+            try {
+                const saves = await window.saveSystem.getSavesList();
+                const autoSave = saves.find(save => save.type === 'auto');
+                if (autoSave) {
+                    console.log('📂 发现自动存档，时间:', new Date(autoSave.timestamp).toLocaleString());
+                    this.autoSaveId = autoSave.id;  // 记录存档ID
+                    return true;
+                }
+            } catch (e) {
+                console.log('检查IndexedDB存档时出错:', e);
+            }
+        }
+
+        // 降级到localStorage检查
         const quickSave = localStorage.getItem(this.STORAGE_KEY);
         if (quickSave) {
             try {
                 const data = JSON.parse(quickSave);
                 // 检查存档是否有效
                 if (data && data.scene && data.timestamp) {
-                    console.log('📂 发现有效存档，时间:', new Date(data.timestamp).toLocaleString());
+                    console.log('📂 发现localStorage存档，时间:', new Date(data.timestamp).toLocaleString());
                     return true;
                 }
             } catch (e) {
                 console.error('存档数据损坏');
             }
         }
-
-        // 再检查IndexedDB（如果需要）
-        // ...
 
         return false;
     }
@@ -102,11 +114,28 @@ class GameBootstrap {
      */
     async loadGameState() {
         try {
+            let saveData = null;
+
+            // 优先从自动存档加载
+            if (this.autoSaveId && window.saveSystem) {
+                try {
+                    const result = await window.saveSystem.loadSave(this.autoSaveId);
+                    if (result && result.success) {
+                        console.log('📂 从自动存档恢复游戏...');
+                        // SaveSystem已经处理了恢复，直接返回成功
+                        return true;
+                    }
+                } catch (e) {
+                    console.log('加载自动存档失败，尝试localStorage:', e);
+                }
+            }
+
+            // 降级到localStorage
             const savedStr = localStorage.getItem(this.STORAGE_KEY);
             if (!savedStr) return false;
 
-            const saveData = JSON.parse(savedStr);
-            console.log('📂 开始恢复游戏状态...');
+            saveData = JSON.parse(savedStr);
+            console.log('📂 从localStorage恢复游戏状态...');
 
             // 1. 先恢复gameState
             if (!window.gameState) {
@@ -230,8 +259,28 @@ class GameBootstrap {
             return true;
         }
 
+        // 检查是否是新游戏（来自菜单）
+        const isNewGameFlag = sessionStorage.getItem('isNewGame');
+        if (isNewGameFlag === 'true') {
+            console.log('🆕 检测到新游戏标记，跳过存档加载');
+            sessionStorage.removeItem('isNewGame');  // 清除标记
+            this.isNewGame = true;
+            this.hasLoaded = true;
+
+            // 设置自动保存
+            this.setupAutoSave();
+
+            // 初始化新游戏状态
+            if (window.gameState && window.gameState.character) {
+                console.log('🎮 开始新游戏，角色:', window.gameState.character.name);
+            }
+
+            return false;  // 返回false表示新游戏
+        }
+
         // 检查是否有存档
-        if (this.hasSavedGame()) {
+        const hasSave = await this.hasSavedGame();
+        if (hasSave) {
             console.log('📂 检测到存档，准备继续游戏...');
 
             // 恢复游戏状态

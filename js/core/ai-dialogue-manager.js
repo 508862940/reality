@@ -247,38 +247,125 @@ class AIDialogueManager {
     }
 
     /**
-     * 显示消息到对话区
+     * 显示消息到对话区 - 混合风格
      */
     displayMessage(type, message, npcName = null) {
         // AI对话应该添加到dialogueHistoryArea，不是storyArea
         const dialogueHistoryArea = document.getElementById('dialogueHistoryArea');
         if (!dialogueHistoryArea) return;
 
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-bubble ${type} fade-in`;
+        // 解析消息，分离动作和对话
+        const parsedMessage = this.parseMessage(message);
 
-        if (type === 'npc') {
-            // 如果是API模式，在NPC消息上添加小星星标记
-            const hasAPI = window.apiState && window.apiState.hasValidKey();
-            const starMark = hasAPI ? '<span class="api-star-mark">✨</span>' : '';
+        // 判断是否有动作
+        const hasActions = parsedMessage.actions.length > 0;
 
-            messageDiv.innerHTML = `
-                <span class="dialogue-name">${npcName}:</span>
-                <span class="dialogue-text">${message}</span>
-                ${starMark}
-            `;
-        } else {
-            messageDiv.innerHTML = `
-                <span class="dialogue-name">你:</span>
-                <span class="dialogue-text">${message}</span>
-            `;
+        if (!hasActions && parsedMessage.dialogue) {
+            // 纯对话 - 使用气泡样式
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = `chat-bubble ${type}`;
+
+            const speaker = type === 'npc' ? (npcName || 'Zero') : '你';
+            bubbleDiv.innerHTML = `<strong>${speaker}:</strong> ${parsedMessage.dialogue}`;
+
+            // API模式添加小星星
+            if (type === 'npc' && window.apiState && window.apiState.hasValidKey()) {
+                bubbleDiv.innerHTML += '<span class="api-star-mark" style="position: absolute; top: 8px; right: 8px; opacity: 0.4;">✨</span>';
+            }
+
+            dialogueHistoryArea.appendChild(bubbleDiv);
+
+        } else if (hasActions) {
+            // 有动作时 - 分两种情况处理
+
+            // 如果只有动作没有对话，使用沉浸式显示
+            if (!parsedMessage.dialogue) {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'dialogue-entry';
+
+                const speaker = type === 'npc' ? (npcName || 'Zero') : '你';
+                const speakerClass = type === 'npc' ? '' : 'player';
+
+                let html = `<span class="dialogue-speaker ${speakerClass}">${speaker}></span>`;
+                html += '<div class="dialogue-content">';
+
+                // 显示所有动作
+                parsedMessage.actions.forEach(action => {
+                    html += `<div class="dialogue-action">*${action}*</div>`;
+                });
+
+                html += '</div>';
+
+                // API模式添加小星星
+                if (type === 'npc' && window.apiState && window.apiState.hasValidKey()) {
+                    html += '<span class="api-star-mark" style="float: right; opacity: 0.3;">✨</span>';
+                }
+
+                entryDiv.innerHTML = html;
+                dialogueHistoryArea.appendChild(entryDiv);
+
+            } else {
+                // 有动作也有对话 - 分开显示
+                // 1. 先显示动作（沉浸式）
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'dialogue-entry';
+
+                const speaker = type === 'npc' ? (npcName || 'Zero') : '你';
+                const speakerClass = type === 'npc' ? '' : 'player';
+
+                let actionHtml = `<span class="dialogue-speaker ${speakerClass}">${speaker}></span>`;
+                actionHtml += '<div class="dialogue-content">';
+
+                // 显示所有动作
+                parsedMessage.actions.forEach(action => {
+                    actionHtml += `<div class="dialogue-action">*${action}*</div>`;
+                });
+
+                actionHtml += '</div>';
+                actionDiv.innerHTML = actionHtml;
+                dialogueHistoryArea.appendChild(actionDiv);
+
+                // 2. 再显示对话（气泡）
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = `chat-bubble ${type}`;
+                bubbleDiv.innerHTML = `<strong>${speaker}:</strong> ${parsedMessage.dialogue}`;
+
+                // API模式添加小星星
+                if (type === 'npc' && window.apiState && window.apiState.hasValidKey()) {
+                    bubbleDiv.innerHTML += '<span class="api-star-mark" style="position: absolute; top: 8px; right: 8px; opacity: 0.4;">✨</span>';
+                }
+
+                dialogueHistoryArea.appendChild(bubbleDiv);
+            }
         }
-
-        // 添加到对话历史区
-        dialogueHistoryArea.appendChild(messageDiv);
 
         // 滚动到底部
         dialogueHistoryArea.scrollTop = dialogueHistoryArea.scrollHeight;
+    }
+
+    /**
+     * 解析消息，分离动作和对话
+     * 支持 *动作* 格式，可以有多个动作
+     */
+    parseMessage(message) {
+        const result = {
+            actions: [],
+            dialogue: ''
+        };
+
+        // 匹配所有 *动作* 格式
+        const actionMatches = message.match(/\*([^*]+)\*/g);
+
+        if (actionMatches) {
+            // 提取所有动作（去掉星号）
+            result.actions = actionMatches.map(match => match.replace(/\*/g, ''));
+            // 移除动作部分，保留对话
+            result.dialogue = message.replace(/\*[^*]+\*/g, '').trim();
+        } else {
+            result.dialogue = message;
+        }
+
+        return result;
     }
 
     /**

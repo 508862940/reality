@@ -181,16 +181,42 @@ async function continueGame() {
 }
 
 // 开始新游戏
-function startNewGame() {
+async function startNewGame() {
     console.log('开始新游戏...');
     // 保存当前配置
     saveConfig();
 
-    // 清除旧的游戏数据（如果有）
-    if (gameConfig.autoSave) {
-        const confirmNew = confirm('开始新游戏将覆盖当前的自动存档，是否继续？');
-        if (!confirmNew) return;
+    // 检查是否有自动存档
+    let hasAutoSave = false;
+    if (window.saveSystem) {
+        const saves = await window.saveSystem.getSavesList('auto');
+        hasAutoSave = saves && saves.length > 0;
     }
+
+    // 如果有自动存档，提示用户
+    if (hasAutoSave) {
+        const confirmNew = confirm('开始新游戏将覆盖当前的自动存档，是否继续？\n\n注意：手动存档和快速存档不会受影响。');
+        if (!confirmNew) return;
+
+        // 删除自动存档
+        try {
+            const autoSaves = await window.saveSystem.getSavesList('auto');
+            for (const save of autoSaves) {
+                await window.saveSystem.deleteSave(save.id);
+                console.log('✅ 已删除自动存档:', save.id);
+            }
+        } catch (error) {
+            console.error('删除自动存档失败:', error);
+        }
+    }
+
+    // 清除sessionStorage中的存档数据
+    sessionStorage.removeItem('currentSaveId');
+    sessionStorage.removeItem('currentSaveData');
+    sessionStorage.removeItem('loadSaveOnStart');
+
+    // 标记为新游戏
+    sessionStorage.setItem('isNewGame', 'true');
 
     // 跳转到角色创建界面
     window.location.href = 'character-creation.html';
@@ -472,12 +498,19 @@ async function checkSaveFiles() {
     if (saves.length > 0) {
         console.log(`找到 ${saves.length} 个存档文件`);
 
-        // 找到最新的存档
-        const latestSave = saves.sort((a, b) => {
-            const timeA = a.data?.timestamp || 0;
-            const timeB = b.data?.timestamp || 0;
-            return timeB - timeA;
-        })[0];
+        // 优先找自动存档，如果没有就找最新的存档
+        let latestSave = saves.find(s => s.type === 'auto');
+
+        if (!latestSave) {
+            // 没有自动存档，找最新的存档
+            latestSave = saves.sort((a, b) => {
+                const timeA = a.data?.timestamp || 0;
+                const timeB = b.data?.timestamp || 0;
+                return timeB - timeA;
+            })[0];
+        }
+
+        console.log(`使用存档类型: ${latestSave?.type || '未知'}`);
 
         // 显示"继续游戏"按钮
         const continueBtn = document.getElementById('continueGameBtn');

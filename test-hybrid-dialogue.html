@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>混合对话系统测试</title>
+
+    <!-- 引入游戏样式 -->
+    <link rel="stylesheet" href="css/game-main.css">
+    <link rel="stylesheet" href="css/f1-dialogue-history.css">
+    <link rel="stylesheet" href="css/f2-ai-input.css">
+
+    <style>
+        body {
+            background: #0f0f23;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            color: #f093fb;
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .test-description {
+            color: #8b92f6;
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* 测试对话区域 */
+        .dialogue-history-area {
+            display: block !important;
+            height: 400px;
+            background: #0f0f23;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* 测试按钮组 */
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .test-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+            background: linear-gradient(135deg, #8b92f6, #f093fb);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            color: #fbbf24;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            width: 100%;
+        }
+
+        /* API状态指示器 */
+        .api-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: rgba(30, 30, 45, 0.95);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            color: #e4e4e7;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .api-status.active {
+            border-color: #22c55e;
+        }
+
+        .api-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .api-status.active .api-status-dot {
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>✨ 混合对话系统测试</h1>
+        <p class="test-description">测试气泡样式（纯对话）与沉浸式样式（带动作）的混合显示</p>
+
+        <!-- API状态显示 -->
+        <div class="api-status" id="apiStatus">
+            <span class="api-status-dot"></span>
+            <span>API: <span id="apiStatusText">未连接</span></span>
+        </div>
+
+        <!-- 对话历史区域 -->
+        <div class="dialogue-history-area active" id="dialogueHistoryArea">
+            <!-- 对话内容将显示在这里 -->
+        </div>
+
+        <!-- 测试按钮 -->
+        <div class="test-section">
+            <div class="section-title">📝 纯对话测试（显示气泡）</div>
+            <div class="test-buttons">
+                <button class="test-btn" onclick="sendPureDialogue('player', '你好，Zero')">玩家：你好</button>
+                <button class="test-btn" onclick="sendPureDialogue('npc', '...嗯。')">Zero：简短回复</button>
+                <button class="test-btn" onclick="sendPureDialogue('npc', '有什么事吗？需要我的帮助？')">Zero：普通对话</button>
+                <button class="test-btn" onclick="sendPureDialogue('player', '我想了解更多关于这个世界的事情。')">玩家：长对话</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="section-title">🎭 动作+对话测试（沉浸式文字）</div>
+            <div class="test-buttons">
+                <button class="test-btn" onclick="sendActionDialogue('npc', '*沉默地看着你* ...')">Zero：单个动作</button>
+                <button class="test-btn" onclick="sendActionDialogue('npc', '*转过身看着窗外* 这个城市...从来没有真正的夜晚。')">Zero：动作+对话</button>
+                <button class="test-btn" onclick="sendActionDialogue('player', '*走近一步* 你在想什么？')">玩家：动作+对话</button>
+                <button class="test-btn" onclick="sendComplexDialogue()">复杂：多个动作</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="section-title">🔄 混合测试</div>
+            <div class="test-buttons">
+                <button class="test-btn" onclick="sendMixedSequence()">发送混合序列</button>
+                <button class="test-btn" onclick="toggleAPIMode()">切换API模式</button>
+                <button class="test-btn clear-btn" onclick="clearDialogue()">清空对话</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入对话管理器 -->
+    <script src="js/core/ai-dialogue-manager.js"></script>
+
+    <script>
+        // 初始化
+        let hasAPI = false;
+
+        // 模拟API状态
+        window.apiState = {
+            hasValidKey: function() {
+                return hasAPI;
+            }
+        };
+
+        // 发送纯对话（应该显示为气泡）
+        function sendPureDialogue(type, text) {
+            const npcName = type === 'npc' ? 'Zero' : null;
+            window.aiDialogueManager.displayMessage(type, text, npcName);
+        }
+
+        // 发送带动作的对话（应该显示为沉浸式文字）
+        function sendActionDialogue(type, text) {
+            const npcName = type === 'npc' ? 'Zero' : null;
+            window.aiDialogueManager.displayMessage(type, text, npcName);
+        }
+
+        // 发送复杂的多动作消息
+        function sendComplexDialogue() {
+            const complexMessage = '*站起身* *慢慢走向你* *凝视着你的眼睛* 你真的想知道真相吗？';
+            window.aiDialogueManager.displayMessage('npc', complexMessage, 'Zero');
+        }
+
+        // 发送混合序列
+        function sendMixedSequence() {
+            // 清空先
+            clearDialogue();
+
+            setTimeout(() => {
+                sendPureDialogue('player', '嗨，Zero！');
+            }, 100);
+
+            setTimeout(() => {
+                sendPureDialogue('npc', '...有事吗？');
+            }, 600);
+
+            setTimeout(() => {
+                sendActionDialogue('player', '*走近* 你看起来有心事。');
+            }, 1200);
+
+            setTimeout(() => {
+                sendActionDialogue('npc', '*转身看向窗外* *深深叹了口气* 只是...想起了一些事。');
+            }, 1800);
+
+            setTimeout(() => {
+                sendPureDialogue('player', '想聊聊吗？');
+            }, 2400);
+
+            setTimeout(() => {
+                sendPureDialogue('npc', '...也许吧。');
+            }, 3000);
+        }
+
+        // 清空对话
+        function clearDialogue() {
+            const area = document.getElementById('dialogueHistoryArea');
+            if (area) {
+                area.innerHTML = '';
+            }
+        }
+
+        // 切换API模式
+        function toggleAPIMode() {
+            hasAPI = !hasAPI;
+            const status = document.getElementById('apiStatus');
+            const statusText = document.getElementById('apiStatusText');
+
+            if (hasAPI) {
+                status.classList.add('active');
+                statusText.textContent = '已连接（模拟）';
+
+                // 发送一条带API标记的消息
+                setTimeout(() => {
+                    sendPureDialogue('npc', '✨ 这条消息会有API标记');
+                }, 300);
+            } else {
+                status.classList.remove('active');
+                statusText.textContent = '未连接';
+            }
+        }
+
+        // 页面加载后显示欢迎消息
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                sendPureDialogue('npc', '欢迎测试混合对话系统！');
+            }, 500);
+
+            setTimeout(() => {
+                // 这会分成两部分显示：动作用沉浸式，对话用气泡
+                sendActionDialogue('npc', '*微微点头* 请试试上面的按钮。');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

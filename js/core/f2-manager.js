@@ -898,28 +898,50 @@ class F2Manager {
     }
 
     /**
-     * 添加消息到对话历史区
+     * 添加消息到对话历史区 - 沉浸式风格
      */
     addMessageToHistory(text, sender = 'npc') {
         const historyArea = document.getElementById('dialogueHistoryArea');
         if (!historyArea) return;
 
-        // 创建消息气泡
-        const bubble = document.createElement('div');
-        bubble.className = `chat-bubble ${sender}`;
-
         // 检查是否是动作模式
         const modeToggle = document.getElementById('aiModeToggle');
         const isActionMode = modeToggle && modeToggle.classList.contains('action-mode');
 
+        // 创建对话条目
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'dialogue-entry';
+
+        // 构建内容
+        let html = '';
+
         if (isActionMode && sender === 'player') {
-            bubble.innerHTML = `<span class="chat-action">*${text}*</span>`;
+            // 动作模式 - 显示为斜体动作
+            html = `<div class="dialogue-action">*${text}*</div>`;
         } else {
-            bubble.textContent = text;
+            // 对话模式
+            const speaker = sender === 'npc' ? 'Zero' : '你';
+            const speakerClass = sender === 'npc' ? '' : 'player';
+
+            html = `
+                <div>
+                    <span class="dialogue-speaker ${speakerClass}">${speaker}></span>
+                    <span class="dialogue-text">${text}</span>
+                </div>
+            `;
         }
 
+        entryDiv.innerHTML = html;
+
         // 添加到历史区
-        historyArea.appendChild(bubble);
+        historyArea.appendChild(entryDiv);
+
+        // 玩家消息后添加分隔线
+        if (sender === 'player') {
+            const separator = document.createElement('div');
+            separator.className = 'dialogue-separator';
+            historyArea.appendChild(separator);
+        }
 
         // 滚动到底部
         historyArea.scrollTop = historyArea.scrollHeight;
