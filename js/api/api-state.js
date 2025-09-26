@@ -108,6 +108,12 @@ const APIState = {
     // 获取当前激活的预设
     getActivePreset() {
         const state = this.get();
+        // 添加安全检查
+        if (!state || !state.apiConfig || !state.apiConfig.presets) {
+            console.warn('API配置未初始化，使用默认配置');
+            this.state = this.getDefaultState();
+            return null;
+        }
         return state.apiConfig.presets.find(p => p.id === state.apiConfig.activePresetId);
     },
 

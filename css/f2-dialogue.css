@@ -1,0 +1,488 @@
+/* F2对话模式样式 - PWA优化版 */
+
+/* ==================== F2 AI输入容器 (基于优化版设计) ==================== */
+.ai-input-container {
+    display: none; /* 默认隐藏，AI模式时显示 */
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+    background: rgba(20, 16, 37, 0.98);  /* 深色背景 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
+    position: relative;
+}
+
+.ai-dialogue-container.active {
+    display: flex;
+}
+
+/* ==================== 对话头部信息 ==================== */
+.dialogue-header {
+    padding: 12px 20px;
+    background: rgba(139, 92, 246, 0.1);  /* 更明显的紫色背景 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* PWA安全区域 */
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+
+.dialogue-npc-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #f093fb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    cursor: pointer;
+    transition: transform 0.3s;
+    /* PWA触摸反馈 */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.dialogue-npc-avatar:active {
+    transform: scale(0.95);
+}
+
+.dialogue-npc-info {
+    flex: 1;
+    min-width: 0; /* 防止文字溢出 */
+}
+
+.dialogue-npc-name {
+    color: #f093fb;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dialogue-npc-status {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.dialogue-mood-indicators {
+    display: flex;
+    gap: 6px;
+}
+
+.mood-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* ==================== 对话历史区域 ==================== */
+.dialogue-history {
+    flex: 1;
+    padding: 12px 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* 优化滚动性能 */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Firefox滚动条 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) rgba(255, 255, 255, 0.05);
+}
+
+/* Webkit滚动条样式 */
+.dialogue-history::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dialogue-history::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.dialogue-history::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+}
+
+.dialogue-history::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+}
+
+/* 消息气泡 - 恢复原本好看的设计 */
+.dialogue-message {
+    padding: 10px 14px;
+    border-radius: 16px;
+    max-width: 75%;
+    animation: messageSlideIn 0.3s ease;
+    word-wrap: break-word;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dialogue-message.npc {
+    align-self: flex-start;
+    background: rgba(139, 92, 246, 0.2);  /* 恢复原本的紫色 */
+    color: #e4e4e7;
+    border-bottom-left-radius: 4px;
+}
+
+.dialogue-message.player {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #8b5cf6, #f093fb);  /* 恢复鲜艳的渐变 */
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.3);  /* 添加光晕 */
+}
+
+/* 动作描述样式 */
+.dialogue-action {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+}
+
+/* 打字指示器 */
+.dialogue-typing {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    align-self: flex-start;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background: rgba(139, 92, 246, 0.5);
+    border-radius: 50%;
+    animation: typingAnimation 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ==================== 输入区域 ==================== */
+.dialogue-input-area {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    /* PWA底部安全区域 */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.dialogue-input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 更多按钮（左侧） */
+.dialogue-more-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px; /* 防止被挤压 */
+    border-radius: 21px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #bcb3ff;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    position: relative;
+    /* PWA触摸优化 */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.dialogue-more-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* 输入框包装器 */
+.dialogue-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 24px;
+    padding: 2px;
+    transition: all 0.3s;
+    min-width: 0; /* 防止flex子项溢出 */
+}
+
+.dialogue-input-wrapper:focus-within {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+}
+
+/* 输入框 */
+.dialogue-input {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    min-width: 0;
+    /* PWA输入优化 */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.dialogue-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* 模式切换按钮 */
+.dialogue-mode-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    background: transparent;
+    border: none;
+    color: #bcb3ff;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dialogue-mode-toggle:active {
+    transform: scale(0.9);
+}
+
+.dialogue-mode-toggle.action-mode {
+    color: #fbbf24;
+}
+
+/* 模式提示 */
+.mode-tooltip {
+    position: absolute;
+    bottom: 45px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    background: rgba(20, 16, 37, 0.95);
+    border-radius: 12px;
+    font-size: 11px;
+    color: #bcb3ff;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.dialogue-mode-toggle:hover .mode-tooltip {
+    opacity: 1;
+}
+
+/* 发送按钮（右侧） */
+.dialogue-send-btn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 21px;
+    background: linear-gradient(135deg, #8b5cf6, #f093fb);
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-left: 6px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.dialogue-send-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+
+.dialogue-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==================== 更多菜单 ==================== */
+.dialogue-more-menu {
+    position: absolute;
+    bottom: 65px;
+    left: 12px;
+    background: rgba(20, 16, 37, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    min-width: 150px;
+    z-index: 100;
+}
+
+.dialogue-more-menu.show {
+    display: flex;
+    animation: slideUpMenu 0.3s ease;
+}
+
+.dialogue-menu-item {
+    padding: 10px 14px;
+    color: #bcb3ff;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dialogue-menu-item:active {
+    background: rgba(139, 92, 246, 0.3);
+}
+
+.menu-item-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+/* ==================== 动画 ==================== */
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes typingAnimation {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUpMenu {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==================== PWA和移动端优化 ==================== */
+
+/* 触摸设备隐藏滚动条 */
+@media (pointer: coarse) {
+    .dialogue-history::-webkit-scrollbar {
+        width: 0;
+        display: none;
+    }
+
+    .dialogue-history {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+}
+
+/* 小屏幕优化 */
+@media (max-width: 430px) {
+    .dialogue-header {
+        padding: 10px 12px;
+    }
+
+    .dialogue-message {
+        max-width: 85%;
+    }
+
+    .dialogue-input-area {
+        padding: 10px;
+    }
+}
+
+/* PWA全屏模式优化 */
+@media (display-mode: standalone) {
+    .dialogue-more-btn,
+    .dialogue-send-btn {
+        /* 增强触摸反馈 */
+        transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+
+    .dialogue-input {
+        /* 防止键盘弹出时的布局跳动 */
+        font-size: 16px; /* iOS防止自动缩放 */
+    }
+}
+
+/* 横屏模式 */
+@media (orientation: landscape) and (max-height: 500px) {
+    .dialogue-header {
+        padding: 8px 12px;
+    }
+
+    .dialogue-history {
+        max-height: 35vh;
+    }
+
+    .dialogue-input-area {
+        padding: 8px;
+    }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+    /* 已经是暗色设计，无需调整 */
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+    .dialogue-message {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .dialogue-input-wrapper {
+        border-width: 2px;
+    }
+}

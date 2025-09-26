@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F2对话UI - 方案3：卡片层叠</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(to bottom, #1a1a2e, #0f0c1a);
+            height: 100vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        /* F2卡片式容器 */
+        .f2-card-chat {
+            width: 100%;
+            max-width: 430px;
+            position: relative;
+        }
+
+        /* 对话卡片堆叠效果 */
+        .message-cards {
+            padding: 0 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+        }
+
+        .message-cards::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .message-cards::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 2px;
+        }
+
+        /* 消息卡片 */
+        .message-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 12px 16px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            animation: slideInCard 0.3s ease;
+        }
+
+        .message-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(2px);
+        }
+
+        .message-card.npc {
+            margin-right: 20%;
+            border-left: 3px solid rgba(139, 92, 246, 0.5);
+        }
+
+        .message-card.player {
+            margin-left: 20%;
+            background: rgba(106, 87, 255, 0.1);
+            border-right: 3px solid rgba(240, 147, 251, 0.5);
+        }
+
+        /* 消息头部 */
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .mini-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .message-name {
+            font-size: 11px;
+            color: #bcb3ff;
+            opacity: 0.8;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-left: auto;
+        }
+
+        .message-text {
+            color: #f6f3ff;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* 底部输入面板 - 分层设计 */
+        .input-panel {
+            background: linear-gradient(to top,
+                rgba(15, 12, 26, 0.98) 0%,
+                rgba(15, 12, 26, 0.9) 50%,
+                transparent 100%);
+            padding: 20px 16px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        }
+
+        /* 输入框容器 */
+        .input-container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .input-container:focus-within {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 输入框内功能按钮 */
+        .input-actions {
+            display: flex;
+            gap: 4px;
+            padding-right: 4px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background: transparent;
+            border: none;
+            color: #bcb3ff;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .action-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .action-btn.send {
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            color: white;
+        }
+
+        .action-btn.send:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
+        }
+
+        /* 功能标签栏 */
+        .function-tabs {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            padding: 0 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .function-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-chip {
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            color: #bcb3ff;
+            font-size: 12px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-chip:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.3);
+            color: white;
+        }
+
+        .tab-chip.active {
+            background: rgba(139, 92, 246, 0.3);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: white;
+        }
+
+        /* NPC状态浮窗 */
+        .npc-status-float {
+            position: absolute;
+            top: -60px;
+            left: 16px;
+            right: 16px;
+            background: rgba(20, 16, 37, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .npc-status-float.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-info {
+            flex: 1;
+        }
+
+        .status-name {
+            font-size: 12px;
+            color: #f093fb;
+            margin-bottom: 2px;
+        }
+
+        .status-mood {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 6px;
+        }
+
+        .indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /* 动画 */
+        @keyframes slideInCard {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 语音输入指示器 */
+        .voice-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 0 12px;
+        }
+
+        .voice-indicator.active {
+            display: flex;
+        }
+
+        .voice-wave {
+            width: 3px;
+            height: 12px;
+            background: rgba(139, 92, 246, 0.6);
+            border-radius: 2px;
+            animation: wave 0.6s ease-in-out infinite;
+        }
+
+        .voice-wave:nth-child(2) { animation-delay: 0.1s; height: 18px; }
+        .voice-wave:nth-child(3) { animation-delay: 0.2s; height: 14px; }
+        .voice-wave:nth-child(4) { animation-delay: 0.3s; height: 20px; }
+        .voice-wave:nth-child(5) { animation-delay: 0.4s; height: 16px; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.6); }
+            50% { transform: scaleY(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="f2-card-chat">
+        <!-- NPC状态浮窗 -->
+        <div class="npc-status-float" id="npcStatus">
+            <div class="status-avatar">🐺</div>
+            <div class="status-info">
+                <div class="status-name">Zero</div>
+                <div class="status-mood">正在输入...</div>
+            </div>
+            <div class="status-indicators">
+                <div class="indicator" title="好感度">💕</div>
+                <div class="indicator" title="信任度">🤝</div>
+            </div>
+        </div>
+
+        <!-- 消息卡片区 -->
+        <div class="message-cards">
+            <div class="message-card npc">
+                <div class="message-header">
+                    <div class="mini-avatar">Z</div>
+                    <span class="message-name">Zero</span>
+                    <span class="message-time">14:30</span>
+                </div>
+                <div class="message-text">
+                    你看起来有心事？
+                </div>
+            </div>
+
+            <div class="message-card player">
+                <div class="message-header">
+                    <div class="mini-avatar">U</div>
+                    <span class="message-name">You</span>
+                    <span class="message-time">14:31</span>
+                </div>
+                <div class="message-text">
+                    只是在想一些事情...
+                </div>
+            </div>
+
+            <div class="message-card npc">
+                <div class="message-header">
+                    <div class="mini-avatar">Z</div>
+                    <span class="message-name">Zero</span>
+                    <span class="message-time">14:31</span>
+                </div>
+                <div class="message-text">
+                    如果想说的话，我会听着。
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部输入面板 -->
+        <div class="input-panel">
+            <div class="input-container">
+                <input type="text" class="chat-input"
+                       placeholder="输入消息或 @ 提及..."
+                       onfocus="showNPCStatus()"
+                       onblur="hideNPCStatus()" />
+
+                <div class="voice-indicator" id="voiceIndicator">
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                </div>
+
+                <div class="input-actions">
+                    <button class="action-btn" title="添加" onclick="showAddMenu()">
+                        +
+                    </button>
+                    <button class="action-btn" title="语音" onclick="toggleVoice()">
+                        🎤
+                    </button>
+                    <button class="action-btn send" title="发送">
+                        ➤
+                    </button>
+                </div>
+            </div>
+
+            <!-- 功能标签 -->
+            <div class="function-tabs">
+                <div class="tab-chip active">对话</div>
+                <div class="tab-chip">表情</div>
+                <div class="tab-chip">动作</div>
+                <div class="tab-chip">礼物</div>
+                <div class="tab-chip">历史</div>
+                <div class="tab-chip">设置</div>
+                <div class="tab-chip">返回</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showNPCStatus() {
+            document.getElementById('npcStatus').classList.add('show');
+        }
+
+        function hideNPCStatus() {
+            setTimeout(() => {
+                document.getElementById('npcStatus').classList.remove('show');
+            }, 200);
+        }
+
+        function toggleVoice() {
+            const indicator = document.getElementById('voiceIndicator');
+            indicator.classList.toggle('active');
+        }
+
+        function showAddMenu() {
+            // 显示添加菜单
+            console.log('显示添加菜单');
+        }
+    </script>
+</body>
+</html>

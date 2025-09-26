@@ -63,21 +63,37 @@ class TimeSystem {
             }
         }
 
+        // 检查是否经过了早上5点（游戏内自动存档时间）
+        const crossedSaveTime = this.checkCrossedSaveTime(oldTime, this.currentTime);
+
         const timeChange = {
             oldTime,
             newTime: { ...this.currentTime },
             minutesAdvanced: minutes,
             dayChanged: oldTime.day !== this.currentTime.day,
-            periodChanged: this.getTimePeriod(oldTime) !== this.getTimePeriod()
+            periodChanged: this.getTimePeriod(oldTime) !== this.getTimePeriod(),
+            crossedSaveTime: crossedSaveTime
         };
 
         // 通知所有监听器
         this.notifyTimeListeners(timeChange);
 
+        // 如果经过了早上5点，触发游戏内自动存档
+        if (crossedSaveTime && window.saveSystem) {
+            console.log('🌅 游戏时间到达早上5点，触发自动存档');
+            window.saveSystem.triggerAutoSave('daily_5am');
+
+            // 显示游戏内提醒
+            if (window.showNotification) {
+                window.showNotification('☀️ 新的一天开始了，游戏已自动保存', 'info');
+            }
+        }
+
         if (this.debugMode) {
             console.log(`⏰ 时间推进 ${minutes}分钟:`, this.formatTime());
             if (timeChange.dayChanged) console.log('📅 新的一天！');
             if (timeChange.periodChanged) console.log('🌅 时间段变化:', this.getTimePeriod());
+            if (crossedSaveTime) console.log('💾 经过早上5点，已触发自动存档');
         }
 
         return timeChange;
@@ -258,6 +274,41 @@ class TimeSystem {
                 console.error('⏰ 时间监听器错误:', error);
             }
         });
+    }
+
+    /**
+     * 检查是否经过了早上5点（游戏内自动存档时间点）
+     * @param {Object} oldTime - 旧时间
+     * @param {Object} newTime - 新时间
+     * @returns {boolean} 是否经过了5点
+     */
+    checkCrossedSaveTime(oldTime, newTime) {
+        // 自动存档时间点：每天早上5点
+        const SAVE_HOUR = 5;
+        const SAVE_MINUTE = 0;
+
+        // 如果是同一天
+        if (oldTime.day === newTime.day) {
+            // 检查是否从5点前跨越到5点后
+            const oldMinutes = oldTime.hour * 60 + oldTime.minute;
+            const newMinutes = newTime.hour * 60 + newTime.minute;
+            const saveMinutes = SAVE_HOUR * 60 + SAVE_MINUTE;
+
+            return oldMinutes < saveMinutes && newMinutes >= saveMinutes;
+        }
+        // 如果跨天了
+        else if (newTime.day > oldTime.day) {
+            // 新的一天已经过了5点
+            if (newTime.hour >= SAVE_HOUR) {
+                return true;
+            }
+            // 或者旧时间还没到5点（说明跨过了5点）
+            if (oldTime.hour < SAVE_HOUR) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

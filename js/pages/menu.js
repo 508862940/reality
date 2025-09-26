@@ -15,7 +15,7 @@ const gameConfig = {
 };
 
 // 初始化主菜单
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
     // 创建背景粒子效果
     createParticles();
 
@@ -25,9 +25,76 @@ window.addEventListener('DOMContentLoaded', function() {
     // 初始化音量滑块
     initVolumeSliders();
 
+    // 绑定按钮事件
+    setupEventListeners();
+
+    // 初始化SaveSystem（如果还没初始化）
+    if (!window.saveSystem) {
+        try {
+            // 等待数据库初始化
+            if (window.Database) {
+                await window.Database.init();
+            }
+            // 初始化存档系统
+            window.saveSystem = new SaveSystem();
+            await window.saveSystem.init();
+            console.log('✅ SaveSystem初始化成功');
+        } catch (error) {
+            console.error('❌ SaveSystem初始化失败:', error);
+        }
+    }
+
     // 检查是否有存档
-    checkSaveFiles();
+    await checkSaveFiles();
+
+    // 初始化存档管理对话框功能
+    initSaveLoadDialog();
 });
+
+// 设置事件监听器
+function setupEventListeners() {
+    // 主菜单按钮
+    const continueGameBtn = document.getElementById('continueGameBtn');
+    if (continueGameBtn) {
+        continueGameBtn.addEventListener('click', continueGame);
+    }
+
+    const newGameBtn = document.getElementById('newGameBtn');
+    if (newGameBtn) {
+        newGameBtn.addEventListener('click', startNewGame);
+    }
+
+    const loadGameBtn = document.getElementById('loadGameBtn');
+    if (loadGameBtn) {
+        loadGameBtn.addEventListener('click', handleLoadGame);
+    }
+
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openSettings);
+    }
+
+    // 设置面板按钮
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    if (closeSettingsBtn) {
+        closeSettingsBtn.addEventListener('click', closeSettings);
+    }
+
+    const openAPISettingsBtn = document.getElementById('openAPISettingsBtn');
+    if (openAPISettingsBtn) {
+        openAPISettingsBtn.addEventListener('click', openAPISettings);
+    }
+
+    // Toggle开关
+    document.querySelectorAll('.toggle-switch').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const setting = this.dataset.setting;
+            if (setting) {
+                toggleSwitch(this, setting);
+            }
+        });
+    });
+}
 
 // 创建背景粒子效果
 function createParticles() {
@@ -39,6 +106,77 @@ function createParticles() {
         particle.style.animationDelay = Math.random() * 15 + 's';
         particle.style.animationDuration = (15 + Math.random() * 10) + 's';
         bgAnimation.appendChild(particle);
+    }
+}
+
+// 处理读取存档按钮点击（同步包装函数）
+function handleLoadGame() {
+    console.log('🎮 handleLoadGame被调用');
+
+    // 确保SaveSystem已初始化
+    if (!window.saveSystem) {
+        console.log('⏳ SaveSystem尚未初始化，正在初始化...');
+
+        // 初始化SaveSystem
+        Promise.resolve().then(async () => {
+            try {
+                // 等待数据库初始化
+                if (window.Database) {
+                    await window.Database.init();
+                }
+                // 初始化存档系统
+                window.saveSystem = new SaveSystem();
+                await window.saveSystem.init();
+                console.log('✅ SaveSystem初始化成功');
+
+                // 初始化完成后调用loadGame
+                await loadGame();
+            } catch (error) {
+                console.error('❌ SaveSystem初始化失败:', error);
+                alert('存档系统初始化失败，请刷新页面重试');
+            }
+        });
+    } else {
+        console.log('✅ SaveSystem已初始化，直接调用loadGame');
+        // SaveSystem已初始化，直接调用
+        loadGame().catch(error => {
+            console.error('读取存档失败:', error);
+            alert('读取存档失败，请重试');
+        });
+    }
+}
+
+// 继续游戏（加载最新存档）
+async function continueGame() {
+    console.log('继续游戏...');
+
+    const continueBtn = document.getElementById('continueGameBtn');
+    const saveId = continueBtn?.dataset.saveId;
+
+    if (!saveId) {
+        console.error('找不到存档ID');
+        return;
+    }
+
+    try {
+        // 使用SaveSystem加载存档
+        if (window.saveSystem) {
+            const saveData = await window.saveSystem.loadSave(saveId);
+
+            if (saveData && saveData.gameData) {
+                // 保存存档信息到sessionStorage
+                sessionStorage.setItem('currentSaveId', saveId);
+                sessionStorage.setItem('currentSaveData', JSON.stringify(saveData.gameData));
+
+                // 跳转到游戏页面
+                window.location.href = 'game-main.html';
+            } else {
+                alert('存档数据损坏，无法继续游戏');
+            }
+        }
+    } catch (error) {
+        console.error('继续游戏失败:', error);
+        alert('加载存档失败，请尝试从载入存档菜单选择');
     }
 }
 
@@ -60,10 +198,14 @@ function startNewGame() {
 
 // 读取存档
 async function loadGame() {
-    console.log('打开存档列表...');
+    console.log('📂 打开存档列表...');
+    console.log('🔍 SaveSystem状态:', window.saveSystem ? '已初始化' : '未初始化');
 
     // 检查是否有存档
     const saves = await getSaveFiles();
+    console.log('📦 获取到的存档数量:', saves.length);
+    console.log('📦 存档详情:', saves);
+
     if (saves.length === 0) {
         alert('没有找到存档文件！');
         return;
@@ -287,6 +429,7 @@ async function getSaveFiles() {
     if (window.saveSystem) {
         try {
             const allSaves = await window.saveSystem.getSavesList();
+
             for (const save of allSaves) {
                 saves.push({
                     id: save.id,
@@ -328,19 +471,62 @@ async function checkSaveFiles() {
     const saves = await getSaveFiles();
     if (saves.length > 0) {
         console.log(`找到 ${saves.length} 个存档文件`);
+
+        // 找到最新的存档
+        const latestSave = saves.sort((a, b) => {
+            const timeA = a.data?.timestamp || 0;
+            const timeB = b.data?.timestamp || 0;
+            return timeB - timeA;
+        })[0];
+
+        // 显示"继续游戏"按钮
+        const continueBtn = document.getElementById('continueGameBtn');
+        if (continueBtn && latestSave) {
+            continueBtn.style.display = 'block';
+            continueBtn.classList.add('primary');
+
+            // 移除"新游戏"按钮的primary样式
+            const newGameBtn = document.getElementById('newGameBtn');
+            if (newGameBtn) {
+                newGameBtn.classList.remove('primary');
+            }
+
+            // 存储最新存档信息
+            continueBtn.dataset.saveId = latestSave.id;
+        }
     }
     return saves.length > 0;
 }
 
 // 加载存档文件
-function loadSaveFile(save) {
+async function loadSaveFile(save) {
     console.log('加载存档:', save);
 
-    // 保存当前选择的存档ID
-    sessionStorage.setItem('currentSave', save.id);
+    try {
+        // 使用SaveSystem读取存档
+        if (window.saveSystem && save.id) {
+            const saveData = await window.saveSystem.loadSave(save.id);
 
-    // 跳转到游戏主界面
-    window.location.href = 'index.html?load=' + save.id;
+            if (saveData && saveData.gameData) {
+                // 保存当前选择的存档到sessionStorage
+                sessionStorage.setItem('currentSaveId', save.id);
+                sessionStorage.setItem('currentSaveData', JSON.stringify(saveData.gameData));
+
+                console.log('✅ 存档已加载，准备跳转到游戏页面');
+                // 跳转到游戏主界面
+                window.location.href = 'game-main.html';
+            } else {
+                alert('存档数据无效');
+            }
+        } else {
+            // 降级处理
+            sessionStorage.setItem('currentSave', save.id);
+            window.location.href = 'game-main.html';
+        }
+    } catch (error) {
+        console.error('加载存档失败:', error);
+        alert('加载存档失败: ' + error.message);
+    }
 }
 
 // 监听难度选择变化
@@ -354,3 +540,227 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// 显示API设置（如果需要的话）
+function showAPISettings() {
+    console.log('打开API设置...');
+    // 可以调用已有的API设置UI
+    if (window.APISettingsUI && window.APISettingsUI.show) {
+        window.APISettingsUI.show();
+    } else {
+        alert('API设置功能暂未实现');
+    }
+}
+
+// ==================== 存档管理功能 ====================
+
+// 初始化存档管理对话框
+function initSaveLoadDialog() {
+    // 创建存档对话框（如果不存在）
+    if (!document.getElementById('saveLoadDialog')) {
+        const dialogHTML = `
+            <div id="saveLoadDialog" class="dialog-overlay hidden">
+                <div class="dialog-box">
+                    <div class="dialog-header">
+                        <h3>💾 载入存档</h3>
+                        <button class="dialog-close" onclick="closeSaveDialog()">×</button>
+                    </div>
+                    <div class="dialog-content">
+                        <div id="savesList" class="saves-list">
+                            <div class="no-saves">正在加载存档...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+}
+
+// 加载存档列表（菜单版本）
+async function loadSavesList() {
+    try {
+        const savesContainer = document.getElementById('savesList');
+        if (!savesContainer) return;
+
+        // 获取所有存档
+        let saves = [];
+        if (window.saveSystem) {
+            saves = await window.saveSystem.getSavesList();
+        }
+
+        // 按类型和时间排序
+        saves.sort((a, b) => {
+            const typeOrder = { quick: 0, manual: 1, auto: 2 };
+            const typeCompare = typeOrder[a.type] - typeOrder[b.type];
+            if (typeCompare !== 0) return typeCompare;
+            return b.timestamp - a.timestamp;
+        });
+
+        // 渲染存档列表
+        if (saves.length === 0) {
+            savesContainer.innerHTML = '<div class="no-saves">暂无存档</div>';
+        } else {
+            savesContainer.innerHTML = saves.map(save => {
+                // 存档类型信息
+                const typeInfo = {
+                    'auto': { icon: '🔄', label: '自动', class: 'type-auto' },
+                    'quick': { icon: '⚡', label: '快速', class: 'type-quick' },
+                    'manual': { icon: '💾', label: '手动', class: 'type-manual' }
+                };
+                const type = typeInfo[save.type] || typeInfo.manual;
+
+                // 提取存档信息
+                let location = '未知位置';
+                let gameDay = 1;
+                let hasWorldSnapshot = false;
+
+                if (save.gameData?.worldData) {
+                    const wd = save.gameData.worldData;
+                    location = wd.player?.position?.location || wd.player?.location || '未知';
+                    gameDay = wd.time?.day || 1;
+                    hasWorldSnapshot = true;
+                }
+
+                // 格式化时间
+                const date = new Date(save.timestamp || 0);
+                const timeStr = date.toLocaleString('zh-CN', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <div class="save-item ${type.class}" data-id="${save.id}">
+                        <div class="save-info">
+                            <div class="save-header">
+                                <span class="save-icon">${type.icon}</span>
+                                <span class="save-name">${save.name || '未命名存档'}</span>
+                                ${hasWorldSnapshot ? '<span class="world-badge" title="完整世界快照">🌍</span>' : ''}
+                            </div>
+                            <div class="save-details">
+                                <span>📅 第${gameDay}天</span>
+                                <span>📍 ${location}</span>
+                                <span>🕐 ${timeStr}</span>
+                            </div>
+                        </div>
+                        <div class="save-actions">
+                            <button class="save-btn load-btn" onclick="loadFromMenu('${save.id}')">
+                                📂 载入
+                            </button>
+                            <button class="save-btn edit-btn" onclick="renameSaveFromMenu('${save.id}')">
+                                ✏️ 重命名
+                            </button>
+                            <button class="save-btn delete-btn" onclick="deleteSaveFromMenu('${save.id}')">
+                                🗑️ 删除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('加载存档列表失败:', error);
+    }
+}
+
+// 从菜单载入存档
+async function loadFromMenu(saveId) {
+    try {
+        if (window.saveSystem) {
+            const saveData = await window.saveSystem.loadSave(saveId);
+            if (saveData && saveData.gameData) {
+                // 保存到sessionStorage，让游戏页面读取
+                sessionStorage.setItem('loadSaveOnStart', 'true');
+                sessionStorage.setItem('currentSaveId', saveId);
+                sessionStorage.setItem('currentSaveData', JSON.stringify(saveData.gameData));
+
+                // 跳转到游戏页面
+                window.location.href = 'game-main.html';
+            }
+        }
+    } catch (error) {
+        console.error('载入存档失败:', error);
+        alert('载入存档失败，请重试');
+    }
+}
+
+// 重命名存档（从菜单）
+async function renameSaveFromMenu(saveId) {
+    try {
+        const newName = prompt('请输入新的存档名称：');
+        if (newName && newName.trim()) {
+            // 获取存档数据
+            const saveData = await window.saveSystem.loadSave(saveId);
+            if (saveData) {
+                // 更新名称
+                saveData.name = newName.trim();
+                // 保存回数据库
+                await window.Database.db.saves.update(saveId, { name: saveData.name });
+                // 刷新列表
+                await loadSavesList();
+                console.log('✅ 存档已重命名');
+            }
+        }
+    } catch (error) {
+        console.error('重命名存档失败:', error);
+        alert('重命名失败，请重试');
+    }
+}
+
+// 删除存档（从菜单）
+async function deleteSaveFromMenu(saveId) {
+    try {
+        if (confirm('确定要删除这个存档吗？此操作不可恢复！')) {
+            if (window.saveSystem) {
+                await window.saveSystem.deleteSave(saveId);
+                // 刷新列表
+                await loadSavesList();
+                console.log('✅ 存档已删除');
+
+                // 如果删除后没有存档了，隐藏继续游戏按钮
+                await checkSaveFiles();
+            }
+        }
+    } catch (error) {
+        console.error('删除存档失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+// 关闭存档对话框
+function closeSaveDialog() {
+    const dialog = document.getElementById('saveLoadDialog');
+    if (dialog) {
+        dialog.classList.remove('active');
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+        }, 300);
+    }
+}
+
+// 更新的handleLoadGame函数
+async function handleLoadGame() {
+    console.log('打开载入存档界面...');
+    const dialog = document.getElementById('saveLoadDialog');
+    if (dialog) {
+        await loadSavesList();
+        dialog.classList.remove('hidden');
+        setTimeout(() => {
+            dialog.classList.add('active');
+        }, 10);
+    }
+}
+
+// 导出函数到全局，供HTML的onclick使用
+window.handleLoadGame = handleLoadGame;
+window.startNewGame = startNewGame;
+window.openSettings = openSettings;
+window.showAPISettings = showAPISettings;
+window.loadGame = loadGame;  // 保留旧的以防万一
+window.loadFromMenu = loadFromMenu;
+window.renameSaveFromMenu = renameSaveFromMenu;
+window.deleteSaveFromMenu = deleteSaveFromMenu;
+window.closeSaveDialog = closeSaveDialog;
+// Version: 20250923_084913

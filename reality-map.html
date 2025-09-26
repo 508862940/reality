@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Reality · 交互式世界地图</title>
+  <link rel="stylesheet" href="./reality-map.css" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+  <div class="app pwa-safe">
+    <header class="app-header">
+      <h1>🗺️ Reality 世界地图</h1>
+      <div class="toolbar">
+        <div class="segmented" role="tablist" aria-label="地图层级切换">
+          <button class="seg active" data-layer="surface" aria-selected="true">表层</button>
+          <button class="seg" data-layer="inner">里层</button>
+          <button class="seg" data-layer="deep">深层</button>
+        </div>
+        <button id="resetZoom" class="btn" title="重置视图">重置</button>
+      </div>
+    </header>
+
+    <main class="map-wrap">
+      <!-- SVG 地图 -->
+      <svg id="worldMap" viewBox="0 0 1200 800" aria-labelledby="title desc" role="img">
+        <title id="title">Reality 世界地图</title>
+        <desc id="desc">根据项目世界观绘制的三层结构地图：表层城市、里层设施网络、深层核心区域。</desc>
+
+        <!-- 背景网格 -->
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+          </pattern>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2"></feGaussianBlur>
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="1200" height="800" fill="url(#grid)"></rect>
+
+        <!-- 连接线（表层） -->
+        <g id="edges-surface" class="edges layer-surface">
+          <path d="M220,300 L420,260 L600,300 L780,260 L980,300" class="edge"></path>
+          <path d="M420,260 L420,420 L600,480" class="edge"></path>
+          <path d="M600,300 L600,480" class="edge"></path>
+        </g>
+
+        <!-- 连接线（里层） -->
+        <g id="edges-inner" class="edges layer-inner hidden">
+          <path d="M180,560 C400,520 800,620 1020,560" class="edge dashed"></path>
+          <path d="M500,520 L700,520" class="edge dashed"></path>
+        </g>
+
+        <!-- 连接线（深层） -->
+        <g id="edges-deep" class="edges layer-deep hidden">
+          <path d="M300,700 L600,700 L900,700" class="edge dotted"></path>
+        </g>
+
+        <!-- 表层节点 -->
+        <g id="nodes-surface" class="nodes layer-surface">
+          <!-- 中央广场 -->
+          <g class="node" data-id="central" data-layer="surface" transform="translate(220,300)">
+            <circle r="18" class="n surface"></circle>
+            <text y="-28" class="label">中央广场</text>
+            <text y="6" class="emoji">🧭</text>
+          </g>
+          <!-- 居住区 -->
+          <g class="node" data-id="residential" data-layer="surface" transform="translate(420,260)">
+            <circle r="18" class="n surface"></circle>
+            <text y="-28" class="label">居住区</text>
+            <text y="6" class="emoji">🏠</text>
+          </g>
+          <!-- 商业街 -->
+          <g class="node" data-id="commerce" data-layer="surface" transform="translate(600,300)">
+            <circle r="18" class="n surface"></circle>
+            <text y="-28" class="label">商业街</text>
+            <text y="6" class="emoji">🛍️</text>
+          </g>
+          <!-- 学院区 -->
+          <g class="node" data-id="academy" data-layer="surface" transform="translate(780,260)">
+            <circle r="18" class="n surface"></circle>
+            <text y="-28" class="label">学院区</text>
+            <text y="6" class="emoji">🏫</text>
+          </g>
+          <!-- 医疗中心 -->
+          <g class="node" data-id="medical" data-layer="surface" transform="translate(980,300)">
+            <circle r="18" class="n surface"></circle>
+            <text y="-28" class="label">医疗中心</text>
+            <text y="6" class="emoji">🏥</text>
+          </g>
+          <!-- 公园 -->
+          <g class="node" data-id="park" data-layer="surface" transform="translate(600,480)">
+            <circle r="18" class="n surface"></circle>
+            <text y="-28" class="label">公园</text>
+            <text y="6" class="emoji">🌳</text>
+          </g>
+        </g>
+
+        <!-- 里层节点 -->
+        <g id="nodes-inner" class="nodes layer-inner hidden">
+          <!-- 废弃工厂 -->
+          <g class="node" data-id="factory" data-layer="inner" transform="translate(200,560)">
+            <rect x="-18" y="-18" width="36" height="36" rx="8" class="n inner"></rect>
+            <text y="-28" class="label">废弃工厂</text>
+            <text y="6" class="emoji">🏭</text>
+          </g>
+          <!-- 地下通道 -->
+          <g class="node" data-id="tunnel" data-layer="inner" transform="translate(500,520)">
+            <rect x="-18" y="-18" width="36" height="36" rx="8" class="n inner"></rect>
+            <text y="-28" class="label">地下通道</text>
+            <text y="6" class="emoji">🕳️</text>
+          </g>
+          <!-- 数据档案馆 -->
+          <g class="node" data-id="archive" data-layer="inner" transform="translate(700,520)">
+            <rect x="-18" y="-18" width="36" height="36" rx="8" class="n inner"></rect>
+            <text y="-28" class="label">数据档案馆</text>
+            <text y="6" class="emoji">🗄️</text>
+          </g>
+          <!-- 监控中心 -->
+          <g class="node" data-id="surveillance" data-layer="inner" transform="translate(1000,560)">
+            <rect x="-18" y="-18" width="36" height="36" rx="8" class="n inner"></rect>
+            <text y="-28" class="label">监控中心</text>
+            <text y="6" class="emoji">📡</text>
+          </g>
+        </g>
+
+        <!-- 深层节点 -->
+        <g id="nodes-deep" class="nodes layer-deep hidden">
+          <!-- AI墓地 -->
+          <g class="node" data-id="ai_graveyard" data-layer="deep" transform="translate(300,700)">
+            <polygon points="-20,-18 20,-18 20,18 -20,18" class="n deep"></polygon>
+            <text y="-28" class="label">AI墓地</text>
+            <text y="6" class="emoji">🪦</text>
+          </g>
+          <!-- 组织总部 -->
+          <g class="node" data-id="hq" data-layer="deep" transform="translate(600,700)">
+            <polygon points="-20,-18 20,-18 20,18 -20,18" class="n deep"></polygon>
+            <text y="-28" class="label">组织总部</text>
+            <text y="6" class="emoji">🏢</text>
+          </g>
+          <!-- 记忆银行 -->
+          <g class="node" data-id="memory_bank" data-layer="deep" transform="translate(900,700)">
+            <polygon points="-20,-18 20,-18 20,18 -20,18" class="n deep"></polygon>
+            <text y="-28" class="label">记忆银行</text>
+            <text y="6" class="emoji">💾</text>
+          </g>
+          <!-- 源代码室 -->
+          <g class="node" data-id="source_room" data-layer="deep" transform="translate(1060,720)">
+            <polygon points="-20,-18 20,-18 20,18 -20,18" class="n deep"></polygon>
+            <text y="-28" class="label">源代码室</text>
+            <text y="6" class="emoji">🧬</text>
+          </g>
+        </g>
+      </svg>
+
+      <!-- 右侧信息栏 -->
+      <aside class="sidebar" aria-live="polite" aria-atomic="true">
+        <div class="card">
+          <h3 id="placeName">提示</h3>
+          <p id="placeDesc">点按任意节点查看地点简介；若已接入游戏，将显示“前往此地”。</p>
+          <div class="chips" id="tags"></div>
+          <div class="actions">
+            <button id="gotoBtn" class="btn primary" disabled>前往此地</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>图例</h3>
+          <ul class="legend">
+            <li><span class="dot surface"></span>表层 · 城市日常</li>
+            <li><span class="dot inner"></span>里层 · 半隐藏网络</li>
+            <li><span class="dot deep"></span>深层 · 核心真相</li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="app-footer">
+      <small>Reality Map · v1.0 · 适配移动端 / 支持PWA安全区</small>
+    </footer>
+  </div>
+
+  <script src="./reality-map.js"></script>
+</body>
+</html>

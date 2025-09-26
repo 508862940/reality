@@ -8,6 +8,16 @@ class SaveSystem {
         this.db = null;
         this.maxManualSlots = 10;  // 手动存档槽位数
         this.maxQuickSlots = 3;    // 快速存档槽位数
+
+        // 自动存档设置
+        this.autoSaveEnabled = true;
+        this.autoSaveInterval = 5 * 60 * 1000; // 5分钟（作为参考值）
+        this.autoSaveTimer = null;
+        this.lastAutoSaveTime = 0;
+        this.isAutoSaving = false;
+        this.lastActivityTime = Date.now(); // 记录最后活动时间
+        this.inCombat = false; // 是否在战斗中
+
         this.init();
     }
 
@@ -19,6 +29,14 @@ class SaveSystem {
             console.log('💾 SaveSystem: 使用现有数据库连接');
         } else {
             console.error('❌ SaveSystem: 数据库未初始化');
+        }
+
+        // 加载自动存档设置
+        this.loadAutoSaveSettings();
+
+        // 如果在游戏页面，启动自动存档
+        if (window.location.pathname.includes('game-main')) {
+            this.startAutoSave();
         }
     }
 
@@ -71,9 +89,24 @@ class SaveSystem {
                 }
             };
 
-            // 保存到数据库
+            // 保存到数据库前检查数据
+            console.log('💾 保存前的gameData.worldData包含:', {
+                hasCurrentSceneData: !!gameData.worldData?.currentSceneData,
+                worldDataKeys: gameData.worldData ? Object.keys(gameData.worldData) : [],
+                sceneId: gameData.worldData?.currentSceneData?.scene?.id
+            });
+
             await this.db.saveSlots.put(saveData);
             console.log(`✅ 存档创建成功: ${saveId}`);
+
+            // 立即读取验证
+            const verification = await this.db.saveSlots.get(saveId);
+            console.log('🔍 保存后立即读取验证:', {
+                hasWorldData: !!verification.gameData?.worldData,
+                worldDataKeys: verification.gameData?.worldData ? Object.keys(verification.gameData.worldData) : [],
+                hasCurrentSceneData: !!verification.gameData?.worldData?.currentSceneData,
+                sceneId: verification.gameData?.worldData?.currentSceneData?.scene?.id
+            });
 
             return saveData;
 
@@ -185,13 +218,202 @@ class SaveSystem {
      */
     async autoSave() {
         try {
+            // 防止重复触发
+            if (this.isAutoSaving) {
+                console.log('⏳ 自动存档进行中，跳过本次请求');
+                return null;
+            }
+
+            this.isAutoSaving = true;
+
             // 自动存档总是覆盖槽位0
             const saveData = await this.createSave('auto', 0, '自动存档');
+
+            this.lastAutoSaveTime = Date.now();
+            this.isAutoSaving = false;
+
+            console.log('💾 自动存档成功');
+
+            // 显示通知（如果存在）
+            if (window.showNotification) {
+                window.showNotification('自动存档完成', 'success');
+            }
+
             return saveData;
 
         } catch (error) {
+            this.isAutoSaving = false;
             console.error('❌ 自动存档失败:', error);
             throw error;
+        }
+    }
+
+    /**
+     * 启动自动存档（简化版 - 仅依赖游戏内时间）
+     */
+    startAutoSave() {
+        if (!this.autoSaveEnabled) {
+            console.log('⚠️ 自动存档已禁用');
+            return;
+        }
+
+        // 清除旧的定时器
+        this.stopAutoSave();
+
+        // 简化版：不使用真实时间定时器
+        // 完全依赖游戏内时间系统的每日5点存档
+        console.log('⏰ 自动存档已启用（游戏内每天早上5点自动保存）');
+
+        // 可选：保留一个备用定时器，但间隔很长（30分钟）
+        // 仅作为保险，防止游戏时间系统出问题
+        this.autoSaveTimer = setInterval(() => {
+            // 超过30分钟没存档才触发（作为保险）
+            const timeSinceLastSave = Date.now() - this.lastAutoSaveTime;
+            if (timeSinceLastSave > 30 * 60 * 1000) {
+                console.log('⚠️ 超过30分钟未存档，触发备用存档');
+                this.triggerAutoSave('backup');
+            }
+        }, 10 * 60 * 1000); // 每10分钟检查一次
+    }
+
+    // 注释掉智能检查功能（保留代码以备将来使用）
+    /*
+    checkAutoSaveConditions() {
+        // 如果正在战斗中，跳过
+        if (this.inCombat || (window.combatSystem && window.combatSystem.inCombat)) {
+            console.log('⚔️ 战斗中，暂不自动存档');
+            return;
+        }
+
+        // 如果正在AI对话中，跳过
+        if (window.aiDialogueManager && window.aiDialogueManager.isActive) {
+            console.log('💬 对话中，暂不自动存档');
+            return;
+        }
+
+        // 检查距离上次存档的时间
+        const timeSinceLastSave = Date.now() - this.lastAutoSaveTime;
+        const timeSinceLastActivity = Date.now() - this.lastActivityTime;
+
+        // 条件1：超过5分钟没存档且最近有活动
+        if (timeSinceLastSave > this.autoSaveInterval && timeSinceLastActivity < 60000) {
+            this.triggerAutoSave('smart_timer');
+            return;
+        }
+
+        // 条件2：超过10分钟没存档（强制存档）
+        if (timeSinceLastSave > this.autoSaveInterval * 2) {
+            this.triggerAutoSave('force_timer');
+            return;
+        }
+    }
+
+    updateActivityTime() {
+        this.lastActivityTime = Date.now();
+    }
+    */
+
+    /**
+     * 停止自动存档定时器
+     */
+    stopAutoSave() {
+        if (this.autoSaveTimer) {
+            clearInterval(this.autoSaveTimer);
+            this.autoSaveTimer = null;
+            console.log('⏸️ 自动存档定时器已停止');
+        }
+    }
+
+    /**
+     * 触发自动存档（带防抖）
+     */
+    triggerAutoSave(reason = 'manual') {
+        // 检查是否启用
+        if (!this.autoSaveEnabled) {
+            return;
+        }
+
+        // 防抖：根据不同触发原因设置不同的间隔
+        const timeSinceLastSave = Date.now() - this.lastAutoSaveTime;
+
+        // 不同触发类型的最小间隔
+        const minIntervals = {
+            'scene_change': 500,         // 场景切换：0.5秒（减少到0.5秒，确保新场景能保存）
+            'combat_victory': 30000,     // 战斗胜利：30秒
+            'smart_timer': 0,            // 智能定时：无限制（已经过滤）
+            'force_timer': 0,            // 强制定时：无限制
+            'important': 0,              // 重要事件：无限制
+            'daily_5am': 0,              // 每日5点：无限制
+            'page_unload': 0,            // 页面卸载：无限制
+            'manual': 15000              // 手动触发：15秒
+        };
+
+        const minInterval = minIntervals[reason] || 30000; // 默认30秒
+
+        if (timeSinceLastSave < minInterval) {
+            console.log(`⏱️ 距离上次自动存档太近，跳过（${Math.floor(timeSinceLastSave / 1000)}秒前，需要${minInterval/1000}秒间隔）`);
+            return;
+        }
+
+        // 执行自动存档
+        this.autoSave().then(() => {
+            console.log(`💾 自动存档触发原因: ${reason}`);
+        }).catch(error => {
+            console.error('自动存档失败:', error);
+        });
+    }
+
+    /**
+     * 设置自动存档开关
+     */
+    setAutoSaveEnabled(enabled) {
+        this.autoSaveEnabled = enabled;
+
+        if (enabled) {
+            this.startAutoSave();
+        } else {
+            this.stopAutoSave();
+        }
+
+        // 保存设置
+        if (window.localStorage) {
+            localStorage.setItem('autoSaveEnabled', enabled ? 'true' : 'false');
+        }
+    }
+
+    /**
+     * 设置自动存档间隔
+     */
+    setAutoSaveInterval(minutes) {
+        this.autoSaveInterval = minutes * 60 * 1000;
+
+        // 重启定时器
+        if (this.autoSaveEnabled) {
+            this.startAutoSave();
+        }
+
+        // 保存设置
+        if (window.localStorage) {
+            localStorage.setItem('autoSaveInterval', minutes.toString());
+        }
+    }
+
+    /**
+     * 加载自动存档设置
+     */
+    loadAutoSaveSettings() {
+        if (window.localStorage) {
+            // 加载开关状态
+            const enabled = localStorage.getItem('autoSaveEnabled');
+            if (enabled !== null) {
+                this.autoSaveEnabled = enabled === 'true';
+            }
+
+            // 加载间隔时间
+            const interval = localStorage.getItem('autoSaveInterval');
+            if (interval) {
+                this.autoSaveInterval = parseInt(interval) * 60 * 1000;
+            }
         }
     }
 
@@ -221,32 +443,119 @@ class SaveSystem {
      * 获取当前游戏状态
      */
     getCurrentGameState() {
-        // 优先使用全局的gameState
-        if (window.gameState) {
-            return window.gameState;
+        const gameData = {};
+
+        // 优先使用统一的世界状态
+        if (window.worldState) {
+            // 获取完整的世界快照
+            const worldSnapshot = window.worldState.getFullState();
+
+            console.log('🔍 getCurrentGameState - worldSnapshot原始数据:', {
+                hasCurrentSceneData: !!worldSnapshot.currentSceneData,
+                worldSnapshotKeys: Object.keys(worldSnapshot),
+                sceneId: worldSnapshot.currentSceneData?.scene?.id
+            });
+
+            // ⚠️ 深拷贝避免引用问题！
+            gameData.worldData = JSON.parse(JSON.stringify(worldSnapshot));
+
+            console.log('💾 存档worldData包含:', {
+                hasCurrentSceneData: !!worldSnapshot.currentSceneData,
+                hasF1Content: !!worldSnapshot.f1Content,
+                sceneId: worldSnapshot.currentSceneData?.scene?.id
+            });
+
+            console.log('🔍 赋值后的gameData.worldData:', {
+                hasCurrentSceneData: !!gameData.worldData.currentSceneData,
+                gameDataWorldKeys: Object.keys(gameData.worldData),
+                sceneId: gameData.worldData.currentSceneData?.scene?.id
+            });
+
+            // 保持向后兼容（提取关键数据到顶层）
+            gameData.character = {
+                name: worldSnapshot.player.name,
+                health: worldSnapshot.player.stats.health,
+                mood: worldSnapshot.player.stats.mood,
+                money: worldSnapshot.player.stats.money,
+                energy: worldSnapshot.player.stats.energy,
+                spirit: worldSnapshot.player.stats.spirit,
+                location: worldSnapshot.player.position.location
+            };
+
+            gameData.gameTime = worldSnapshot.time;
+            gameData.currentSceneId = worldSnapshot.story.currentSceneId;
+            gameData.sceneHistory = worldSnapshot.story.sceneHistory || [];
+
+            console.log('📸 使用统一世界状态创建存档');
+
+            // 🔒 防止被其他数据覆盖，直接返回！
+            console.log('🔒 跳过其他数据源，防止覆盖worldData');
+        }
+        // 后备方案：使用旧的gameState（仅当worldState不存在时）
+        else if (window.gameState) {
+            console.log('📦 使用window.gameState作为后备数据源');
+            Object.assign(gameData, window.gameState);
+        } else if (typeof gameState !== 'undefined') {
+            console.log('📦 使用全局gameState作为后备数据源');
+            Object.assign(gameData, gameState);
+        } else {
+            // 使用默认值
+            console.warn('⚠️ 无法获取当前游戏状态，使用默认值');
+            Object.assign(gameData, {
+                character: {
+                    name: '未知',
+                    health: 100,
+                    mood: 50,
+                    money: 100,
+                    location: 'unknown'
+                },
+                gameTime: {
+                    day: 1,
+                    hour: 8,
+                    minute: 0
+                }
+            });
         }
 
-        // 尝试从页面特定的变量获取
-        if (typeof gameState !== 'undefined') {
-            return gameState;
+        // 添加剧情标记数据
+        if (window.storyFlags) {
+            gameData.storyData = window.storyFlags.save();
         }
 
-        // 返回默认状态
-        console.warn('⚠️ 无法获取当前游戏状态，使用默认值');
-        return {
-            character: {
-                name: '未知',
-                health: 100,
-                mood: 50,
-                money: 100,
-                location: 'unknown'
-            },
-            gameTime: {
-                day: 1,
-                hour: 8,
-                minute: 0
+        // 添加关系数据（如果系统存在）
+        if (window.relationships) {
+            gameData.relationshipData = window.relationships.save();
+        }
+
+        // 场景数据已经包含在gameState中，不需要重复保存
+        // gameState.currentSceneId 和 gameState.sceneHistory 已经是世界快照的一部分
+
+        // 添加世界系统数据（仅当worldState不存在时）
+        if (!window.worldState) {
+            const worldData = {};
+            if (window.weatherSystem) {
+                worldData.weather = window.weatherSystem.save();
             }
-        };
+            if (window.economySystem) {
+                worldData.economy = window.economySystem.save();
+            }
+            if (window.farmingSystem) {
+                worldData.farming = window.farmingSystem.save();
+            }
+            if (Object.keys(worldData).length > 0) {
+                gameData.worldData = worldData;
+            }
+            console.log('📦 添加了独立的世界系统数据（无worldState）');
+        } else {
+            console.log('🔒 跳过独立世界系统数据（已有worldState完整数据）');
+        }
+
+        // 添加战斗状态（如果存在）
+        if (window.combatSystem) {
+            gameData.combatData = window.combatSystem.save();
+        }
+
+        return gameData;
     }
 
     /**

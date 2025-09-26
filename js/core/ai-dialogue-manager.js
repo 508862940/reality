@@ -250,16 +250,22 @@ class AIDialogueManager {
      * 显示消息到对话区
      */
     displayMessage(type, message, npcName = null) {
-        const storyArea = document.getElementById('storyArea');
-        if (!storyArea) return;
+        // AI对话应该添加到dialogueHistoryArea，不是storyArea
+        const dialogueHistoryArea = document.getElementById('dialogueHistoryArea');
+        if (!dialogueHistoryArea) return;
 
         const messageDiv = document.createElement('div');
-        messageDiv.className = `dialogue-message ${type}-message fade-in`;
+        messageDiv.className = `chat-bubble ${type} fade-in`;
 
         if (type === 'npc') {
+            // 如果是API模式，在NPC消息上添加小星星标记
+            const hasAPI = window.apiState && window.apiState.hasValidKey();
+            const starMark = hasAPI ? '<span class="api-star-mark">✨</span>' : '';
+
             messageDiv.innerHTML = `
                 <span class="dialogue-name">${npcName}:</span>
                 <span class="dialogue-text">${message}</span>
+                ${starMark}
             `;
         } else {
             messageDiv.innerHTML = `
@@ -268,31 +274,33 @@ class AIDialogueManager {
             `;
         }
 
-        // 添加到对话区
-        storyArea.appendChild(messageDiv);
+        // 添加到对话历史区
+        dialogueHistoryArea.appendChild(messageDiv);
 
         // 滚动到底部
-        storyArea.scrollTop = storyArea.scrollHeight;
+        dialogueHistoryArea.scrollTop = dialogueHistoryArea.scrollHeight;
     }
 
     /**
      * 显示思考指示器
      */
     showTypingIndicator() {
-        const storyArea = document.getElementById('storyArea');
-        if (!storyArea) return;
+        const dialogueHistoryArea = document.getElementById('dialogueHistoryArea');
+        if (!dialogueHistoryArea) return;
 
         const indicator = document.createElement('div');
         indicator.className = 'typing-indicator';
         indicator.id = 'typingIndicator';
+
+        // 两种模式都显示三个点，保持一致性
         indicator.innerHTML = `
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
         `;
 
-        storyArea.appendChild(indicator);
-        storyArea.scrollTop = storyArea.scrollHeight;
+        dialogueHistoryArea.appendChild(indicator);
+        dialogueHistoryArea.scrollTop = dialogueHistoryArea.scrollHeight;
     }
 
     /**
@@ -432,3 +440,6 @@ class AIDialogueManager {
         return aiEnabledNPCs.includes(npcName);
     }
 }
+
+// 创建全局实例
+window.aiDialogueManager = new AIDialogueManager();

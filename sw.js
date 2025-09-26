@@ -1,5 +1,5 @@
 // Service Worker for PWA support
-const CACHE_NAME = 'interactive-novel-v1.0.0';
+const CACHE_NAME = 'reality-game-v1.1.0';
 const urlsToCache = [
   './',
   './index.html',
@@ -16,6 +16,11 @@ const urlsToCache = [
   './js/core/scene-manager.js',
   './js/core/f2-manager.js',
   './js/core/illustration-manager.js',
+  './js/core/save-system.js',
+  './js/core/world-state.js',
+  './js/core/game-bootstrap.js',
+  './js/core/database.js',
+  './js/core/reactive-system.js',
   './manifest.json'
 ];
 
@@ -48,6 +53,11 @@ self.addEventListener('activate', event => {
 
 // 拦截请求
 self.addEventListener('fetch', event => {
+  // 忽略非GET请求和数据URL
+  if (event.request.method !== 'GET' || event.request.url.startsWith('data:')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -62,6 +72,12 @@ self.addEventListener('fetch', event => {
         return fetch(fetchRequest).then(response => {
           // 检查是否是有效响应
           if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // 不缓存API请求和存档数据
+          if (event.request.url.includes('/api/') ||
+              event.request.url.includes('indexeddb')) {
             return response;
           }
 

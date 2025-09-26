@@ -31,6 +31,17 @@ class F2Manager {
             this.createSceneControlArea();
         }
 
+        // 如果没有AI输入区，也创建它（但默认隐藏）
+        if (!this.aiInputArea) {
+            this.createAIInputArea();
+        }
+
+        // 确保对话历史区也存在（F1区的AI模式）
+        const dialogueHistoryArea = document.getElementById('dialogueHistoryArea');
+        if (!dialogueHistoryArea) {
+            this.createDialogueHistoryArea();
+        }
+
         // 默认显示场景模式
         this.switchToSceneMode();
     }
@@ -91,20 +102,30 @@ class F2Manager {
             <!-- 快捷菜单 -->
             <div class="quick-menu" id="quickMenu" style="display: none;">
                 <div class="quick-menu-content">
+                    <button class="quick-menu-item" data-action="toggleAIMode">
+                        <span class="quick-icon">🤖</span>
+                        <span class="quick-text">AI对话模式</span>
+                    </button>
+                    <div class="quick-menu-divider"></div>
                     <button class="quick-menu-item" data-action="quickSave">
+                        <span class="quick-icon">⚡</span>
+                        <span class="quick-text">快速存档 (F5)</span>
+                    </button>
+                    <button class="quick-menu-item" data-action="quickLoad">
+                        <span class="quick-icon">📖</span>
+                        <span class="quick-text">快速读档 (F9)</span>
+                    </button>
+                    <button class="quick-menu-item" data-action="saveManage">
                         <span class="quick-icon">💾</span>
-                        <span class="quick-text">快速存档</span>
+                        <span class="quick-text">存档管理</span>
                     </button>
-                    <button class="quick-menu-item" data-action="loadSave">
-                        <span class="quick-icon">📁</span>
-                        <span class="quick-text">读取存档</span>
-                    </button>
+                    <div class="quick-menu-divider"></div>
                     <button class="quick-menu-item" data-action="showHistory">
                         <span class="quick-icon">📜</span>
                         <span class="quick-text">历史记录</span>
                     </button>
                     <button class="quick-menu-item" data-action="toggleAutoMode">
-                        <span class="quick-icon">⚡</span>
+                        <span class="quick-icon">🔄</span>
                         <span class="quick-text">自动模式</span>
                     </button>
                     <button class="quick-menu-item" data-action="testAdvanceTime">
@@ -148,11 +169,26 @@ class F2Manager {
     }
 
     /**
-     * 切换到场景模式
+     * 切换到场景模式（同时切换F1和F2回正常状态）
      */
     switchToSceneMode() {
         this.currentMode = 'scene';
 
+        // F1区域：dialogue-history-area 切换回 story-area
+        const storyArea = document.getElementById('storyArea');
+        const dialogueHistoryArea = document.getElementById('dialogueHistoryArea');
+
+        if (dialogueHistoryArea) {
+            dialogueHistoryArea.style.display = 'none';
+            dialogueHistoryArea.classList.remove('active');
+        }
+
+        if (storyArea) {
+            storyArea.style.display = 'block';
+            storyArea.classList.add('active');
+        }
+
+        // F2区域：AI输入区 切换回 场景控制区
         if (this.aiInputArea) {
             this.aiInputArea.style.display = 'none';
             this.aiInputArea.classList.remove('active');
@@ -170,17 +206,38 @@ class F2Manager {
     }
 
     /**
-     * 切换到AI模式
+     * 切换到AI模式（同时切换F1和F2）
      */
     switchToAIMode() {
         this.currentMode = 'ai';
 
+        // F1区域：story-area 切换到 dialogue-history-area
+        const storyArea = document.getElementById('storyArea');
+        const dialogueHistoryArea = document.getElementById('dialogueHistoryArea');
+
+        if (storyArea) {
+            storyArea.style.display = 'none';
+            storyArea.classList.remove('active');
+        }
+
+        // 如果对话历史区不存在，创建它
+        if (!dialogueHistoryArea) {
+            this.createDialogueHistoryArea();
+        } else {
+            dialogueHistoryArea.style.display = 'flex';
+            dialogueHistoryArea.classList.add('active');
+        }
+
+        // F2区域：场景控制区 切换到 AI输入区
         if (this.sceneControlArea) {
             this.sceneControlArea.style.display = 'none';
         }
 
-        if (this.aiInputArea) {
-            this.aiInputArea.style.display = 'block';
+        // 如果AI输入区不存在，创建它
+        if (!this.aiInputArea) {
+            this.createAIInputArea();
+        } else {
+            this.aiInputArea.style.display = 'flex';
             this.aiInputArea.classList.add('active');
 
             // 自动聚焦输入框
@@ -198,6 +255,177 @@ class F2Manager {
 
         // AI模式不可重置
         this.resetCount = this.maxResets;
+    }
+
+    /**
+     * 创建对话历史区（F1区域的AI模式）
+     */
+    createDialogueHistoryArea() {
+        const lowerSection = document.querySelector('.lower-section');
+        if (!lowerSection) return;
+
+        // 在story-area后面添加对话历史区
+        const historyHTML = `
+            <div class="dialogue-history-area" id="dialogueHistoryArea">
+                <!-- 对话历史将动态添加 -->
+            </div>
+        `;
+
+        const storyArea = document.getElementById('storyArea');
+        if (storyArea) {
+            storyArea.insertAdjacentHTML('afterend', historyHTML);
+        }
+    }
+
+    /**
+     * 创建优化版AI输入区（F2区域的AI模式）
+     */
+    createAIInputArea() {
+        const lowerSection = document.querySelector('.lower-section');
+        if (!lowerSection) return;
+
+        // 创建优化版的AI输入区
+        const inputHTML = `
+            <div class="ai-input-container" id="aiInputArea">
+                <div class="ai-input-wrapper">
+                    <!-- 左侧更多按钮 -->
+                    <button class="ai-more-btn" id="aiMoreBtn" aria-label="更多功能">
+                        ⋮
+                    </button>
+
+                    <!-- 中间输入区域 -->
+                    <div class="ai-input-field-wrapper">
+                        <input type="text"
+                               class="ai-input-field"
+                               id="aiInput"
+                               placeholder="说点什么..."
+                               autocomplete="off"
+                               autocorrect="off"
+                               autocapitalize="off"
+                               spellcheck="false" />
+
+                        <button class="ai-mode-toggle" id="aiModeToggle" aria-label="切换模式">
+                            💬
+                        </button>
+                    </div>
+
+                    <!-- 右侧发送按钮 -->
+                    <button class="ai-send-btn" id="aiSendBtn" aria-label="发送">
+                        ➤
+                    </button>
+                </div>
+
+                <!-- 更多菜单 -->
+                <div class="ai-more-menu" id="aiMoreMenu">
+                    <div class="ai-menu-item" data-action="history">
+                        <span class="menu-item-icon">📜</span>
+                        <span>对话历史</span>
+                    </div>
+                    <div class="ai-menu-item" data-action="emoji">
+                        <span class="menu-item-icon">😊</span>
+                        <span>快速表情</span>
+                    </div>
+                    <div class="ai-menu-item" data-action="save">
+                        <span class="menu-item-icon">💾</span>
+                        <span>保存对话</span>
+                    </div>
+                    <div class="ai-menu-item" data-action="exit">
+                        <span class="menu-item-icon">↩️</span>
+                        <span>返回场景</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 确保AI输入区总是在lower-section的底部
+        // 先移除可能存在的旧元素
+        const existingAI = document.getElementById('aiInputArea');
+        if (existingAI) {
+            existingAI.remove();
+        }
+
+        // 始终插入到lower-section的末尾，确保在底部
+        lowerSection.insertAdjacentHTML('beforeend', inputHTML);
+
+        this.aiInputArea = document.getElementById('aiInputArea');
+
+        // 确保lower-section是flex布局，AI输入区在底部
+        lowerSection.style.display = 'flex';
+        lowerSection.style.flexDirection = 'column';
+
+        // 确保story-area或dialogue-history占用剩余空间
+        const storyArea = document.getElementById('storyArea');
+        const dialogueArea = document.getElementById('dialogueHistoryArea');
+
+        if (storyArea) {
+            storyArea.style.flex = '1';
+            storyArea.style.minHeight = '0';
+        }
+
+        if (dialogueArea) {
+            dialogueArea.style.flex = '1';
+            dialogueArea.style.minHeight = '0';
+        }
+        this.bindAIInputEvents();
+    }
+
+    /**
+     * 绑定AI输入区事件
+     */
+    bindAIInputEvents() {
+        // 发送按钮
+        const sendBtn = document.getElementById('aiSendBtn');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => this.sendAIMessage());
+        }
+
+        // 输入框回车发送
+        const input = document.getElementById('aiInput');
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendAIMessage();
+                }
+            });
+        }
+
+        // 更多按钮
+        const moreBtn = document.getElementById('aiMoreBtn');
+        const moreMenu = document.getElementById('aiMoreMenu');
+        if (moreBtn && moreMenu) {
+            moreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moreMenu.classList.toggle('show');
+            });
+
+            // 点击外部关闭菜单
+            document.addEventListener('click', () => {
+                moreMenu.classList.remove('show');
+            });
+
+            // 菜单项点击
+            moreMenu.querySelectorAll('.ai-menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const action = e.currentTarget.dataset.action;
+                    if (action === 'exit') {
+                        this.switchToSceneMode();
+                    }
+                    // 其他动作...
+                    moreMenu.classList.remove('show');
+                });
+            });
+        }
+
+        // 模式切换按钮
+        const modeToggle = document.getElementById('aiModeToggle');
+        if (modeToggle) {
+            modeToggle.addEventListener('click', () => {
+                const isActionMode = modeToggle.classList.toggle('action-mode');
+                modeToggle.textContent = isActionMode ? '🎭' : '💬';
+                input.placeholder = isActionMode ? '描述动作...' : '说点什么...';
+            });
+        }
     }
 
     /**
@@ -228,24 +456,17 @@ class F2Manager {
      * 处理重置按钮
      */
     handleReset() {
-        if (this.resetCount >= this.maxResets) {
-            this.showTip('本场景只能重置一次');
+        // 检查场景管理器是否可以重置
+        if (!window.sceneManager || !window.sceneManager.canResetToLastStep) {
+            this.showTip('需要继续后才能重置');
             return;
         }
 
-        this.resetCount++;
-
-        // 更新提示
-        const resetHint = document.getElementById('resetHint');
-        if (resetHint) {
-            resetHint.textContent = '已使用重置';
-            resetHint.style.color = '#6b7280';
-        }
-
         // 调用场景管理器的重置方法
-        if (window.sceneManager) {
-            window.sceneManager.resetScene();
-        }
+        window.sceneManager.resetScene();
+
+        // 更新重置按钮状态
+        this.updateResetButton(false);
     }
 
     /**
@@ -284,6 +505,37 @@ class F2Manager {
                 btn.classList.add('disabled');
                 btn.classList.remove('preview-ready');
                 btn.style.opacity = '0.5';
+            }
+        }
+    }
+
+    /**
+     * 更新重置按钮状态
+     * @param {boolean} canReset - 是否可以重置
+     */
+    updateResetButton(canReset) {
+        const resetBtn = document.getElementById('resetBtn');
+        const resetHint = document.getElementById('resetHint');
+
+        if (resetBtn) {
+            if (canReset) {
+                resetBtn.classList.remove('disabled');
+                resetBtn.classList.add('can-reset');
+                resetBtn.style.opacity = '1';
+            } else {
+                resetBtn.classList.add('disabled');
+                resetBtn.classList.remove('can-reset');
+                resetBtn.style.opacity = '0.5';
+            }
+        }
+
+        if (resetHint) {
+            if (canReset) {
+                resetHint.textContent = '可重置';
+                resetHint.className = 'reset-hint available';
+            } else {
+                resetHint.textContent = '需继续';
+                resetHint.className = 'reset-hint used';
             }
         }
     }
@@ -387,11 +639,42 @@ class F2Manager {
     }
 
     /**
-     * 快速存档
+     * 切换AI对话模式
+     */
+    toggleAIMode() {
+        this.closeQuickMenu();
+
+        if (this.currentMode === 'scene') {
+            // 切换到AI模式
+            this.switchToAIMode();
+            if (window.showNotification) {
+                window.showNotification('已切换到AI对话模式', 'info');
+            }
+        } else {
+            // 切换回场景模式
+            this.switchToSceneMode();
+            if (window.showNotification) {
+                window.showNotification('已切换到场景模式', 'info');
+            }
+        }
+    }
+
+    /**
+     * 快速存档（使用新的快速存档系统）
      */
     async quickSave() {
         // 阻止事件冒泡
         if (event) event.stopPropagation();
+
+        this.closeQuickMenu();
+
+        // 使用新的快速存档函数（F5）
+        if (window.quickSave) {
+            await window.quickSave();
+            return;
+        }
+
+        // 降级到旧方法
 
         // 收集游戏状态
         const saveData = {
@@ -422,11 +705,41 @@ class F2Manager {
 
         // 显示提示
         this.showTip('已快速存档');
-        this.closeQuickMenu();
     }
 
     /**
-     * 读取存档
+     * 快速读档（使用新的F9系统）
+     */
+    async quickLoad() {
+        this.closeQuickMenu();
+
+        // 使用新的快速读档函数（F9）
+        if (window.quickLoad) {
+            await window.quickLoad();
+        } else {
+            // 降级到旧的loadSave
+            this.loadSave();
+        }
+    }
+
+    /**
+     * 打开存档管理界面
+     */
+    saveManage() {
+        this.closeQuickMenu();
+
+        // 打开存档管理对话框
+        if (window.showSaveLoadDialog) {
+            window.showSaveLoadDialog();
+        } else {
+            if (window.showNotification) {
+                window.showNotification('存档管理功能暂未实现', 'warning');
+            }
+        }
+    }
+
+    /**
+     * 读取存档（旧版本）
      */
     async loadSave() {
         let saveData = null;
@@ -568,12 +881,48 @@ class F2Manager {
         const message = input.value.trim();
         if (!message) return;
 
-        // 调用AI对话管理器
+        // 调用AI对话管理器处理所有逻辑
         if (window.aiDialogueManager) {
+            // AI管理器会处理显示消息和回复
             window.aiDialogueManager.sendMessage(message);
+        } else {
+            // 只在没有AI管理器时才自己处理
+            this.addMessageToHistory(message, 'player');
+            input.value = '';
+
+            // 显示本地回复
+            setTimeout(() => {
+                this.addMessageToHistory('AI系统初始化中...', 'npc');
+            }, 1000);
+        }
+    }
+
+    /**
+     * 添加消息到对话历史区
+     */
+    addMessageToHistory(text, sender = 'npc') {
+        const historyArea = document.getElementById('dialogueHistoryArea');
+        if (!historyArea) return;
+
+        // 创建消息气泡
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${sender}`;
+
+        // 检查是否是动作模式
+        const modeToggle = document.getElementById('aiModeToggle');
+        const isActionMode = modeToggle && modeToggle.classList.contains('action-mode');
+
+        if (isActionMode && sender === 'player') {
+            bubble.innerHTML = `<span class="chat-action">*${text}*</span>`;
+        } else {
+            bubble.textContent = text;
         }
 
-        input.value = '';
+        // 添加到历史区
+        historyArea.appendChild(bubble);
+
+        // 滚动到底部
+        historyArea.scrollTop = historyArea.scrollHeight;
     }
 
     /**
@@ -600,6 +949,11 @@ class F2Manager {
         console.log('   选择类型:', sceneState.choiceType);
         console.log('   已选数量:', sceneState.selectedCount);
         console.log('   能否继续:', sceneState.canProceed);
+
+        // 更新重置按钮状态
+        if (window.sceneManager) {
+            this.updateResetButton(window.sceneManager.canResetToLastStep);
+        }
 
         // 根据场景状态更新F2区域的UI
         const continueBtn = document.getElementById('continueBtn');

@@ -419,6 +419,13 @@ if (document.readyState === 'loading') {
         setTimeout(() => {
             if (initReactiveGameState()) {
                 console.log('✨ 响应式系统准备就绪！');
+
+                // 调试：检查响应式系统初始化后场景是否还在
+                if (window.sceneManager && window.sceneManager.currentScene) {
+                    console.log('🔍 响应式系统初始化后，当前场景:', window.sceneManager.currentScene.id);
+                } else {
+                    console.log('⚠️ 响应式系统初始化后，场景丢失！');
+                }
             } else {
                 console.log('⏳ 等待游戏状态加载...');
                 // 监听游戏状态加载完成

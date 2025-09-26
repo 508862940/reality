@@ -26,6 +26,14 @@
     <link rel="stylesheet" href="css/game-main.css">
     <!-- 可折叠UI样式 -->
     <link rel="stylesheet" href="css/collapsible-ui.css">
+    <!-- 时光倒流特效样式 -->
+    <link rel="stylesheet" href="css/time-rewind-effect.css">
+    <!-- F1对话历史样式 -->
+    <link rel="stylesheet" href="css/f1-dialogue-history.css">
+    <!-- F2 AI输入样式 -->
+    <link rel="stylesheet" href="css/f2-ai-input.css">
+    <!-- 旧的F2对话样式暂时禁用，避免冲突 -->
+    <!-- <link rel="stylesheet" href="css/f2-dialogue.css"> -->
 </head>
 <body>
     <div class="game-container pwa-safe-container">
@@ -122,7 +130,7 @@
             <div class="ai-mode-indicator" id="aiModeIndicator">AI对话模式</div>
 
             <!-- AI对话结束按钮 -->
-            <button class="end-ai-btn" id="endAIBtn" onclick="window.aiDialogueManager.endAIDialogue()" style="display: none;">结束对话</button>
+            <button class="end-ai-btn hidden" id="endAIBtn">结束对话</button>
 
             <!-- F1区 - 剧情文本和选项混合 -->
             <div class="story-area" id="storyArea">
@@ -132,15 +140,12 @@
                 </div>
             </div>
 
-            <!-- F2区 - AI输入区域 -->
-            <div class="ai-input-area" id="aiInputArea">
-                <div class="ai-input-wrapper">
-                    <input type="text" class="ai-input" id="aiInput" placeholder="输入你想说的话..." />
-                    <button class="ai-send-btn" id="aiSendBtn">
-                        ➤
-                    </button>
-                </div>
+            <!-- F1区 - AI对话历史显示 (默认隐藏) -->
+            <div class="dialogue-history-area" id="dialogueHistoryArea" style="display: none;">
+                <!-- 对话历史将在这里显示 -->
             </div>
+
+            <!-- F2区 - 场景控制和AI输入将由f2-manager.js动态创建 -->
         </div>
     </div>
 
@@ -150,9 +155,28 @@
     <script src="js/core/database.js"></script>
     <!-- 统一的存档系统 -->
     <script src="js/core/save-system.js"></script>
+    <!-- 剧情标记系统 -->
+    <script src="js/core/story-flags.js"></script>
+    <script src="js/data/story-events.js"></script>
+    <!-- NPC关系系统 -->
+    <script src="js/core/relationship-system.js"></script>
+    <script src="js/data/npc-profiles.js"></script>
+    <!-- 世界系统 -->
+    <script src="js/core/weather-system.js"></script>
+    <script src="js/core/economy-system.js"></script>
+    <script src="js/core/farming-system.js"></script>
+    <!-- 战斗系统 -->
+    <script src="js/core/combat-system.js"></script>
+    <script src="js/data/combat-skills.js"></script>
     <script src="js/api/api-state.js"></script>
     <!-- 响应式系统（魔法系统） -->
     <script src="js/core/reactive-system.js"></script>
+    <!-- 统一世界状态管理 -->
+    <script src="js/core/world-state.js"></script>
+    <!-- 游戏启动引导 -->
+    <script src="js/core/game-bootstrap.js"></script>
+    <!-- 简单存档系统 -->
+    <script src="js/core/simple-save.js"></script>
     <!-- 时间系统 -->
     <script src="js/core/time-system.js"></script>
     <!-- 加载动画系统 -->
@@ -161,7 +185,7 @@
     <script src="js/core/scene-manager.js"></script>
     <!-- 加载F2区管理器 -->
     <script src="js/core/f2-manager.js"></script>
-    <!-- 加载AI对话管理器 -->
+    <!-- AI对话管理器 -->
     <script src="js/core/ai-dialogue-manager.js"></script>
     <!-- 加载插图系统 -->
     <script src="js/data/scene-illustrations.js"></script>
@@ -181,11 +205,27 @@
     <!-- 加载AI配置 -->
     <script src="js/ai/ai-config.js"></script>
     <script src="js/ai/ai-npc-system.js"></script>
+    <!-- 清理修复工具 -->
+    <script src="js/test/clean-fix.js"></script>
+    <!-- 手动存档测试 -->
+    <script src="js/test/test-manual-save.js"></script>
+    <!-- F2位置检查工具 -->
+    <script src="js/test/check-f2-position.js"></script>
+    <!-- 其他测试工具暂时禁用 -->
+    <!-- <script src="js/test/test-story-system.js"></script> -->
+    <!-- <script src="js/test/test-save-quick.js"></script> -->
+    <!-- <script src="js/test/test-world-state.js"></script> -->
+    <!-- <script src="js/test/test-quick-save-complete.js"></script> -->
+    <!-- <script src="js/test/test-ai-dialogue.js"></script> -->
+    <!-- <script src="js/test/debug-f2.js"></script> -->
+    <!-- <script src="js/test/test-ai-final.js"></script> -->
+    <!-- <script src="js/test/test-ai-quick.js"></script> -->
+    <!-- <script src="js/test/fix-f-layout.js"></script> -->
     <!-- 加载高级游戏系统（如果需要） -->
     <!-- <script src="js/core/advanced-game.js"></script> -->
 
     <!-- 返回主菜单确认对话框 -->
-    <div id="returnMenuDialog" class="game-dialog-overlay" style="display: none;">
+    <div id="returnMenuDialog" class="game-dialog-overlay hidden">
         <div class="game-dialog">
             <div class="dialog-header">
                 <h3>🏠 返回主菜单</h3>
@@ -195,22 +235,22 @@
                 <p>确定要返回主菜单吗？</p>
             </div>
             <div class="dialog-buttons">
-                <button class="dialog-btn dialog-btn-cancel" onclick="hideReturnMenuDialog()">取消</button>
-                <button class="dialog-btn dialog-btn-confirm" onclick="confirmReturnToMenu()">确定</button>
+                <button class="dialog-btn dialog-btn-cancel" id="cancelReturnBtn">取消</button>
+                <button class="dialog-btn dialog-btn-confirm" id="confirmReturnBtn">确定</button>
             </div>
         </div>
     </div>
 
     <!-- 存档管理对话框 -->
-    <div id="saveLoadDialog" class="game-dialog-overlay" style="display: none;">
+    <div id="saveLoadDialog" class="game-dialog-overlay hidden">
         <div class="game-dialog save-dialog">
             <div class="dialog-header">
                 <h3>💾 存档管理</h3>
-                <button class="dialog-close" onclick="hideSaveLoadDialog()">×</button>
+                <button class="dialog-close" id="closeSaveDialogBtn">×</button>
             </div>
             <div class="dialog-content">
                 <div class="save-actions-bar">
-                    <button class="save-new-btn" onclick="createManualSave();">
+                    <button class="save-new-btn" id="createSaveBtn">
                         ➕ 新建存档
                     </button>
                 </div>
@@ -219,7 +259,7 @@
                 </div>
             </div>
             <div class="dialog-buttons">
-                <button class="dialog-btn dialog-btn-cancel" onclick="hideSaveLoadDialog()">关闭</button>
+                <button class="dialog-btn dialog-btn-cancel" id="closeSaveDialogBtn2">关闭</button>
             </div>
         </div>
     </div>

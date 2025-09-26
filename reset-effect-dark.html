@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时光倒流特效预览 - 深色主题</title>
+    <style>
+        /* 使用游戏的颜色变量 */
+        :root {
+            --ui-bg: #0f0c1a;
+            --ui-panel: #141025;
+            --ui-text: #f6f3ff;
+            --ui-muted: #bcb3ff;
+            --ui-ghost: #2a2146;
+            --ui-primary: #6a57ff;
+            --ui-primary-press: #5846ff;
+            --ui-border: rgba(255,255,255,.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            color: #f6f3ff;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 游戏界面模拟 - 匹配实际游戏风格 */
+        .game-container {
+            width: 90%;
+            max-width: 430px;
+            background: #1a1a2e;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        /* 上半部分模拟 */
+        .upper-section {
+            background: linear-gradient(to bottom, #2d3561, #1a1a2e);
+            padding: 20px;
+            border-bottom: 2px solid #16213e;
+        }
+
+        /* D区状态面板模拟 */
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            width: 60px;
+            font-size: 13px;
+            color: #bcb3ff;
+        }
+
+        .stat-bar {
+            flex: 1;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .stat-fill {
+            height: 100%;
+            transition: width 0.5s ease-out;
+            position: relative;
+            border-radius: 10px;
+        }
+
+        /* 匹配游戏的状态条颜色 */
+        .health-fill {
+            background: linear-gradient(90deg, #ff6b6b, #ff9999);
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        }
+
+        .mood-fill {
+            background: linear-gradient(90deg, #4ecdc4, #7eddd6);
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+        }
+
+        .money-fill {
+            background: linear-gradient(90deg, #f7b731, #ffd700);
+            box-shadow: 0 0 10px rgba(247, 183, 49, 0.3);
+        }
+
+        .energy-fill {
+            background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+        }
+
+        .stat-value {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* 数字翻转效果 */
+        .stat-value.flipping {
+            animation: flipNumber 0.6s ease-out;
+        }
+
+        @keyframes flipNumber {
+            0%, 100% { transform: translateY(-50%) rotateX(0deg); }
+            50% { transform: translateY(-50%) rotateX(90deg); opacity: 0.5; }
+        }
+
+        /* 下半部分 F1/F2区模拟 */
+        .lower-section {
+            background: #0f1419;
+            padding: 20px;
+        }
+
+        /* F1区场景文本 */
+        .scene-area {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 120px;
+        }
+
+        .scene-text {
+            line-height: 1.8;
+            color: #e4e4e7;
+            font-size: 14px;
+        }
+
+        /* F2区控制按钮 - 匹配实际游戏 */
+        .button-area {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        /* 继续按钮 - 紫色渐变 */
+        .continue-btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .continue-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 重置按钮 - 低调的状态显示 */
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .reset-btn.can-reset {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .reset-btn.can-reset:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        /* 时光倒流粒子效果 - 紫色主题 */
+        .time-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: radial-gradient(circle, #8b5cf6, #7c3aed);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatUp 2s ease-out forwards;
+            box-shadow: 0 0 6px rgba(139, 92, 246, 0.6);
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) translateX(var(--drift));
+                opacity: 0;
+            }
+        }
+
+        /* 时光倒流模糊效果 */
+        .time-rewind-effect {
+            animation: rewindBlur 1.5s ease-out;
+        }
+
+        @keyframes rewindBlur {
+            0% {
+                filter: blur(0) brightness(1);
+            }
+            50% {
+                filter: blur(3px) brightness(1.2);
+                transform: scale(0.98);
+            }
+            100% {
+                filter: blur(0) brightness(1);
+                transform: scale(1);
+            }
+        }
+
+        /* 倒流涟漪效果 - 紫色 */
+        .ripple-effect {
+            position: absolute;
+            border: 2px solid rgba(139, 92, 246, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: ripple 1.5s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 400px;
+                height: 400px;
+                opacity: 0;
+            }
+        }
+
+        /* 时钟图标 */
+        .clock-icon {
+            display: inline-block;
+            margin-left: 5px;
+        }
+
+        .clock-icon.rewinding {
+            animation: rotateCounterClockwise 1s ease-out;
+        }
+
+        @keyframes rotateCounterClockwise {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-720deg); }
+        }
+
+        /* 演示控制 */
+        .demo-controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .demo-btn {
+            padding: 10px 25px;
+            margin: 0 10px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 2px solid #8b5cf6;
+            color: #e4e4e7;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .demo-btn:hover {
+            background: rgba(139, 92, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* 提示信息 */
+        .tip {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 16, 37, 0.95);
+            color: #f6f3ff;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .tip.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>⏰ 时光倒流特效预览 - 深色主题</h1>
+
+    <div class="game-container" id="gameContainer">
+        <!-- 上半部分 -->
+        <div class="upper-section">
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <span class="stat-label">体力</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill health-fill" id="healthBar" style="width: 80%">
+                            <span class="stat-value" id="healthValue">80</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">心情</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill mood-fill" id="moodBar" style="width: 60%">
+                            <span class="stat-value" id="moodValue">60</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">金钱</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill money-fill" id="moneyBar" style="width: 50%">
+                            <span class="stat-value" id="moneyValue">500</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">精力</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill energy-fill" id="energyBar" style="width: 70%">
+                            <span class="stat-value" id="energyValue">70</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下半部分 -->
+        <div class="lower-section">
+            <!-- F1区 场景文本 -->
+            <div class="scene-area">
+                <div class="scene-text" id="sceneText">
+                    你站在教室门口，阳光透过窗户洒在走廊上。<br>
+                    Zero靠在墙边，金色的瞳孔在阴影中微微发光。<br>
+                    "要一起去食堂吗？"他问道。
+                </div>
+            </div>
+
+            <!-- F2区 控制按钮 -->
+            <div class="button-area">
+                <button class="btn continue-btn" id="continueBtn">
+                    ▶️ 继续
+                    <span class="clock-icon" id="clockIcon">⏰</span>
+                </button>
+                <button class="btn reset-btn" id="resetBtn">
+                    ↩️ 重置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 演示控制 -->
+    <div class="demo-controls">
+        <button class="demo-btn" onclick="simulateContinue()">模拟点击继续</button>
+        <button class="demo-btn" onclick="simulateReset()">模拟时光倒流</button>
+        <button class="demo-btn" onclick="resetDemo()">重置演示</button>
+    </div>
+
+    <!-- 提示 -->
+    <div class="tip" id="tip"></div>
+
+    <script>
+        // 保存的世界快照
+        let worldSnapshot = null;
+        let canReset = false;
+
+        // 当前状态
+        let currentStats = {
+            health: 80,
+            mood: 60,
+            money: 500,
+            energy: 70
+        };
+
+        // 显示提示
+        function showTip(message) {
+            const tip = document.getElementById('tip');
+            tip.textContent = message;
+            tip.classList.add('show');
+            setTimeout(() => {
+                tip.classList.remove('show');
+            }, 2000);
+        }
+
+        // 更新状态条
+        function updateStats(stats, animate = true) {
+            Object.keys(stats).forEach(key => {
+                const bar = document.getElementById(`${key}Bar`);
+                const value = document.getElementById(`${key}Value`);
+
+                if (bar && value) {
+                    const newValue = stats[key];
+                    const displayValue = key === 'money' ? newValue : newValue;
+                    const barWidth = key === 'money' ? Math.min(100, newValue / 10) : newValue;
+
+                    // 数字翻转动画
+                    if (animate && value.textContent != displayValue) {
+                        value.classList.add('flipping');
+                        setTimeout(() => {
+                            value.textContent = displayValue;
+                            value.classList.remove('flipping');
+                        }, 300);
+                    } else {
+                        value.textContent = displayValue;
+                    }
+
+                    // 更新进度条
+                    bar.style.width = `${barWidth}%`;
+                }
+            });
+
+            currentStats = {...stats};
+        }
+
+        // 模拟点击继续
+        function simulateContinue() {
+            if (!canReset) {
+                // 保存当前世界快照
+                worldSnapshot = {...currentStats};
+                console.log('💾 保存世界快照:', worldSnapshot);
+            }
+
+            // 时间流动，改变一些数值
+            const newStats = {
+                health: Math.max(0, currentStats.health - 10),
+                mood: Math.max(0, currentStats.mood - 5),
+                money: currentStats.money + 50,
+                energy: Math.max(0, currentStats.energy - 15)
+            };
+
+            updateStats(newStats);
+
+            // 更新场景文本
+            document.getElementById('sceneText').innerHTML =
+                '你和Zero一起走向食堂。<br>' +
+                '路上遇到了其他学生的好奇目光。<br>' +
+                '"别在意他们。"Zero淡淡地说。';
+
+            // 启用重置按钮
+            enableReset();
+
+            // 时钟旋转
+            document.getElementById('clockIcon').classList.add('rewinding');
+            setTimeout(() => {
+                document.getElementById('clockIcon').classList.remove('rewinding');
+            }, 1000);
+
+            showTip('⏰ 时间流动了，世界状态已改变');
+        }
+
+        // 启用重置
+        function enableReset() {
+            canReset = true;
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.classList.add('can-reset');
+        }
+
+        // 禁用重置
+        function disableReset() {
+            canReset = false;
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.classList.remove('can-reset');
+        }
+
+        // 模拟时光倒流
+        function simulateReset() {
+            if (!canReset) {
+                showTip('需要先点击继续才能重置');
+                return;
+            }
+
+            // 创建涟漪效果
+            createRipple();
+
+            // 创建粒子效果
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => createParticle(), i * 50);
+            }
+
+            // 添加模糊效果
+            const container = document.getElementById('gameContainer');
+            container.classList.add('time-rewind-effect');
+
+            // 恢复世界快照
+            setTimeout(() => {
+                if (worldSnapshot) {
+                    updateStats(worldSnapshot, true);
+
+                    // 恢复场景文本
+                    document.getElementById('sceneText').innerHTML =
+                        '你站在教室门口，阳光透过窗户洒在走廊上。<br>' +
+                        'Zero靠在墙边，金色的瞳孔在阴影中微微发光。<br>' +
+                        '"要一起去食堂吗？"他问道。';
+
+                    console.log('⏮️ 世界状态已恢复:', worldSnapshot);
+                    showTip('⏮️ 时光倒流！世界回到了一步之前');
+                }
+
+                // 禁用重置（只能重置一次）
+                disableReset();
+                worldSnapshot = null;
+            }, 750);
+
+            // 移除效果
+            setTimeout(() => {
+                container.classList.remove('time-rewind-effect');
+            }, 1500);
+        }
+
+        // 创建粒子
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'time-particle';
+
+            // 随机位置
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+
+            // 随机飘移方向
+            particle.style.setProperty('--drift', (Math.random() - 0.5) * 100 + 'px');
+
+            document.getElementById('gameContainer').appendChild(particle);
+
+            // 动画结束后移除
+            setTimeout(() => particle.remove(), 2000);
+        }
+
+        // 创建涟漪
+        function createRipple() {
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple-effect';
+            ripple.style.left = '50%';
+            ripple.style.top = '50%';
+
+            document.getElementById('gameContainer').appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 1500);
+        }
+
+        // 重置演示
+        function resetDemo() {
+            currentStats = {
+                health: 80,
+                mood: 60,
+                money: 500,
+                energy: 70
+            };
+            updateStats(currentStats, false);
+
+            document.getElementById('sceneText').innerHTML =
+                '你站在教室门口，阳光透过窗户洒在走廊上。<br>' +
+                'Zero靠在墙边，金色的瞳孔在阴影中微微发光。<br>' +
+                '"要一起去食堂吗？"他问道。';
+
+            worldSnapshot = null;
+            disableReset();
+
+            showTip('演示已重置');
+        }
+
+        // 点击事件绑定
+        document.getElementById('continueBtn').addEventListener('click', simulateContinue);
+        document.getElementById('resetBtn').addEventListener('click', simulateReset);
+    </script>
+</body>
+</html>

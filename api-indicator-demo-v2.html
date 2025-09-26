@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI对话沉浸式体验演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #0f0f23;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .phone-mockup {
+            width: 390px;
+            height: 844px;
+            background: #000;
+            border-radius: 40px;
+            padding: 10px;
+            box-shadow: 0 0 100px rgba(139, 92, 246, 0.2);
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            border-radius: 30px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .demo-header {
+            background: linear-gradient(135deg, #2d3561 0%, #1a1a2e 100%);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        .demo-header h1 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .demo-header p {
+            font-size: 12px;
+            color: #8b92f6;
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding: 15px;
+            background: #0f0f23;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            background: transparent;
+            color: #8b92f6;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+
+        .mode-btn.active {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: #8b5cf6;
+            color: #f093fb;
+        }
+
+        /* 聊天区域 */
+        .chat-area {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #0f0f23;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 聊天气泡 - 与实际游戏保持一致 */
+        .chat-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            animation: bubbleFadeIn 0.3s ease;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .chat-bubble.player {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            margin-left: auto;
+            margin-right: 0;
+        }
+
+        .chat-bubble.npc {
+            align-self: flex-start;
+            background: rgba(139, 92, 246, 0.15);
+            color: #e4e4e7;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            position: relative;
+        }
+
+        /* 小星星标记 - 低调且优雅 */
+        .api-star-mark {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 10px;
+            opacity: 0.6;
+            animation: gentleBreath 3s ease-in-out infinite;
+        }
+
+        @keyframes gentleBreath {
+            0%, 100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        /* 输入指示器 - 统一使用三个点 */
+        .typing-indicator {
+            align-self: flex-start;
+            padding: 12px 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            max-width: 80px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #8b92f6;
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        @keyframes bubbleFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 输入区域 */
+        .input-area {
+            padding: 12px;
+            background: rgba(20, 16, 37, 0.98);
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 状态提示 */
+        .status-hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 15, 35, 0.95);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 20px 30px;
+            color: white;
+            z-index: 1000;
+            display: none;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-hint.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status-hint h3 {
+            color: #f093fb;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .status-hint p {
+            color: #8b92f6;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .comparison-item {
+            text-align: center;
+        }
+
+        .comparison-item h4 {
+            color: #f093fb;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .demo-bubble {
+            padding: 10px 14px;
+            background: rgba(139, 92, 246, 0.15);
+            border-radius: 12px;
+            color: #e4e4e7;
+            font-size: 13px;
+            position: relative;
+            margin: 0 auto;
+            max-width: 200px;
+        }
+
+        .demo-bubble .api-star-mark {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            font-size: 10px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 滚动条样式 */
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-mockup">
+        <div class="phone-screen">
+            <div class="demo-header">
+                <h1>Zero的对话</h1>
+                <p>沉浸式AI体验</p>
+            </div>
+
+            <div class="mode-switcher">
+                <button class="mode-btn active" onclick="switchMode('local')">
+                    内置模型
+                </button>
+                <button class="mode-btn" onclick="switchMode('api')">
+                    API模式
+                </button>
+                <button class="mode-btn" onclick="showComparison()">
+                    查看区别
+                </button>
+            </div>
+
+            <div class="chat-area" id="chatArea">
+                <!-- 示例对话 -->
+                <div class="chat-bubble npc">
+                    <strong>Zero:</strong> 你醒了？感觉怎么样？
+                </div>
+                <div class="chat-bubble player">
+                    我...感觉有些恍惚，发生了什么？
+                </div>
+                <div class="chat-bubble npc" id="demoNPC">
+                    <strong>Zero:</strong> 别担心，这是正常的。你需要时间适应。
+                </div>
+
+                <!-- 这里会动态添加新消息 -->
+                <div id="newMessages"></div>
+
+                <!-- 输入指示器区域 -->
+                <div id="indicatorArea"></div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" class="input-field" id="messageInput" placeholder="说点什么..." />
+                <button class="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对比提示框 -->
+    <div class="status-hint" id="statusHint">
+        <h3>✨ 模式对比</h3>
+        <div class="comparison">
+            <div class="comparison-item">
+                <h4>内置模型</h4>
+                <div class="demo-bubble">
+                    Zero: 我知道了。
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 10px;">
+                    没有星星标记<br>
+                    预设的回复
+                </p>
+            </div>
+            <div class="comparison-item">
+                <h4>API模式</h4>
+                <div class="demo-bubble">
+                    Zero: 我知道了。
+                    <span class="api-star-mark">✨</span>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 10px;">
+                    小星星悄悄呼吸<br>
+                    智能生成的回复
+                </p>
+            </div>
+        </div>
+        <p style="margin-top: 20px; font-size: 12px; color: #666;">
+            加载动画保持一致，都是三个点<br>
+            只通过小星星区分消息来源
+        </p>
+    </div>
+
+    <script>
+        let currentMode = 'local';
+        let isTyping = false;
+
+        // 预设回复
+        const localResponses = [
+            "...嗯。",
+            "我明白了。",
+            "不用担心。",
+            "...知道了。",
+            "别说这种话。"
+        ];
+
+        const apiResponses = [
+            "我一直在这里守护着你，就像过去的每一天一样。",
+            "有些记忆被封存是为了保护你，但我相信你足够坚强去面对真相。",
+            "新京市的夜晚总是这样，充满了未知和危险，但只要我在，你就是安全的。",
+            "你的情感...很真实。这让我想起了我们第一次相遇的时候。"
+        ];
+
+        function switchMode(mode) {
+            currentMode = mode;
+
+            // 更新按钮状态
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 更新现有NPC消息的星星
+            updateExistingMessages();
+        }
+
+        function updateExistingMessages() {
+            const demoNPC = document.getElementById('demoNPC');
+            if (currentMode === 'api') {
+                if (!demoNPC.querySelector('.api-star-mark')) {
+                    demoNPC.innerHTML += '<span class="api-star-mark">✨</span>';
+                }
+            } else {
+                const star = demoNPC.querySelector('.api-star-mark');
+                if (star) star.remove();
+            }
+        }
+
+        function sendMessage() {
+            if (isTyping) return;
+
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // 添加玩家消息
+            addMessage(message, 'player');
+            input.value = '';
+
+            // 显示统一的三点加载动画
+            showTypingIndicator();
+
+            // 模拟回复延迟
+            const delay = currentMode === 'api' ? 2500 : 1200;
+            setTimeout(() => {
+                hideTypingIndicator();
+
+                // 根据模式选择回复
+                const responses = currentMode === 'api' ? apiResponses : localResponses;
+                const response = responses[Math.floor(Math.random() * responses.length)];
+
+                addMessage(response, 'npc');
+            }, delay);
+        }
+
+        function addMessage(text, sender) {
+            const newMessages = document.getElementById('newMessages');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${sender}`;
+
+            if (sender === 'npc') {
+                // API模式添加小星星
+                const starMark = currentMode === 'api' ? '<span class="api-star-mark">✨</span>' : '';
+                bubble.innerHTML = `<strong>Zero:</strong> ${text}${starMark}`;
+            } else {
+                bubble.textContent = text;
+            }
+
+            newMessages.appendChild(bubble);
+
+            // 滚动到底部
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            isTyping = true;
+            const indicatorArea = document.getElementById('indicatorArea');
+
+            // 两种模式都使用相同的三点动画
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = `
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            `;
+
+            indicatorArea.appendChild(indicator);
+
+            // 滚动到底部
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            isTyping = false;
+            const indicatorArea = document.getElementById('indicatorArea');
+            indicatorArea.innerHTML = '';
+        }
+
+        function showComparison() {
+            const hint = document.getElementById('statusHint');
+            hint.classList.add('show');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                hint.classList.remove('show');
+            }, 5000);
+        }
+
+        // 点击提示框外部关闭
+        document.getElementById('statusHint').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
+
+        // 回车发送
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 页面加载时的提示
+        setTimeout(() => {
+            addMessage("试着切换模式，观察消息的细微差别", 'npc');
+        }, 2000);
+    </script>
+</body>
+</html>

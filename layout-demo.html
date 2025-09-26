@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F区布局版本对比</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .version-box {
+            border: 2px solid #8b5cf6;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #0f0f23;
+        }
+
+        .version-title {
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .phone-frame {
+            width: 100%;
+            max-width: 390px;
+            height: 600px;
+            margin: 20px auto;
+            border: 3px solid #333;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #1a1a2e;
+            position: relative;
+        }
+
+        /* 上半部分（ABCDE区） */
+        .upper-section {
+            height: 45%;
+            background: linear-gradient(to bottom, #2d3561, #1a1a2e);
+            border-bottom: 2px solid #16213e;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+        }
+
+        /* 下半部分（F区） */
+        .lower-section {
+            height: 55%;
+            background: #0f0f23;
+            position: relative;
+        }
+
+        /* ========== 版本1：错误的当前版本 ========== */
+        .version1 .lower-section {
+            /* F1占满，F2浮在上面 */
+            position: relative;
+        }
+
+        .version1 .f1-area {
+            height: 100%;
+            padding: 15px;
+            overflow-y: auto;
+            background: #0f0f23;
+        }
+
+        .version1 .f2-area {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 16, 37, 0.95);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        /* ========== 版本2：正确的分离版本 ========== */
+        .version2 .lower-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .version2 .f1-area {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #0f0f23;
+        }
+
+        .version2 .f2-area {
+            height: 60px;
+            background: #141025;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 10px;
+            flex-shrink: 0;
+        }
+
+        /* ========== 版本3：AI模式切换演示 ========== */
+        .version3 .lower-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .version3 .f1-dialogue {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #0f0f23;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .version3 .f2-input {
+            height: 60px;
+            background: rgba(30, 30, 45, 0.95);
+            border-top: 2px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            gap: 8px;
+        }
+
+        /* 通用样式 */
+        .story-text {
+            color: #e4e4e7;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .story-choice {
+            color: #8b92f6;
+            text-decoration: underline;
+            cursor: pointer;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: #6a57ff;
+        }
+
+        .chat-bubble {
+            padding: 10px 14px;
+            border-radius: 16px;
+            max-width: 80%;
+            background: rgba(139, 92, 246, 0.15);
+        }
+
+        .chat-bubble.player {
+            align-self: flex-end;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            color: white;
+        }
+
+        .pros { color: #10b981; margin-top: 10px; }
+        .cons { color: #ef4444; margin-top: 5px; }
+
+        h1 {
+            text-align: center;
+            color: #f093fb;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🎮 F区布局版本对比</h1>
+        <p class="description">以下是不同版本的F1/F2区布局演示，请选择你想要的效果</p>
+
+        <div class="version-grid">
+            <!-- 版本1：当前错误版本 -->
+            <div class="version-box">
+                <div class="version-title">❌ 版本1：当前问题版本</div>
+                <div class="phone-frame version1">
+                    <div class="upper-section">
+                        <div>ABCDE区域（角色/状态/场景等）</div>
+                    </div>
+                    <div class="lower-section">
+                        <div class="f1-area">
+                            <div class="story-text">
+                                <p>📍 公寓</p>
+                                <p>手机闹钟的铃声把你吵醒。</p>
+                                <p>你躺在狭小的单人床上，盯着天花板发了一会呆。</p>
+                                <p>窗外传来新京市早高峰的嘈杂声，又是新的一天。</p>
+                                <p>奇怪的是，你记不太清昨天发生了什么...算了，可能是太累了。</p>
+                                <br>
+                                <span class="story-choice">→ 起床洗漱</span><br>
+                                <span class="story-choice">→ 再睡一会</span><br>
+                                <span class="story-choice">→ 查看手机</span>
+                            </div>
+                            <!-- F2浮在F1上面 -->
+                            <div class="f2-area">
+                                <button class="control-btn">▶️</button>
+                                <button class="control-btn">↩️</button>
+                                <button class="control-btn">🔍</button>
+                                <button class="control-btn">⋮</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cons">❌ F2按钮遮挡了F1内容</div>
+                <div class="cons">❌ 无法看清被遮挡的选项</div>
+            </div>
+
+            <!-- 版本2：正确的分离版本 -->
+            <div class="version-box">
+                <div class="version-title">✅ 版本2：正确的分离布局</div>
+                <div class="phone-frame version2">
+                    <div class="upper-section">
+                        <div>ABCDE区域（角色/状态/场景等）</div>
+                    </div>
+                    <div class="lower-section">
+                        <div class="f1-area">
+                            <div class="story-text">
+                                <p>📍 公寓</p>
+                                <p>手机闹钟的铃声把你吵醒。</p>
+                                <p>你躺在狭小的单人床上，盯着天花板发了一会呆。</p>
+                                <p>窗外传来新京市早高峰的嘈杂声，又是新的一天。</p>
+                                <p>奇怪的是，你记不太清昨天发生了什么...算了，可能是太累了。</p>
+                                <br>
+                                <span class="story-choice">→ 起床洗漱</span><br>
+                                <span class="story-choice">→ 再睡一会</span><br>
+                                <span class="story-choice">→ 查看手机</span>
+                            </div>
+                        </div>
+                        <div class="f2-area">
+                            <button class="control-btn">▶️</button>
+                            <button class="control-btn">↩️</button>
+                            <button class="control-btn">🔍</button>
+                            <button class="control-btn">⋮</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="pros">✅ F1和F2完全分离</div>
+                <div class="pros">✅ 内容不会被遮挡</div>
+                <div class="pros">✅ 按钮始终可见</div>
+            </div>
+
+            <!-- 版本3：AI对话模式 -->
+            <div class="version-box">
+                <div class="version-title">💬 版本3：AI对话模式（切换后）</div>
+                <div class="phone-frame version3">
+                    <div class="upper-section">
+                        <div>ABCDE区域（角色/状态/场景等）</div>
+                    </div>
+                    <div class="lower-section">
+                        <div class="f1-dialogue">
+                            <div class="chat-bubble npc">
+                                <strong>Zero:</strong> 你醒了？昨晚睡得还好吗？
+                            </div>
+                            <div class="chat-bubble player">
+                                <strong>你:</strong> 还好...就是感觉有点恍惚
+                            </div>
+                            <div class="chat-bubble npc">
+                                <strong>Zero:</strong> 这很正常，新京市的空气质量一直不太好。要不要一起吃早餐？
+                            </div>
+                        </div>
+                        <div class="f2-input">
+                            <input type="text" class="input-field" placeholder="输入消息...">
+                            <button class="control-btn">➤</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="pros">✅ F1完全切换为对话历史</div>
+                <div class="pros">✅ F2完全切换为输入框</div>
+                <div class="pros">✅ 沉浸式对话体验</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; padding: 20px; background: rgba(139, 92, 246, 0.1); border-radius: 10px;">
+            <h2 style="color: #f093fb; margin-bottom: 15px;">📋 版本说明</h2>
+            <ul style="line-height: 1.8; color: #e4e4e7;">
+                <li><strong>版本1（当前问题）</strong>：F2按钮浮在F1内容上，造成遮挡</li>
+                <li><strong>版本2（推荐修复）</strong>：F1和F2完全分离，各占独立空间</li>
+                <li><strong>版本3（AI模式）</strong>：切换模式时，F1和F2的内容完全改变，但布局保持不变</li>
+            </ul>
+            <p style="margin-top: 15px; color: #fbbf24;">
+                💡 <strong>核心理念</strong>：F1和F2应该是两个独立的区域，不应该重叠。切换模式时只改变内容，不改变布局结构。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

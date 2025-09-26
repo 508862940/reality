@@ -26,14 +26,54 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🤖 AI对话管理器已初始化');
     }
 
-    // 加载初始场景
+    // 加载初始场景 - 只有在没有恢复场景的情况下才加载
     if (window.sceneManager && window.OpeningScenes) {
-        // 使用真实的开场场景
-        const openingScene = window.OpeningScenes.awakening;
-
-        // 加载场景
         setTimeout(() => {
-            sceneManager.loadScene(openingScene);
+            // 检查是否已经恢复了游戏（从存档）
+            if (window.gameState && window.gameState.restored) {
+                console.log('📖 游戏已从存档恢复，跳过初始场景加载');
+
+                // 如果worldState有待恢复的场景，恢复它
+                if (window.worldState && window.worldState.pendingSceneData) {
+                    const sceneData = window.worldState.pendingSceneData;
+                    console.log('📖 恢复待处理的场景:', sceneData.scene?.id);
+
+                    window.sceneManager.currentScene = sceneData.scene;
+                    window.sceneManager.currentTextIndex = sceneData.currentTextIndex || 0;
+                    window.sceneManager.isInChoice = false;  // 总是重置为未选择状态
+
+                    // 重置预览相关状态，确保选项可以正常点击
+                    window.sceneManager.currentChoice = null;
+                    window.sceneManager.previewChoice = null;
+                    window.sceneManager.isPreviewMode = false;
+
+                    // 不调用loadScene，因为会覆盖F1内容
+                    // F1内容会在下面从worldState恢复
+
+                    // 清除待处理数据
+                    window.worldState.pendingSceneData = null;
+                }
+
+                // F1内容已在world-state.js的loadFullState中恢复，这里只需要重新绑定事件
+                const storyArea = document.getElementById('storyArea');
+                if (storyArea) {
+                    console.log('📖 重新绑定F1区域选项事件');
+                    // 重新绑定选项事件（内容已在world-state中恢复，不要重复设置innerHTML）
+                    if (window.gameBootstrap) {
+                        window.gameBootstrap.rebindChoiceEvents();
+                    }
+                }
+                return;
+            }
+
+            // 检查是否已经有场景（从存档恢复的）
+            if (!window.sceneManager.currentScene || window.sceneManager.currentScene.id === 'awakening_placeholder') {
+                console.log('📚 没有恢复的场景，加载初始场景');
+                const openingScene = window.OpeningScenes.awakening;
+                sceneManager.loadScene(openingScene);
+            } else {
+                console.log('📖 已有恢复的场景:', window.sceneManager.currentScene.id, '，跳过初始场景加载');
+            }
         }, 500);
     }
 

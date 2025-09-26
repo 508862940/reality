@@ -10,7 +10,15 @@ class SceneManager {
         this.previewChoice = null;  // 预览中的选择
         this.isPreviewMode = false;  // 是否处于预览模式
         this.sceneHistory = [];
-        this.canReset = true;
+
+        // 重置系统：世界快照历史管理
+        this.lastWorldSnapshot = null;  // 上一步的世界快照
+        this.canResetToLastStep = false;  // 是否可以重置到上一步
+        this.justResetted = false;  // 标记刚刚重置过
+        this.isRestoring = false;  // 标记正在恢复中
+
+        // 废弃旧的重置系统（保留以防兼容性问题）
+        this.canReset = false;
         this.lastSceneSnapshot = null;
 
         // 状态更新系统
@@ -64,6 +72,8 @@ class SceneManager {
     loadScene(sceneData) {
         if (this.isTransitioning) return;
 
+        console.log('📝 loadScene被调用，场景ID:', sceneData?.id);
+
         // 更新状态为加载中
         this.updateSceneState({ status: 'loading' });
 
@@ -75,6 +85,26 @@ class SceneManager {
 
         // 保存当前场景快照（用于重置）
         this.lastSceneSnapshot = this.getCurrentSnapshot();
+
+        // 更新全局游戏状态中的场景信息
+        if (window.gameState) {
+            window.gameState.currentSceneId = sceneData.id || null;
+            window.gameState.currentChoiceId = null;
+            // 添加到场景历史（最多保留20个）
+            if (!window.gameState.sceneHistory) {
+                window.gameState.sceneHistory = [];
+            }
+            window.gameState.sceneHistory.push({
+                sceneId: sceneData.id,
+                timestamp: Date.now()
+            });
+            if (window.gameState.sceneHistory.length > 20) {
+                window.gameState.sceneHistory.shift();
+            }
+        }
+
+        // 注意：自动存档移到场景加载完成后触发（在fadeIn回调中）
+        // 这样可以确保保存的是新场景而不是旧场景
 
         // 设置场景插图数据
         if (window.illustrationManager) {
@@ -103,8 +133,27 @@ class SceneManager {
 
             // 淡入新内容
             this.fadeIn(() => {
+                console.log('✨ fadeIn回调执行，场景ID:', sceneData.id);
+
                 // 场景加载完成，更新状态为就绪
                 this.updateSceneState({ status: 'ready' });
+
+                // 场景完全加载后，更新世界状态
+                if (window.worldState) {
+                    console.log('📊 准备更新世界状态，场景ID:', sceneData.id);
+                    window.worldState.updateCurrentScene(sceneData);
+                } else {
+                    console.log('⚠️ worldState不存在，无法更新场景');
+                }
+
+                // 触发自动存档 - 场景切换完成
+                // 但如果是从存档恢复的场景（isRestoring标记），不要触发存档
+                if (window.saveSystem && !this.isRestoring) {
+                    console.log('📸 场景加载完成，触发自动存档，场景ID:', sceneData.id);
+                    window.saveSystem.triggerAutoSave('scene_change');
+                } else {
+                    console.log('⏭️ 跳过自动存档，isRestoring:', this.isRestoring);
+                }
             });
         });
     }
@@ -777,6 +826,12 @@ class SceneManager {
         // 更新状态为转换中
         this.updateSceneState({ status: 'transitioning' });
 
+        // 🔄 重置系统：保存当前世界快照（在执行选择之前）
+        if (!this.justResetted && window.worldState) {
+            // 只有不是刚重置的情况下，才保存快照
+            this.saveWorldSnapshot();
+        }
+
         // 如果处于预览模式，先确认预览选择
         if (this.isPreviewMode) {
             console.log('🎭 [原始] 进入预览确认流程');
@@ -802,9 +857,17 @@ class SceneManager {
             choice: this.currentChoice
         });
 
+        // 🔄 重置系统：点击继续后，刷新重置能力
+        this.canResetToLastStep = true;
+        this.justResetted = false;
+
         // 📝 小纸条：应用选择结果到游戏状态
         console.log('📝 小纸条：准备应用选择结果到游戏状态');
         this.applyChoiceResults(this.currentChoice, this.currentScene);
+
+        // 注意：移除这里的自动存档触发，因为此时还在旧场景
+        // 自动存档会在新场景加载完成后触发（loadScene的fadeIn回调中）
+        // 这样确保存档保存的是新场景而不是旧场景
 
         // 🔥 立即强制更新UI，不等待场景切换
         // PWA和网页版都使用forceUpdateUI
@@ -827,11 +890,14 @@ class SceneManager {
         // 获取下一场景
         const nextScene = this.getNextScene(this.currentChoice);
 
+        console.log('🎯 获取到的下一场景:', nextScene ? nextScene.id : 'null');
+
         if (nextScene) {
             // 检查是否是AI对话场景
             if (nextScene.type === 'ai_dialogue') {
                 this.switchToAIMode(nextScene);
             } else {
+                console.log('🚀 准备加载新场景:', nextScene.id);
                 this.loadScene(nextScene);
             }
         } else {
@@ -859,38 +925,97 @@ class SceneManager {
     }
 
     /**
-     * 重置当前场景 - 简化重置系统
+     * 重置到上一步 - 新的重置系统
      */
     resetScene() {
         console.log('📝 小纸条：重置按钮被点击了！');
 
-        if (!this.canReset) {
-            console.log('❌ 小纸条：不能重置，canReset =', this.canReset);
-            return; // 静默处理，不可重置时直接返回
+        // 检查是否可以重置
+        if (!this.canResetToLastStep) {
+            console.log('❌ 小纸条：不能重置，需要先继续后才能重置');
+            return; // 静默处理
         }
 
-        if (!this.lastSceneSnapshot) {
-            console.log('❌ 小纸条：没有场景快照，无法重置');
-            return; // 静默处理，没有快照时直接返回
+        if (!this.lastWorldSnapshot) {
+            console.log('❌ 小纸条：没有世界快照，无法重置');
+            return; // 静默处理
         }
 
-        console.log('📝 小纸条：重置开始 - 当前状态:', this.sceneState.status);
-        console.log('📝 小纸条：重置开始 - 当前选择:', this.currentChoice);
+        console.log('📝 小纸条：重置开始 - 回到上一步');
+        console.log('📝 小纸条：当前状态:', this.sceneState.status);
 
-        // 执行完全重置
-        this.performFullReset();
+        // 添加时光倒流视觉特效
+        this.playTimeRewindEffect();
 
-        // 重置计数管理
-        this.canReset = false;
-        console.log('📝 小纸条：重置计数已设为false，下次不能再重置');
+        // 延迟恢复世界快照，让特效先播放
+        setTimeout(() => {
+            // 恢复世界快照
+            this.restoreWorldSnapshot();
+            console.log('✅ 小纸条：重置到上一步完成');
+        }, 750); // 特效播放时间
+    }
 
-        // 通知F2管理器重置状态变化
-        if (window.f2Manager) {
-            console.log('📝 小纸条：通知F2Manager重置状态');
-            window.f2Manager.resetState();
+    /**
+     * 播放时光倒流视觉特效
+     */
+    playTimeRewindEffect() {
+        // 获取游戏容器
+        const gameContainer = document.querySelector('.game-container') ||
+                              document.querySelector('.upper-section')?.parentElement;
+
+        if (!gameContainer) return;
+
+        // 创建涟漪效果
+        this.createRippleEffect(gameContainer);
+
+        // 创建粒子效果
+        for (let i = 0; i < 15; i++) {
+            setTimeout(() => this.createTimeParticle(gameContainer), i * 50);
         }
 
-        console.log('✅ 小纸条：重置场景完成');
+        // 添加模糊动画效果
+        gameContainer.classList.add('time-rewind-effect');
+
+        // 移除动画类
+        setTimeout(() => {
+            gameContainer.classList.remove('time-rewind-effect');
+        }, 1500);
+    }
+
+    /**
+     * 创建涟漪效果
+     */
+    createRippleEffect(container) {
+        const ripple = document.createElement('div');
+        ripple.className = 'time-ripple';
+        container.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 1500);
+    }
+
+    /**
+     * 创建时光粒子
+     */
+    createTimeParticle(container) {
+        const particle = document.createElement('div');
+        particle.className = 'time-particle';
+
+        // 随机位置和飘移方向
+        const randomX = Math.random() * 100;
+        const randomDrift = (Math.random() - 0.5) * 100;
+
+        particle.style.left = `${randomX}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.setProperty('--drift', `${randomDrift}px`);
+
+        container.appendChild(particle);
+        setTimeout(() => particle.remove(), 2000);
+    }
+
+    /**
+     * 重置到上一步（兼容旧方法名）
+     */
+    resetToLastStep() {
+        this.resetScene();
     }
 
     /**
@@ -1464,6 +1589,12 @@ class SceneManager {
                         window.gameState.character[stat] = targetState[stat];
                     }
 
+                    // 🔥 关键：同步到worldState，确保存档时能保存！
+                    if (window.worldState && window.worldState.state.player.stats[stat] !== undefined) {
+                        window.worldState.state.player.stats[stat] = targetState[stat];
+                        console.log(`🔄 已同步${stat}到worldState:`, targetState[stat]);
+                    }
+
                     const change = effectsToApply[stat];
                     const sign = change >= 0 ? '+' : '';
                     console.log(`📝 小纸条：${stat} ${currentValue} → ${targetState[stat]} (${sign}${change})`);
@@ -1478,10 +1609,8 @@ class SceneManager {
                     console.log(`✨ 响应式系统已自动更新UI！`);
                 }
 
-                // 保存游戏状态
-                if (window.saveGameState) {
-                    window.saveGameState();
-                }
+                // 注意：移除这里的保存游戏状态调用
+                // 因为此时还在旧场景，应该等新场景加载完成后再保存
             }
 
             // 备用方案：调用gameEngine
@@ -1718,6 +1847,109 @@ class SceneManager {
     }
 
     /**
+     * 保存世界快照
+     */
+    saveWorldSnapshot() {
+        if (!window.worldState) {
+            console.warn('⚠️ worldState不存在，无法保存快照');
+            return;
+        }
+
+        // 获取完整的世界状态
+        this.lastWorldSnapshot = window.worldState.getFullState();
+        console.log('💾 已保存世界快照，时间点:', this.lastWorldSnapshot.time);
+    }
+
+    /**
+     * 恢复世界快照
+     */
+    restoreWorldSnapshot() {
+        if (!this.lastWorldSnapshot || !window.worldState) {
+            console.error('❌ 无法恢复世界快照');
+            return;
+        }
+
+        console.log('🔄 开始恢复世界快照...');
+
+        // 设置恢复标记
+        this.isRestoring = true;
+        this.justResetted = true;
+        this.canResetToLastStep = false;
+
+        // 恢复世界状态
+        window.worldState.loadFullState(this.lastWorldSnapshot);
+
+        // 恢复场景（如果有）
+        if (this.lastWorldSnapshot.currentSceneData && this.lastWorldSnapshot.currentSceneData.scene) {
+            console.log('📖 恢复场景:', this.lastWorldSnapshot.currentSceneData.scene.id);
+
+            // 清除当前的选择状态
+            this.currentChoice = null;
+            this.previewChoice = null;
+            this.isPreviewMode = false;
+
+            // 重新加载场景
+            this.loadScene(this.lastWorldSnapshot.currentSceneData.scene);
+        }
+
+        // 🌟 触发响应式系统更新（替代forceUpdateUI）
+        this.triggerReactiveUpdate();
+
+        // 通知F2管理器更新重置按钮状态
+        if (window.f2Manager) {
+            window.f2Manager.updateResetButton(false);
+        }
+
+        // 清除恢复标记
+        setTimeout(() => {
+            this.isRestoring = false;
+            console.log('📖 恢复标记已清除');
+        }, 500);
+    }
+
+    /**
+     * 触发响应式系统更新
+     */
+    triggerReactiveUpdate() {
+        console.log('✨ 触发响应式系统更新...');
+
+        // 如果有响应式系统，让它自动更新UI
+        if (window.reactiveGameState && window.worldState) {
+            const restoredStats = window.worldState.state.player.stats;
+            const restoredPosition = window.worldState.state.player.position;
+
+            // 批量更新响应式数据（会自动触发UI更新）
+            console.log('📊 更新响应式数据:', restoredStats);
+
+            // 更新所有状态值
+            Object.keys(restoredStats).forEach(key => {
+                if (window.reactiveGameState[key] !== undefined) {
+                    // 响应式系统会自动检测变化并更新UI
+                    window.reactiveGameState[key] = restoredStats[key];
+                }
+            });
+
+            // 更新位置
+            if (window.reactiveGameState.location !== undefined) {
+                window.reactiveGameState.location = restoredPosition.location;
+            }
+
+            console.log('✅ 响应式更新完成，UI已自动刷新');
+        }
+        // 降级方案：如果没有响应式系统，使用原来的强制更新
+        else if (window.gameState && window.gameState.character) {
+            console.log('⚠️ 无响应式系统，使用降级方案');
+            this.forceUpdateUI();
+        }
+        // 如果响应式系统还没初始化，使用批量更新
+        else if (window.reactiveSystem && window.worldState) {
+            console.log('📊 使用响应式批量更新');
+            const restoredStats = window.worldState.state.player.stats;
+            window.reactiveSystem.batchUpdate(restoredStats);
+        }
+    }
+
+    /**
      * 强制更新UI - 直接操作DOM
      */
     forceUpdateUI() {
@@ -1808,3 +2040,20 @@ class SceneManager {
 
 // 创建全局实例
 window.sceneManager = new SceneManager();
+
+// 如果worldState有待恢复的场景数据，立即恢复
+// 暂时禁用 - 让game-bootstrap统一处理场景恢复
+// if (window.worldState && window.worldState.tryRestorePendingScene) {
+//     // 设置恢复标记，避免触发自动存档
+//     window.sceneManager.isRestoring = true;
+//     setTimeout(() => {
+//         if (window.worldState.tryRestorePendingScene()) {
+//             console.log('📖 场景管理器初始化后，成功恢复待处理场景');
+//         }
+//         // 恢复完成后清除标记
+//         setTimeout(() => {
+//             window.sceneManager.isRestoring = false;
+//             console.log('📖 场景恢复标记已清除');
+//         }, 500);
+//     }, 10);
+// }

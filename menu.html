@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <!-- PWA配置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,13 +34,16 @@
         <p class="game-subtitle">互动文字冒险游戏</p>
 
         <div class="menu-buttons">
-            <button class="menu-btn primary" onclick="startNewGame()">
+            <button class="menu-btn primary" id="continueGameBtn" style="display:none">
+                ▶️ 继续游戏
+            </button>
+            <button class="menu-btn" id="newGameBtn">
                 🎮 开始新游戏
             </button>
-            <button class="menu-btn" onclick="loadGame()">
-                💾 读取存档
+            <button class="menu-btn" id="loadGameBtn">
+                💾 载入存档
             </button>
-            <button class="menu-btn" onclick="openSettings()">
+            <button class="menu-btn" id="settingsBtn">
                 ⚙️ 游戏设置
             </button>
         </div>
@@ -55,7 +58,7 @@
         <div class="settings-container">
             <div class="settings-header">
                 <div class="settings-title">游戏设置</div>
-                <button class="close-btn" onclick="closeSettings()">×</button>
+                <button class="close-btn" id="closeSettingsBtn">×</button>
             </div>
 
             <div class="settings-content">
@@ -64,8 +67,8 @@
                     <div class="section-title">🤖 API 设置</div>
                     <div id="api-settings-container">
                         <!-- 显示当前预设信息 -->
-                        <div id="current-preset-info" style="color: #999; font-size: 12px; margin-bottom: 10px;"></div>
-                        <button class="setting-btn" onclick="openAPISettings()">配置AI服务</button>
+                        <div id="current-preset-info" class="preset-info"></div>
+                        <button class="setting-btn" id="openAPISettingsBtn">配置AI服务</button>
                     </div>
                 </div>
 
@@ -74,7 +77,7 @@
                     <div class="section-title">🎮 游戏设置</div>
                     <div class="setting-item">
                         <span class="setting-label">难度</span>
-                        <select class="setting-select" id="difficulty-select">
+                        <select class="setting-select" id="difficulty-select" aria-label="难度选择">
                             <option value="easy">简单</option>
                             <option value="normal" selected>普通</option>
                             <option value="hard">困难</option>
@@ -83,19 +86,19 @@
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">自动存档</span>
-                        <div class="toggle-switch active" onclick="toggleSwitch(this, 'autoSave')">
+                        <div class="toggle-switch active" data-setting="autoSave">
                             <div class="toggle-slider"></div>
                         </div>
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">跳过教程</span>
-                        <div class="toggle-switch" onclick="toggleSwitch(this, 'skipTutorial')">
+                        <div class="toggle-switch" data-setting="skipTutorial">
                             <div class="toggle-slider"></div>
                         </div>
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">显示提示</span>
-                        <div class="toggle-switch active" onclick="toggleSwitch(this, 'showHints')">
+                        <div class="toggle-switch active" data-setting="showHints">
                             <div class="toggle-slider"></div>
                         </div>
                     </div>
@@ -106,19 +109,19 @@
                     <div class="section-title">🔊 音量设置</div>
                     <div class="setting-item">
                         <span class="setting-label">主音量</span>
-                        <input type="range" class="volume-slider" id="volume-master" min="0" max="100" value="70">
+                        <input type="range" class="volume-slider" id="volume-master" min="0" max="100" value="70" aria-label="主音量">
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">音效</span>
-                        <input type="range" class="volume-slider" id="volume-sfx" min="0" max="100" value="80">
+                        <input type="range" class="volume-slider" id="volume-sfx" min="0" max="100" value="80" aria-label="音效音量">
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">背景音乐</span>
-                        <input type="range" class="volume-slider" id="volume-bgm" min="0" max="100" value="50">
+                        <input type="range" class="volume-slider" id="volume-bgm" min="0" max="100" value="50" aria-label="背景音乐音量">
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">语音</span>
-                        <input type="range" class="volume-slider" id="volume-voice" min="0" max="100" value="90">
+                        <input type="range" class="volume-slider" id="volume-voice" min="0" max="100" value="90" aria-label="语音音量">
                     </div>
                 </div>
 
@@ -149,7 +152,7 @@
     </div>
 
     <!-- API配置模态框（使用原有的） -->
-    <div id="api-config-modal" class="modal-overlay" style="display: none;">
+    <div id="api-config-modal" class="modal-overlay hidden">
         <!-- 这里会动态加载原有的API配置界面 -->
     </div>
 

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F2对话UI - 优化版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        /* F2区域容器 */
+        .f2-chat-container {
+            width: 100%;
+            max-width: 430px;
+            height: 320px;
+            background: rgba(15, 12, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        /* 对话对象信息条 */
+        .chat-header {
+            padding: 12px 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .npc-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .npc-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .npc-info {
+            flex: 1;
+        }
+
+        .npc-name {
+            color: #f093fb;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .npc-status {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .chat-mood {
+            display: flex;
+            gap: 6px;
+        }
+
+        .mood-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* 对话历史预览区 */
+        .chat-history {
+            flex: 1;
+            padding: 12px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            /* Firefox滚动条 */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.3) rgba(255, 255, 255, 0.05);
+        }
+
+        /* Webkit滚动条样式 - 和游戏原本风格一致 */
+        .chat-history::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-history::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .chat-history::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 3px;
+        }
+
+        .chat-history::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.5);
+        }
+
+        .chat-message {
+            padding: 10px 14px;
+            border-radius: 16px;
+            max-width: 75%;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .npc-message {
+            align-self: flex-start;
+            background: rgba(139, 92, 246, 0.2);
+            color: #e4e4e7;
+            border-bottom-left-radius: 4px;
+        }
+
+        .player-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* 动作描述样式 */
+        .action-text {
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+        }
+
+        /* 输入区域 - 优化布局 */
+        .chat-input-area {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 输入容器 - 美观的布局 */
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 左侧更多按钮 */
+        .more-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 21px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #bcb3ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            position: relative;
+        }
+
+        .more-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(1.05);
+        }
+
+        .more-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 输入框容器 */
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2px;
+            transition: all 0.3s;
+        }
+
+        .input-wrapper:focus-within {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+
+        /* 输入框 */
+        .chat-input {
+            flex: 1;
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* 模式切换按钮 */
+        .mode-toggle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background: transparent;
+            border: none;
+            color: #bcb3ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .mode-toggle-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .mode-toggle-btn.action-mode {
+            color: #fbbf24;
+        }
+
+        /* 模式指示器 */
+        .mode-indicator {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 2px 8px;
+            background: rgba(20, 16, 37, 0.9);
+            border-radius: 10px;
+            font-size: 10px;
+            color: #bcb3ff;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .mode-toggle-btn:hover .mode-indicator {
+            opacity: 1;
+        }
+
+        /* 发送按钮 */
+        .send-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 21px;
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-left: 6px;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 更多菜单 - 向上展开 */
+        .more-menu {
+            position: absolute;
+            bottom: 65px;
+            left: 12px;
+            background: rgba(20, 16, 37, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            min-width: 150px;
+        }
+
+        .more-menu.show {
+            display: flex;
+            animation: slideUp 0.3s ease;
+        }
+
+        .menu-item {
+            padding: 10px 14px;
+            color: #bcb3ff;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+            color: white;
+        }
+
+        .menu-item-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 快速表情选择器 */
+        .emoji-selector {
+            position: absolute;
+            bottom: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 16, 37, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            padding: 8px;
+            display: none;
+            flex-direction: row;
+            gap: 4px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .emoji-selector.show {
+            display: flex;
+            animation: slideUp 0.2s ease;
+        }
+
+        .emoji-item {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .emoji-item:hover {
+            background: rgba(139, 92, 246, 0.3);
+            transform: scale(1.2);
+        }
+
+        /* 动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 打字指示器 */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 12px;
+            align-self: flex-start;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(139, 92, 246, 0.5);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 430px) {
+            .f2-chat-container {
+                border-radius: 0;
+                height: 350px;
+            }
+
+            .chat-input-area {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* 移动端和触摸设备隐藏滚动条 */
+        @media (pointer: coarse) {
+            .chat-history::-webkit-scrollbar {
+                width: 0;
+                display: none;
+            }
+
+            .chat-history {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+        }
+
+        /* 备用方案：小屏幕且无鼠标悬停能力 */
+        @media (max-width: 768px) and (hover: none) {
+            .chat-history::-webkit-scrollbar {
+                width: 0;
+                display: none;
+            }
+
+            .chat-history {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="f2-chat-container">
+        <!-- 对话对象信息 -->
+        <div class="chat-header">
+            <div class="npc-avatar" onclick="showNPCMenu()">🐺</div>
+            <div class="npc-info">
+                <div class="npc-name">Zero</div>
+                <div class="npc-status">💭 正在思考...</div>
+            </div>
+            <div class="chat-mood">
+                <div class="mood-indicator" title="好感度">💕</div>
+                <div class="mood-indicator" title="心情">😐</div>
+            </div>
+        </div>
+
+        <!-- 对话预览区 -->
+        <div class="chat-history">
+            <div class="chat-message npc-message">
+                有什么想问的吗？
+            </div>
+            <div class="chat-message player-message">
+                你在想什么？
+            </div>
+            <div class="chat-message player-message">
+                <span class="action-text">*轻轻靠近*</span>
+            </div>
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <!-- 优化后的输入区域 -->
+        <div class="chat-input-area">
+            <div class="input-container">
+                <!-- 左侧：更多按钮 -->
+                <button class="more-btn" onclick="toggleMoreMenu()" title="更多功能">
+                    ⋮
+                </button>
+
+                <!-- 中间：输入框和模式切换 -->
+                <div class="input-wrapper">
+                    <input type="text" class="chat-input" id="chatInput"
+                           placeholder="说点什么..." />
+
+                    <button class="mode-toggle-btn" id="modeBtn"
+                            onclick="toggleMode()" title="切换输入模式">
+                        💬
+                        <span class="mode-indicator" id="modeIndicator">对话模式</span>
+                    </button>
+                </div>
+
+                <!-- 右侧：发送按钮 -->
+                <button class="send-btn" onclick="sendMessage()" title="发送">
+                    ➤
+                </button>
+            </div>
+        </div>
+
+        <!-- 更多菜单（向上展开） -->
+        <div class="more-menu" id="moreMenu">
+            <div class="menu-item" onclick="showHistory()">
+                <span class="menu-item-icon">📜</span>
+                <span>对话历史</span>
+            </div>
+            <div class="menu-item" onclick="showEmojis()">
+                <span class="menu-item-icon">😊</span>
+                <span>快速表情</span>
+            </div>
+            <div class="menu-item" onclick="saveChat()">
+                <span class="menu-item-icon">💾</span>
+                <span>保存对话</span>
+            </div>
+            <div class="menu-item" onclick="toggleMute()">
+                <span class="menu-item-icon">🔇</span>
+                <span>静音模式</span>
+            </div>
+            <div class="menu-item" onclick="changePersona()">
+                <span class="menu-item-icon">🎭</span>
+                <span>切换人格</span>
+            </div>
+            <div class="menu-item" onclick="exitChat()">
+                <span class="menu-item-icon">↩️</span>
+                <span>返回场景</span>
+            </div>
+        </div>
+
+        <!-- 表情选择器 -->
+        <div class="emoji-selector" id="emojiSelector">
+            <div class="emoji-item" onclick="insertEmoji('😊')">😊</div>
+            <div class="emoji-item" onclick="insertEmoji('😢')">😢</div>
+            <div class="emoji-item" onclick="insertEmoji('😡')">😡</div>
+            <div class="emoji-item" onclick="insertEmoji('😍')">😍</div>
+            <div class="emoji-item" onclick="insertEmoji('🤔')">🤔</div>
+            <div class="emoji-item" onclick="insertEmoji('😅')">😅</div>
+            <div class="emoji-item" onclick="insertEmoji('👍')">👍</div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'dialogue'; // dialogue 或 action
+
+        function toggleMoreMenu() {
+            const menu = document.getElementById('moreMenu');
+            menu.classList.toggle('show');
+            // 关闭其他菜单
+            document.getElementById('emojiSelector').classList.remove('show');
+        }
+
+        function toggleMode() {
+            const btn = document.getElementById('modeBtn');
+            const indicator = document.getElementById('modeIndicator');
+            const input = document.getElementById('chatInput');
+
+            if (currentMode === 'dialogue') {
+                currentMode = 'action';
+                btn.innerHTML = '🎭<span class="mode-indicator" id="modeIndicator">动作模式</span>';
+                btn.classList.add('action-mode');
+                input.placeholder = '描述动作...';
+                indicator.textContent = '动作模式';
+            } else {
+                currentMode = 'dialogue';
+                btn.innerHTML = '💬<span class="mode-indicator" id="modeIndicator">对话模式</span>';
+                btn.classList.remove('action-mode');
+                input.placeholder = '说点什么...';
+                indicator.textContent = '对话模式';
+            }
+        }
+
+        function showEmojis() {
+            const selector = document.getElementById('emojiSelector');
+            selector.classList.toggle('show');
+            document.getElementById('moreMenu').classList.remove('show');
+        }
+
+        function insertEmoji(emoji) {
+            const input = document.getElementById('chatInput');
+            input.value += emoji;
+            input.focus();
+            document.getElementById('emojiSelector').classList.remove('show');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (message) {
+                console.log(`发送${currentMode === 'action' ? '动作' : '对话'}:`, message);
+                input.value = '';
+            }
+        }
+
+        function showNPCMenu() {
+            console.log('显示NPC交互菜单');
+        }
+
+        function showHistory() {
+            console.log('显示对话历史');
+            document.getElementById('moreMenu').classList.remove('show');
+        }
+
+        function saveChat() {
+            console.log('保存对话');
+            document.getElementById('moreMenu').classList.remove('show');
+        }
+
+        function toggleMute() {
+            console.log('切换静音模式');
+            document.getElementById('moreMenu').classList.remove('show');
+        }
+
+        function changePersona() {
+            console.log('切换人格');
+            document.getElementById('moreMenu').classList.remove('show');
+        }
+
+        function exitChat() {
+            console.log('返回场景模式');
+            document.getElementById('moreMenu').classList.remove('show');
+        }
+
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.more-btn') && !e.target.closest('.more-menu')) {
+                document.getElementById('moreMenu').classList.remove('show');
+            }
+            if (!e.target.closest('.emoji-item') && !e.target.closest('.menu-item')) {
+                document.getElementById('emojiSelector').classList.remove('show');
+            }
+        });
+
+        // 回车发送
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

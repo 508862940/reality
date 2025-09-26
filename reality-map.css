@@ -1,0 +1,91 @@
+/* Reality · 交互式世界地图 */
+:root{
+  --bg:#0b1022;
+  --panel:#0f1530;
+  --panel-2:#121938;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --acc-1:#8b92f6;
+  --acc-2:#f093fb;
+  --surface:#7dd3fc; /* 青蓝 */
+  --inner:#fbbf24;   /* 琥珀 */
+  --deep:#f87171;    /* 玫红 */
+  --edge:#ffffff14;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background: radial-gradient(1200px 600px at 20% 10%, #0e1634 0%, #0b1022 50%, #090c1a 100%);
+  color:var(--text);
+  font:14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC","Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  -webkit-font-smoothing:antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.pwa-safe{
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding-left: max(8px, env(safe-area-inset-left));
+  padding-right: max(8px, env(safe-area-inset-right));
+}
+
+.app{max-width:1200px; margin:0 auto; padding:16px;}
+.app-header{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background: linear-gradient(135deg, #141b3c 0%, #0f1530 100%);
+  border:1px solid #ffffff10; padding:12px 16px; border-radius:16px;
+}
+.app-header h1{font-size:18px; margin:0; letter-spacing:.5px;}
+.toolbar{display:flex; align-items:center; gap:10px;}
+
+.segmented{display:inline-flex; background:#0c1229; padding:4px; border-radius:999px; border:1px solid #ffffff14;}
+.seg{
+  background:transparent; color:var(--text); border:0; padding:8px 14px; border-radius:999px; cursor:pointer;
+  font-weight:600; letter-spacing:.2px;
+}
+.seg.active{background:linear-gradient(135deg, var(--acc-1), var(--acc-2)); color:#0b1022}
+
+.btn{background:#131a39; color:var(--text); border:1px solid #ffffff1c; border-radius:10px; padding:8px 12px; cursor:pointer;}
+.btn:hover{background:#161f46}
+.btn.primary{background:linear-gradient(135deg, var(--acc-1), var(--acc-2)); color:#0b1022; border:none; font-weight:700;}
+.btn[disabled]{opacity:.55; cursor:not-allowed;}
+
+.map-wrap{display:grid; grid-template-columns: 1fr 320px; gap:12px; margin-top:12px;}
+svg{width:100%; height:auto; background:linear-gradient(180deg,#0b1022,#0b1022 60%,#0b1022 100%); border-radius:16px; border:1px solid #ffffff12}
+.edges .edge{fill:none; stroke:var(--edge); stroke-width:3}
+.edges .edge.dashed{stroke-dasharray:10 8}
+.edges .edge.dotted{stroke-dasharray:3 8}
+
+.nodes .n{fill:#ffffff10; stroke:#ffffff30; stroke-width:2}
+.nodes .n.surface{stroke:var(--surface)}
+.nodes .n.inner{stroke:var(--inner)}
+.nodes .n.deep{stroke:var(--deep)}
+
+.node{cursor:pointer; filter:drop-shadow(0 0 0 transparent); transition: transform .15s ease}
+.node:focus-within, .node:focus, .node:hover{transform:translateY(-2px)}
+.node .label{fill:#e5e7eb; font-size:14px; text-anchor:middle; font-weight:700; letter-spacing:.5px}
+.node .emoji{font-size:16px; text-anchor:middle; dominant-baseline: middle}
+
+.hidden{display:none}
+
+.sidebar{display:flex; flex-direction:column; gap:12px}
+.card{background:var(--panel); border:1px solid #ffffff10; border-radius:16px; padding:14px}
+.card h3{margin:0 0 6px 0; font-size:16px}
+.card p{margin:0; color:var(--muted)}
+.legend{list-style:none; padding:0; margin:6px 0 0 0}
+.legend li{display:flex; align-items:center; gap:8px; color:var(--muted)}
+.legend .dot{display:inline-block; width:10px; height:10px; border-radius:50%}
+.legend .surface{background:var(--surface)}
+.legend .inner{background:var(--inner)}
+.legend .deep{background:var(--deep)}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0}
+.chip{background:#ffffff12; border:1px solid #ffffff24; color:#cbd5e1; border-radius:999px; padding:4px 8px; font-size:12px}
+
+.app-footer{margin-top:10px; text-align:center; color:#94a3b8}
+
+@media (max-width: 860px){
+  .map-wrap{grid-template-columns: 1fr}
+  .sidebar{order:-1}
+}

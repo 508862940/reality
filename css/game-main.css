@@ -1,5 +1,138 @@
 /* 游戏主界面样式 - 样式v2 */
 
+/* 存档动画效果 */
+@keyframes saveFlash {
+    0% {
+        transform: scale(1);
+        opacity: 0;
+        background: radial-gradient(circle, rgba(106, 87, 255, 0.3) 0%, transparent 70%);
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+        background: radial-gradient(circle, rgba(106, 87, 255, 0.6) 0%, transparent 70%);
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+        background: radial-gradient(circle, rgba(106, 87, 255, 0) 0%, transparent 70%);
+    }
+}
+
+@keyframes saveSuccess {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 存档闪光层 */
+.save-flash-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+}
+
+.save-flash-overlay.active {
+    display: block;
+    animation: saveFlash 0.6s ease-out;
+}
+
+/* 增强的通知样式 */
+.game-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    color: var(--ui-text);
+    font-size: 14px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.game-notification.show {
+    transform: translateX(0);
+    animation: saveSuccess 0.4s ease-out;
+}
+
+.game-notification.success {
+    border-color: #4ade80;
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, var(--ui-panel) 100%);
+}
+
+.game-notification.warning {
+    border-color: #fbbf24;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, var(--ui-panel) 100%);
+}
+
+.game-notification.error {
+    border-color: #f87171;
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.1) 0%, var(--ui-panel) 100%);
+}
+
+.game-notification.info {
+    border-color: var(--ui-primary);
+    background: linear-gradient(135deg, rgba(106, 87, 255, 0.1) 0%, var(--ui-panel) 100%);
+}
+
+/* 存档槽位指示器 */
+.save-slot-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 12px;
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-primary);
+    border-radius: 20px;
+    color: var(--ui-text);
+    font-size: 12px;
+    z-index: 9998;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.save-slot-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 存档进度条 */
+.save-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ui-primary) 0%, #5846ff 50%, var(--ui-primary) 100%);
+    background-size: 200% 100%;
+    z-index: 10002;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.save-progress.active {
+    opacity: 1;
+    animation: progressMove 1s linear infinite;
+}
+
+@keyframes progressMove {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+}
+
 /* 参考UI设计的颜色变量 */
 :root {
     --ui-bg: #0f0c1a;
@@ -25,6 +158,11 @@ body {
     height: 100vh;
     overflow: hidden; /* 确保body无滚动条 */
     position: relative;
+}
+
+/* 通用工具类 */
+.hidden {
+    display: none !important;
 }
 
 /* PWA灵动岛适配 */
@@ -380,6 +518,9 @@ body {
     /* 移动端触摸滚动优化 */
     overscroll-behavior: contain; /* 防止滚动链传递 */
     touch-action: pan-y; /* 只允许垂直滚动 */
+    /* 确保内容正确显示 */
+    position: relative;
+    z-index: 1;
 }
 
 /* F1区滚动条样式 - Webkit (Chrome, Safari, Edge) */
@@ -804,19 +945,8 @@ body {
     border: 1px solid rgba(240, 147, 251, 0.3);
 }
 
-/* F2区 - AI输入区域（默认隐藏） */
-.ai-input-area {
-    display: none;
-    padding: 10px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); /* 底部安全区适配 */
-    background: rgba(30, 30, 45, 0.95);
-    border-top: 2px solid rgba(139, 92, 246, 0.3);
-    animation: slideUp 0.3s ease-out;
-}
-
-.ai-input-area.active {
-    display: block;
-}
+/* F2区 - AI输入区域（旧版本，已弃用） */
+/* 注意：现在使用 .ai-input-container 替代 */
 
 @keyframes slideUp {
     from {
@@ -829,57 +959,7 @@ body {
     }
 }
 
-.ai-input-wrapper {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.ai-input {
-    flex: 1;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 20px;
-    color: #e4e4e7;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.3s;
-}
-
-.ai-input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(139, 92, 246, 0.6);
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
-}
-
-.ai-input::placeholder {
-    color: rgba(228, 228, 231, 0.4);
-}
-
-.ai-send-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8b92f6, #f093fb);
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.ai-send-btn:active {
-    transform: scale(0.9);
-}
-
-.ai-send-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+/* 旧的AI输入样式已移除，使用新的.ai-input-container系统 */
 
 /* NPC标识 */
 .npc-name {
@@ -916,6 +996,78 @@ body {
     50% { opacity: 0.7; }
 }
 
+/* F1区 - AI对话历史区域 */
+.dialogue-history-area {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* 使用和story-area相同的滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.4) rgba(255, 255, 255, 0.05);
+}
+
+.dialogue-history-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dialogue-history-area::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.dialogue-history-area::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.4);
+    border-radius: 4px;
+}
+
+.dialogue-history-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.6);
+}
+
+/* 对话消息气泡 */
+.dialogue-message {
+    padding: 10px 14px;
+    border-radius: 16px;
+    max-width: 80%;
+    animation: fadeIn 0.3s ease;
+}
+
+.dialogue-message.npc {
+    align-self: flex-start;
+    background: rgba(139, 92, 246, 0.15);
+    color: #e4e4e7;
+    border-bottom-left-radius: 4px;
+}
+
+.dialogue-message.player {
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.dialogue-message .speaker {
+    font-size: 11px;
+    color: #bcb3ff;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.dialogue-message .text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 动作描述样式 */
+.dialogue-message .action {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+}
+
 /* 场景切换动画 */
 #storyArea {
     transition: opacity 0.3s ease;
@@ -936,6 +1088,8 @@ body {
     border-radius: 20px;  /* 参考设计的圆角 */
     backdrop-filter: blur(20px);  /* 毛玻璃效果 */
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);  /* 浮动阴影 */
+    margin-top: 10px;  /* 添加上边距，避免与F1区重叠 */
+    z-index: 10;  /* 确保在正确的层级 */
 }
 
 .control-btn {
@@ -1047,6 +1201,64 @@ body {
         transform: translateY(-1px) scale(1);
         box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
     }
+}
+
+/* ==================== 重置按钮样式 ==================== */
+
+/* 重置按钮可用状态 - 更低调的提示 */
+.reset-btn.can-reset {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.9) !important;
+    opacity: 1 !important;
+    /* 移除动画，只保留静态状态 */
+}
+
+.reset-btn.can-reset:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+    /* 悬停时才有轻微光晕 */
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.reset-btn.can-reset:active {
+    transform: scale(0.98);
+}
+
+/* 重置按钮不可用状态 - 更暗淡 */
+.reset-btn.disabled {
+    background: rgba(107, 114, 128, 0.1) !important;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+    color: rgba(107, 114, 128, 0.5) !important;
+    cursor: not-allowed;
+    opacity: 0.4 !important;
+}
+
+.reset-btn.disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 重置提示文字样式 */
+.reset-hint {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.reset-hint.available {
+    color: #fbbf24;
+    opacity: 0.8;
+}
+
+.reset-hint.used {
+    color: #6b7280;
+    opacity: 0.5;
 }
 
 
@@ -1253,6 +1465,7 @@ body {
     transform: translateX(-50%);
     z-index: 1001;  /* 高于遮罩层 */
     max-width: 430px;  /* 限制最大宽度 */
+    display: none;  /* 默认隐藏，只在需要时显示 */
 }
 
 .quick-menu-overlay {
@@ -1283,6 +1496,13 @@ body {
 .quick-menu.active .quick-menu-content {
     transform: translateY(0);
     opacity: 1;
+}
+
+/* 快捷菜单分隔线 */
+.quick-menu-divider {
+    height: 1px;
+    background: var(--ui-border);
+    margin: 8px 0;
 }
 
 .quick-menu-item {
@@ -1542,6 +1762,18 @@ body {
 
 .settings-item:hover {
     color: var(--ui-primary);
+}
+
+/* 设置页面分组标题 */
+.tab-section-title {
+    color: var(--ui-muted);
+    font-size: 10px;
+    font-weight: bold;
+    padding: 4px 8px;
+    margin: 4px 0 2px 0;
+    border-bottom: 1px solid var(--ui-border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* 游戏对话框样式 */
@@ -1951,4 +2183,345 @@ body {
 
 .notice-text.success {
     color: #10b981;
+}
+
+/* ==================== F2 AI输入区样式 ==================== */
+/* AI输入容器 - F2区域的AI模式 */
+.ai-input-container {
+    display: none;
+    padding: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(30, 30, 45, 0.95);
+    border-top: 2px solid rgba(139, 92, 246, 0.3);
+    /* 移除动画，避免布局错乱 */
+}
+
+.ai-input-container.active {
+    display: block !important;  /* 确保在激活时正确显示 */
+}
+
+/* AI输入包装器 */
+.ai-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    max-width: 100%;
+}
+
+/* 左侧更多按钮 */
+.ai-more-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e4e4e7;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.ai-more-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+/* 中间输入区域 */
+.ai-input-field-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    padding: 0 40px 0 12px;
+    transition: all 0.3s ease;
+}
+
+.ai-input-field-wrapper:focus-within {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
+/* 输入框 */
+.ai-input-field {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #e4e4e7;
+    font-size: 14px;
+    padding: 10px 0;
+    outline: none;
+    font-family: inherit;
+}
+
+.ai-input-field::placeholder {
+    color: rgba(228, 228, 231, 0.4);
+}
+
+/* 模式切换按钮 */
+.ai-mode-toggle {
+    position: absolute;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.ai-mode-toggle:hover {
+    background: rgba(139, 92, 246, 0.3);
+    transform: scale(1.1);
+}
+
+.ai-mode-toggle.action-mode {
+    background: rgba(240, 147, 251, 0.2);
+    border-color: rgba(240, 147, 251, 0.3);
+}
+
+/* 右侧发送按钮 */
+.ai-send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ai-send-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.ai-send-btn:active {
+    transform: scale(0.95);
+}
+
+.ai-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 更多菜单 */
+.ai-more-menu {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 10px;
+    background: var(--ui-panel);
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 180px;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    opacity: 0;
+    transform: translateY(10px);
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.ai-more-menu.show {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* 菜单项 */
+.ai-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: var(--ui-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.ai-menu-item:hover {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--ui-text);
+    transform: translateX(4px);
+}
+
+.menu-item-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+/* F1区对话历史气泡样式 */
+.chat-bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    margin: 8px 0;
+    animation: fadeIn 0.3s ease;
+    word-wrap: break-word;
+}
+
+.chat-bubble.npc {
+    align-self: flex-start;
+    background: rgba(139, 92, 246, 0.15);
+    color: #e4e4e7;
+    border-bottom-left-radius: 4px;
+}
+
+.chat-bubble.player {
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-action {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==================== 增强的存档列表样式 ==================== */
+.save-item {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+/* 存档类型标识 */
+.save-item.type-auto {
+    border-left: 3px solid #52c41a;
+}
+
+.save-item.type-quick {
+    border-left: 3px solid #fadb14;
+}
+
+.save-item.type-manual {
+    border-left: 3px solid #1890ff;
+}
+
+.save-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(3px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 存档头部 */
+.save-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.save-icon {
+    font-size: 18px;
+}
+
+.save-name {
+    font-weight: bold;
+    color: #fff;
+    flex: 1;
+    font-size: 14px;
+}
+
+/* 世界快照徽章 */
+.world-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* 存档详情 */
+.save-details {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 8px;
+}
+
+.save-details span {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* 存档操作按钮 */
+.save-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.save-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.save-btn.load-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.save-btn.load-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+}
+
+.save-btn.delete-btn {
+    background: rgba(255, 59, 48, 0.1);
+    color: #ff6b6b;
+    border-color: rgba(255, 59, 48, 0.2);
+}
+
+.save-btn.delete-btn:hover {
+    background: rgba(255, 59, 48, 0.2);
+    border-color: #ff3b30;
+}
+
+/* 无存档提示 */
+.no-saves {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
 }
