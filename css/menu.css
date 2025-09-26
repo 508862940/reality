@@ -680,3 +680,241 @@ body {
 #savesList::-webkit-scrollbar-thumb:hover {
     background: rgba(139, 92, 246, 0.5);
 }
+
+/* ==================== 游戏预设管理样式 ==================== */
+.preset-management-bar {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.preset-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.preset-label {
+    color: #e4e4e7;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: fit-content;
+}
+
+.preset-select {
+    flex: 1;
+    min-width: 150px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.preset-select:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(240, 147, 251, 0.5);
+}
+
+.preset-select:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(240, 147, 251, 0.6);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.preset-select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+.preset-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.preset-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(139, 92, 246, 0.5);
+    transform: scale(1.05);
+}
+
+.preset-btn:active {
+    transform: scale(0.95);
+}
+
+.preset-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.save-preset {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(240, 147, 251, 0.4));
+    border-color: rgba(240, 147, 251, 0.5);
+    font-weight: 500;
+    padding: 10px 20px;
+    flex: 1;
+    min-width: 150px;
+}
+
+.save-preset:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.6), rgba(240, 147, 251, 0.6));
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+}
+
+/* 预设通知样式 */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 430px) {
+    .preset-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .preset-select {
+        width: 100%;
+    }
+
+    .preset-selector > div {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .preset-actions {
+        flex-direction: column;
+    }
+
+    .save-preset {
+        width: 100%;
+    }
+}
+
+/* 自定义属性对话框样式 */
+.stats-info {
+    background: rgba(139, 146, 246, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.stats-info p {
+    margin: 0 0 10px 0;
+    color: #e4e4e7;
+    font-size: 14px;
+}
+
+.points-display {
+    font-size: 18px;
+    font-weight: bold;
+    color: #f093fb;
+    text-align: center;
+    padding: 10px;
+    background: rgba(240, 147, 251, 0.1);
+    border-radius: 5px;
+}
+
+.stats-sliders {
+    padding: 20px 0;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.stat-item label {
+    flex: 0 0 150px;
+    color: #e4e4e7;
+    font-size: 14px;
+}
+
+.stat-item input[type="range"] {
+    flex: 1;
+    height: 6px;
+    background: rgba(139, 146, 246, 0.2);
+    outline: none;
+    border-radius: 3px;
+    -webkit-appearance: none;
+}
+
+.stat-item input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.stat-item input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.stat-value {
+    flex: 0 0 30px;
+    text-align: center;
+    font-weight: bold;
+    color: #8b92f6;
+    font-size: 16px;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.dialog-actions .setting-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+}

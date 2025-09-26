@@ -144,7 +144,7 @@ const APISettingsUI = {
         const modelInput = document.getElementById('api-model-input');
 
         if (!nameInput || !providerSelect || !endpointInput || !keyInput || !modelInput) {
-            console.error('表单元素未找到');
+            // 静默返回，因为可能正在使用另一个API设置界面
             return;
         }
 

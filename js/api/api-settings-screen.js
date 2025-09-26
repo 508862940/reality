@@ -26,6 +26,14 @@ const APISettingsScreen = {
             this.container = null;
         }
         this.isOpen = false;
+
+        // 如果游戏设置面板是打开的，保持它打开
+        // 不要关闭游戏设置面板
+        const settingsPanel = document.getElementById('settingsPanel');
+        if (settingsPanel && !settingsPanel.classList.contains('active')) {
+            // 如果设置面板被意外关闭，重新打开它
+            settingsPanel.classList.add('active');
+        }
     },
 
     // 创建模态框
@@ -141,11 +149,21 @@ const APISettingsScreen = {
         const preset = APIPresetManager.getActivePreset();
         if (!preset) return;
 
-        document.getElementById('preset-name').value = preset.name;
-        document.getElementById('api-provider').value = preset.provider;
-        document.getElementById('api-endpoint').value = preset.endpoint || '';
-        document.getElementById('api-key').value = preset.apiKey || '';
-        document.getElementById('api-model').value = preset.model || '';
+        // 检查元素是否存在
+        const elements = {
+            name: document.getElementById('preset-name'),
+            provider: document.getElementById('api-provider'),
+            endpoint: document.getElementById('api-endpoint'),
+            key: document.getElementById('api-key'),
+            model: document.getElementById('api-model')
+        };
+
+        // 只设置存在的元素
+        if (elements.name) elements.name.value = preset.name;
+        if (elements.provider) elements.provider.value = preset.provider;
+        if (elements.endpoint) elements.endpoint.value = preset.endpoint || '';
+        if (elements.key) elements.key.value = preset.apiKey || '';
+        if (elements.model) elements.model.value = preset.model || '';
 
         // 更新端点提示
         this.updateEndpointPlaceholder();
@@ -203,8 +221,15 @@ const APISettingsScreen = {
 
         // 保存预设
         document.getElementById('save-preset-btn').onclick = () => {
+            // 检查元素是否存在
+            const presetNameEl = document.getElementById('preset-name');
+            if (!presetNameEl) {
+                console.warn('API设置界面元素未找到');
+                return;
+            }
+
             const updates = {
-                name: document.getElementById('preset-name').value,
+                name: presetNameEl.value,
                 provider: document.getElementById('api-provider').value,
                 endpoint: document.getElementById('api-endpoint').value,
                 apiKey: document.getElementById('api-key').value,
@@ -305,8 +330,15 @@ const APISettingsScreen = {
 
     // 保存当前输入
     async saveCurrentInputs() {
+        // 检查元素是否存在
+        const presetNameEl = document.getElementById('preset-name');
+        if (!presetNameEl) {
+            console.warn('API设置界面元素未找到');
+            return;
+        }
+
         const updates = {
-            name: document.getElementById('preset-name').value,
+            name: presetNameEl.value,
             provider: document.getElementById('api-provider').value,
             endpoint: document.getElementById('api-endpoint').value,
             apiKey: document.getElementById('api-key').value,

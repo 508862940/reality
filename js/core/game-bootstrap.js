@@ -259,6 +259,12 @@ class GameBootstrap {
             return true;
         }
 
+        // 初始化API设置
+        await this.initializeAPISettings();
+
+        // 加载游戏预设设置
+        this.loadGamePresetSettings();
+
         // 检查是否是新游戏（来自菜单）
         const isNewGameFlag = sessionStorage.getItem('isNewGame');
         if (isNewGameFlag === 'true') {
@@ -312,6 +318,104 @@ class GameBootstrap {
         this.setupAutoSave();
 
         return true;
+    }
+
+    /**
+     * 初始化API设置
+     */
+    async initializeAPISettings() {
+        try {
+            // 获取当前激活的游戏预设
+            const presetId = sessionStorage.getItem('activePresetId');
+            if (!presetId) {
+                console.log('⚠️ 没有找到激活的预设ID，使用默认API设置');
+                return;
+            }
+
+            // 从localStorage获取游戏预设
+            const savedPresets = localStorage.getItem('game_presets');
+            if (!savedPresets) {
+                console.log('⚠️ 没有找到游戏预设，使用默认API设置');
+                return;
+            }
+
+            const data = JSON.parse(savedPresets);
+            const preset = data.presets.find(p => p.id === presetId);
+
+            if (preset && preset.apiPresetId) {
+                // 加载关联的API预设
+                if (window.APIPresetManager) {
+                    await window.APIPresetManager.init();
+                    window.APIPresetManager.switchPreset(preset.apiPresetId);
+                    console.log('✅ 已加载API预设:', preset.apiPresetId);
+                }
+
+                // 初始化APIState
+                if (window.APIState) {
+                    await window.APIState.init();
+                    console.log('✅ APIState已初始化');
+                }
+            }
+        } catch (error) {
+            console.error('初始化API设置失败:', error);
+        }
+    }
+
+    /**
+     * 加载游戏预设设置
+     */
+    loadGamePresetSettings() {
+        try {
+            // 获取世界设置（从sessionStorage，由character-creation保存）
+            const worldSettings = sessionStorage.getItem('worldSettings');
+            if (worldSettings) {
+                const settings = JSON.parse(worldSettings);
+
+                // 应用世界设置
+                if (window.worldState) {
+                    // 应用经济难度
+                    if (settings.economyDifficulty) {
+                        console.log('📊 应用经济难度:', settings.economyDifficulty);
+                        // 这里可以设置价格倍率等
+                    }
+
+                    // 应用NPC密度
+                    if (settings.npcDensity) {
+                        console.log('👥 应用NPC密度:', settings.npcDensity);
+                        // 这里可以设置NPC生成率等
+                    }
+
+                    // 应用开局季节
+                    if (settings.startSeason && window.weatherSystem) {
+                        console.log('🌍 应用开局季节:', settings.startSeason);
+                        window.weatherSystem.setSeason(settings.startSeason);
+                    }
+                }
+            }
+
+            // 从预设加载其他设置
+            const presetId = sessionStorage.getItem('activePresetId');
+            if (presetId) {
+                const savedPresets = localStorage.getItem('game_presets');
+                if (savedPresets) {
+                    const data = JSON.parse(savedPresets);
+                    const preset = data.presets.find(p => p.id === presetId);
+
+                    if (preset && preset.settings) {
+                        // 应用时间速度
+                        if (preset.settings.timeSpeed && window.timeSystem) {
+                            console.log('⏰ 应用时间流速:', preset.settings.timeSpeed);
+                            window.timeSystem.setTimeSpeed(preset.settings.timeSpeed);
+                        }
+
+                        // 应用其他设置...
+                        console.log('✅ 游戏预设已应用:', preset.name);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('加载游戏预设设置失败:', error);
+        }
     }
 
     /**

@@ -37,11 +37,17 @@ const baseAttributes = {
 
 // 初始化
 window.addEventListener('DOMContentLoaded', function() {
+    // 加载预设配置
+    loadPresetSettings();
+
     // 加载之前的配置（如果有）
     loadPreviousSettings();
 
     // 更新进度条
     updateProgress();
+
+    // 初始化角色预览
+    updateCharacterPreview();
 
     // 初始化名字输入监听
     document.getElementById('characterName').addEventListener('input', function(e) {
@@ -68,12 +74,15 @@ function selectOption(element, group, value) {
             break;
         case 'hair':
             characterData.appearance.hair = value;
+            updateCharacterPreview();  // 更新预览
             break;
         case 'hairColor':
             characterData.appearance.hairColor = value;
+            updateCharacterPreview();  // 更新预览
             break;
         case 'body':
             characterData.appearance.body = value;
+            updateCharacterPreview();  // 更新预览
             break;
     }
 
@@ -137,7 +146,113 @@ function updateAvatar() {
         'male': '👦',
         'other': '🧑'
     };
-    document.getElementById('previewAvatar').textContent = avatarMap[characterData.gender] || '👤';
+
+    // 肤色修饰符（暂时默认，可以扩展）
+    const skinTone = '🏻'; // 可以根据选择变化
+
+    const emoji = (avatarMap[characterData.gender] || '👤') + skinTone;
+    document.getElementById('previewAvatar').textContent = emoji;
+
+    // 同时更新完整预览
+    updateCharacterPreview();
+}
+
+// 新增：更新完整的角色预览（包括外观描述）
+function updateCharacterPreview() {
+    const previewContainer = document.querySelector('.character-preview');
+    if (!previewContainer) return;
+
+    // 生成描述文字
+    const genderText = {
+        'female': '女性',
+        'male': '男性',
+        'other': '中性'
+    };
+
+    const hairText = {
+        'long': '长发',
+        'short': '短发',
+        'twintails': '双马尾',
+        'ponytail': '单马尾'
+    };
+
+    const hairColorText = {
+        'black': '黑色',
+        'brown': '棕色',
+        'blonde': '金色',
+        'red': '红色',
+        'purple': '紫色'
+    };
+
+    const bodyText = {
+        'slim': '纤细',
+        'normal': '标准',
+        'athletic': '健壮',
+        'plump': '丰满'
+    };
+
+    // 获取当前emoji
+    const avatarMap = {
+        'female': '👧',
+        'male': '👦',
+        'other': '🧑'
+    };
+
+    const emoji = (avatarMap[characterData.gender] || '👤') + '🏻';
+
+    // 生成描述
+    const gender = genderText[characterData.gender] || '未知';
+    const hair = hairText[characterData.appearance.hair] || '长发';
+    const hairColor = hairColorText[characterData.appearance.hairColor] || '黑色';
+    const body = bodyText[characterData.appearance.body] || '标准';
+
+    const description = `${gender}·${hairColor}${hair}·${body}`;
+
+    // 添加发色指示器
+    const hairColorHex = {
+        'black': '#1a1a1a',
+        'brown': '#8B4513',
+        'blonde': '#FFD700',
+        'red': '#DC143C',
+        'purple': '#9370DB'
+    };
+
+    const currentHairColor = hairColorHex[characterData.appearance.hairColor] || '#1a1a1a';
+
+    // 更新预览HTML
+    previewContainer.innerHTML = `
+        <div class="preview-avatar-container">
+            <div class="preview-avatar" id="previewAvatar">${emoji}</div>
+            <div class="hair-color-indicator" style="background: ${currentHairColor};" title="发色"></div>
+        </div>
+        <div class="preview-description">${description}</div>
+        <style>
+            .preview-avatar-container {
+                position: relative;
+                display: inline-block;
+            }
+            .preview-description {
+                margin-top: 10px;
+                font-size: 12px;
+                color: #a1a1aa;
+                text-align: center;
+                padding: 4px 8px;
+                background: rgba(139, 92, 246, 0.1);
+                border-radius: 12px;
+                border: 1px solid rgba(139, 92, 246, 0.2);
+            }
+            .hair-color-indicator {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+        </style>
+    `;
 }
 
 // 切换NPC
@@ -258,6 +373,169 @@ function goBack() {
     }
 }
 
+// 加载预设中的角色设置
+function loadPresetSettings() {
+    // 从sessionStorage获取预设ID
+    const presetId = sessionStorage.getItem('activePresetId');
+    if (!presetId) {
+        console.log('没有找到激活的预设ID');
+        return;
+    }
+
+    // 从localStorage获取预设
+    const savedPresets = localStorage.getItem('game_presets');
+    if (!savedPresets) {
+        console.log('没有找到保存的预设');
+        return;
+    }
+
+    try {
+        const data = JSON.parse(savedPresets);
+        const preset = data.presets.find(p => p.id === presetId);
+
+        if (preset && preset.settings) {
+            const s = preset.settings;
+            console.log('加载预设:', preset.name, s);
+
+            // 应用难度设置
+            if (s.difficulty) {
+                characterData.difficulty = s.difficulty;
+                // 更新UI - 选择对应的难度卡片
+                const difficultyCard = document.querySelector(`[data-difficulty="${s.difficulty}"]`);
+                if (difficultyCard) {
+                    selectDifficulty(difficultyCard, s.difficulty);
+                }
+            }
+
+            // 应用角色预设
+            if (s.character) {
+                // 应用性别
+                if (s.character.gender) {
+                    characterData.gender = s.character.gender;
+                    // 更新UI - 选择对应的性别按钮
+                    const genderButtons = document.querySelectorAll('.option-group .option-btn');
+                    genderButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    const genderMap = {
+                        'female': '女性',
+                        'male': '男性',
+                        'other': '其他'
+                    };
+                    const targetText = genderMap[s.character.gender];
+                    genderButtons.forEach(btn => {
+                        if (btn.textContent === targetText) {
+                            btn.classList.add('active');
+                        }
+                    });
+                    updateAvatar();
+                }
+
+                // 应用体型
+                if (s.character.bodyType) {
+                    // 转换bodyType格式
+                    const bodyTypeMap = {
+                        'small': 'slim',
+                        'medium': 'normal',
+                        'large': 'athletic'
+                    };
+                    const bodyType = bodyTypeMap[s.character.bodyType] || 'normal';
+                    characterData.appearance.body = bodyType;
+
+                    // 更新UI - 选择对应的体型按钮
+                    const bodyButtons = document.querySelectorAll('[onclick*="body"]');
+                    bodyButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.getAttribute('onclick').includes(bodyType)) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+
+                // 应用初始属性
+                if (s.character.initialStats) {
+                    const stats = s.character.initialStats;
+
+                    // 映射属性（预设系统和角色创建系统的属性名称可能不同）
+                    const statMapping = {
+                        'strength': 'str',      // 力量 → 体力
+                        'intelligence': 'int',  // 智力
+                        'charisma': 'cha',     // 魅力
+                        'agility': 'cou'       // 敏捷 → 勇气
+                    };
+
+                    // 计算总点数
+                    let totalPoints = 0;
+                    for (let key in stats) {
+                        if (key !== 'luck') { // 幸运值不在角色创建中
+                            totalPoints += (stats[key] - 5); // 减去基础值
+                        }
+                    }
+
+                    // 设置最大属性点数
+                    characterData.maxAttributePoints = 20 + totalPoints;
+
+                    // 应用到角色数据和UI
+                    if (stats.strength !== undefined) {
+                        characterData.attributes.str = stats.strength;
+                        const slider = document.getElementById('strSlider');
+                        if (slider) {
+                            slider.value = stats.strength;
+                            document.getElementById('strValue').textContent = stats.strength;
+                        }
+                    }
+
+                    if (stats.intelligence !== undefined) {
+                        characterData.attributes.int = stats.intelligence;
+                        const slider = document.getElementById('intSlider');
+                        if (slider) {
+                            slider.value = stats.intelligence;
+                            document.getElementById('intValue').textContent = stats.intelligence;
+                        }
+                    }
+
+                    if (stats.charisma !== undefined) {
+                        characterData.attributes.cha = stats.charisma;
+                        const slider = document.getElementById('chaSlider');
+                        if (slider) {
+                            slider.value = stats.charisma;
+                            document.getElementById('chaValue').textContent = stats.charisma;
+                        }
+                    }
+
+                    if (stats.agility !== undefined) {
+                        characterData.attributes.cou = stats.agility;
+                        const slider = document.getElementById('couSlider');
+                        if (slider) {
+                            slider.value = stats.agility;
+                            document.getElementById('couValue').textContent = stats.agility;
+                        }
+                    }
+
+                    // 更新剩余点数显示
+                    updateRemainingPoints();
+
+                    console.log('已应用预设属性:', stats);
+                }
+            }
+
+            // 应用世界设置到难度（如果有扩展的难度设置）
+            if (s.economyDifficulty || s.npcDensity) {
+                // 这些设置会在进入游戏时应用
+                sessionStorage.setItem('worldSettings', JSON.stringify({
+                    economyDifficulty: s.economyDifficulty || 'normal',
+                    npcDensity: s.npcDensity || 'normal',
+                    startSeason: s.startSeason || 'spring'
+                }));
+            }
+
+            console.log('✅ 预设已成功应用到角色创建界面');
+        }
+    } catch (e) {
+        console.error('加载预设失败:', e);
+    }
+}
+
 // 进入游戏
 function enterReality() {
     // 验证必填项
@@ -294,7 +572,17 @@ function enterReality() {
             mood: 50,
             money: 100,
             location: 'awakening_room',
-            relationships: {}
+            relationships: {},
+            // 外观数据（立绘系统用）
+            appearanceData: {
+                gender: characterData.gender,
+                bodyType: characterData.appearance.body || 'normal',
+                skinTone: 'fair', // 可以扩展
+                hairStyle: characterData.appearance.hair || 'long',
+                hairColor: characterData.appearance.hairColor || 'black',
+                eyeShape: 'round', // 可以扩展
+                eyeColor: 'brown'  // 可以扩展
+            }
         },
         npcs: characterData.enabledNPCs,
         customNPCs: characterData.customNPCs,

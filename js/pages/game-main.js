@@ -349,7 +349,17 @@ function initializeUI() {
     console.log('📝 小纸条：开始初始化UI，gameState.character.mood =', gameState.character.mood);
 
     // 更新角色名称
-    document.getElementById('characterName').textContent = gameState.character.name || '角色';
+    const characterName = gameState.character.name || '角色';
+    if (window.portraitManager && typeof window.portraitManager.updateCharacterName === 'function') {
+        // 使用立绘管理器更新（会同时更新worldState）
+        window.portraitManager.updateCharacterName(characterName);
+    } else {
+        // 降级到直接DOM操作
+        const nameElement = document.getElementById('characterName');
+        if (nameElement) {
+            nameElement.textContent = characterName;
+        }
+    }
 
     // 更新状态值
     updateStatus();
@@ -408,10 +418,18 @@ function restoreWorldUI() {
         console.log('✅ A区：角色名恢复为', state.player.name);
     }
 
-    // 恢复表情（如果有表情系统）
-    if (state.player && state.player.expression) {
-        // TODO: 更新立绘表情
-        console.log('✅ A区：表情状态', state.player.expression);
+    // 恢复立绘外观和表情
+    if (window.portraitManager) {
+        if (state.player && state.player.appearance) {
+            window.portraitManager.updateAppearance(state.player.appearance);
+            window.portraitManager.updatePortrait();
+            console.log('✅ A区：立绘外观已恢复');
+        }
+
+        if (state.player && state.player.expression) {
+            window.portraitManager.setExpression(state.player.expression);
+            console.log('✅ A区：表情状态已恢复', state.player.expression);
+        }
     }
 
     // B区：恢复时间和位置

@@ -71,6 +71,17 @@ class WorldState {
                 currentAction: 'idle',
                 expression: 'normal',
 
+                // 外观数据（立绘系统）
+                appearance: {
+                    gender: 'female',      // 性别
+                    bodyType: 'normal',    // 体型
+                    skinTone: 'fair',      // 肤色
+                    hairStyle: 'long',     // 发型
+                    hairColor: 'black',    // 发色
+                    eyeShape: 'round',     // 眼型
+                    eyeColor: 'brown'      // 瞳色
+                },
+
                 // A区 - 视觉状态
                 visual: {
                     sprite: 'default',      // 立绘ID

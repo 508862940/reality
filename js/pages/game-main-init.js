@@ -26,6 +26,33 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🤖 AI对话管理器已初始化');
     }
 
+    // 初始化立绘系统
+    if (window.portraitManager) {
+        // 延迟初始化，确保gameState已经加载
+        setTimeout(() => {
+            // 从gameState加载外观数据
+            if (window.gameState && window.gameState.character) {
+                const appearanceData = window.gameState.character.appearanceData;
+                if (appearanceData) {
+                    // 同步到WorldState
+                    if (window.worldState) {
+                        window.worldState.state.player.appearance = appearanceData;
+                    }
+                    // 加载到立绘管理器
+                    window.portraitManager.updateAppearance(appearanceData);
+                }
+
+                // 如果有角色名，更新它
+                if (window.gameState.character.name) {
+                    window.portraitManager.updateCharacterName(window.gameState.character.name);
+                }
+            }
+            // 初始化立绘显示
+            window.portraitManager.init();
+            console.log('🎨 立绘系统已初始化');
+        }, 100);
+    }
+
     // 加载初始场景 - 只有在没有恢复场景的情况下才加载
     if (window.sceneManager && window.OpeningScenes) {
         setTimeout(() => {

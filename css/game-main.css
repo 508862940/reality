@@ -379,8 +379,9 @@ body {
     font-size: 13px;
     max-height: calc(100% - 48px); /* 减去标签栏高度 */
     /* 移动端触摸滚动优化 */
+    -webkit-overflow-scrolling: touch; /* iOS流畅滚动 */
     overscroll-behavior: contain; /* 防止滚动链传递 */
-    touch-action: pan-y; /* 只允许垂直滚动 */
+    /* 移除touch-action限制，让系统自己处理 */
 }
 
 /* D区滚动条样式 - Webkit */
@@ -1363,7 +1364,7 @@ body {
     }
 }
 
-/* 移动端和PWA滚动条隐藏策略 */
+/* 移动端和PWA滚动条策略 */
 /* 检测触摸设备 - 移动端和平板 */
 @media (pointer: coarse) {
     /* F1区移动端滚动条隐藏 */
@@ -1379,29 +1380,64 @@ body {
         -ms-overflow-style: none;
     }
 
-    /* D区移动端滚动条隐藏 */
+    /* D区透明滚动条 - 仅在滚动时显示 */
     .function-content::-webkit-scrollbar {
-        width: 0;
-        display: none;
+        width: 4px; /* 更细的滚动条 */
     }
 
+    .function-content::-webkit-scrollbar-track {
+        background: transparent; /* 完全透明的轨道 */
+    }
+
+    .function-content::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.15); /* 很透明的滑块 */
+        border-radius: 2px;
+        transition: background 0.3s ease;
+    }
+
+    /* 滚动时稍微显示一点 */
+    .function-content:hover::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.25);
+    }
+
+    /* 确保D区内容可以滚动 */
     .function-content {
-        scrollbar-width: none; /* Firefox移动端 */
-        -ms-overflow-style: none; /* IE和旧Edge */
+        overflow-y: scroll; /* 强制显示滚动区域 */
+        -webkit-overflow-scrolling: touch;
     }
 }
 
 /* 备用方案：使用屏幕宽度和hover检测 */
 @media (max-width: 768px) and (hover: none) {
-    .story-area::-webkit-scrollbar,
-    .function-content::-webkit-scrollbar {
+    /* F1区隐藏滚动条 */
+    .story-area::-webkit-scrollbar {
         width: 0;
         display: none;
     }
 
-    .story-area, .function-content {
+    .story-area {
         scrollbar-width: none;
         -ms-overflow-style: none;
+    }
+
+    /* D区透明滚动条 */
+    .function-content::-webkit-scrollbar {
+        width: 3px; /* 移动端更细 */
+    }
+
+    .function-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .function-content::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.1); /* 移动端更透明 */
+        border-radius: 1.5px;
+    }
+
+    .function-content {
+        /* 保持滚动功能 */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 

@@ -94,6 +94,9 @@ function setupEventListeners() {
             }
         });
     });
+
+    // 游戏预设管理
+    setupGamePresetListeners();
 }
 
 // 创建背景粒子效果
@@ -183,8 +186,48 @@ async function continueGame() {
 // 开始新游戏
 async function startNewGame() {
     console.log('开始新游戏...');
+
+    // 检查是否需要创建预设（新用户）
+    if (window.GamePresetManager && window.GamePresetManager.needsPresetCreation()) {
+        // 显示预设创建向导
+        const shouldCreate = confirm(
+            '欢迎来到Reality游戏！\n\n' +
+            '首次游戏需要创建一个游戏预设。\n' +
+            '预设包含难度、世界设置、NPC设置等配置。\n\n' +
+            '是否现在创建预设？'
+        );
+
+        if (shouldCreate) {
+            // 打开设置面板让用户配置
+            openSettings();
+
+            // 引导用户创建预设
+            setTimeout(() => {
+                alert(
+                    '请按以下步骤设置你的游戏：\n\n' +
+                    '1. 配置各项游戏设置\n' +
+                    '2. 点击"配置AI服务"设置API（可选）\n' +
+                    '3. 点击"💾 保存当前预设"\n' +
+                    '4. 关闭设置，点击"开始游戏"'
+                );
+            }, 500);
+
+            return; // 中断开始游戏流程
+        }
+    }
+
     // 保存当前配置
     saveConfig();
+
+    // 将当前预设应用到游戏
+    if (window.GamePresetManager) {
+        const preset = window.GamePresetManager.getActivePreset();
+        if (preset) {
+            // 存储预设ID供游戏使用
+            sessionStorage.setItem('activePresetId', preset.id);
+            console.log('📋 使用预设:', preset.name);
+        }
+    }
 
     // 检查是否有自动存档
     let hasAutoSave = false;
@@ -270,10 +313,13 @@ function openAPISettings() {
     // 使用新的API设置界面
     if (typeof APISettingsScreen !== 'undefined') {
         APISettingsScreen.open();
-        // 关闭设置面板
-        closeSettings();
+        // 不关闭设置面板，保持它打开
+        // closeSettings(); // 注释掉这行
+
         // 更新预设信息显示
-        updatePresetInfo();
+        setTimeout(() => {
+            updatePresetInfo();
+        }, 100);
     } else {
         console.error('API设置界面未加载');
     }
@@ -786,6 +832,398 @@ async function handleLoadGame() {
     }
 }
 
+// ==================== 游戏预设管理功能 ====================
+
+// 设置游戏预设相关的事件监听器
+function setupGamePresetListeners() {
+    // 预设选择下拉框
+    const presetSelect = document.getElementById('game-preset-select');
+    if (presetSelect) {
+        updatePresetSelect();  // 初始化下拉列表
+        presetSelect.addEventListener('change', (e) => {
+            if (window.GamePresetManager) {
+                window.GamePresetManager.switchPreset(e.target.value);
+                showNotification('预设已切换', 'success');
+            }
+        });
+    }
+
+    // 新建预设按钮
+    const newPresetBtn = document.getElementById('new-preset-btn');
+    if (newPresetBtn) {
+        newPresetBtn.addEventListener('click', createNewPreset);
+    }
+
+    // 重命名预设按钮
+    const renamePresetBtn = document.getElementById('rename-preset-btn');
+    if (renamePresetBtn) {
+        renamePresetBtn.addEventListener('click', renameCurrentPreset);
+    }
+
+    // 删除预设按钮
+    const deletePresetBtn = document.getElementById('delete-preset-btn');
+    if (deletePresetBtn) {
+        deletePresetBtn.addEventListener('click', deleteCurrentPreset);
+    }
+
+    // 保存预设按钮
+    const savePresetBtn = document.getElementById('save-preset-btn');
+    if (savePresetBtn) {
+        savePresetBtn.addEventListener('click', saveCurrentPreset);
+    }
+
+    // 导出预设按钮
+    const exportPresetBtn = document.getElementById('export-preset-btn');
+    if (exportPresetBtn) {
+        exportPresetBtn.addEventListener('click', exportPreset);
+    }
+
+    // 导入预设按钮
+    const importPresetBtn = document.getElementById('import-preset-btn');
+    if (importPresetBtn) {
+        importPresetBtn.addEventListener('click', () => {
+            document.getElementById('import-preset-file').click();
+        });
+    }
+
+    // 导入文件选择
+    const importFile = document.getElementById('import-preset-file');
+    if (importFile) {
+        importFile.addEventListener('change', handlePresetImport);
+    }
+
+    // 自定义属性按钮
+    const customizeStatsBtn = document.getElementById('customize-stats-btn');
+    if (customizeStatsBtn) {
+        customizeStatsBtn.addEventListener('click', openCustomStatsDialog);
+    }
+
+    // 自定义NPC按钮
+    const customizeNpcsBtn = document.getElementById('customize-npcs-btn');
+    if (customizeNpcsBtn) {
+        customizeNpcsBtn.addEventListener('click', () => {
+            alert('自定义NPC功能即将推出！');
+        });
+    }
+}
+
+// 更新预设选择下拉列表
+function updatePresetSelect() {
+    if (!window.GamePresetManager) return;
+
+    const select = document.getElementById('game-preset-select');
+    if (!select) return;
+
+    // 清空现有选项
+    select.innerHTML = '';
+
+    // 添加所有预设
+    const presets = window.GamePresetManager.getAllPresets();
+    presets.forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = preset.name;
+        select.appendChild(option);
+    });
+
+    // 设置当前激活的预设
+    select.value = window.GamePresetManager.activePresetId;
+}
+
+// 创建新预设
+function createNewPreset() {
+    const name = prompt('请输入新预设名称：', '我的预设');
+    if (name && window.GamePresetManager) {
+        const presetId = window.GamePresetManager.createPreset(name);
+        if (presetId) {
+            updatePresetSelect();
+            showNotification(`预设"${name}"已创建`, 'success');
+        }
+    }
+}
+
+// 重命名当前预设
+function renameCurrentPreset() {
+    if (!window.GamePresetManager) return;
+
+    const current = window.GamePresetManager.getActivePreset();
+    if (!current) return;
+
+    const newName = prompt('请输入新名称：', current.name);
+    if (newName && newName !== current.name) {
+        if (window.GamePresetManager.renamePreset(current.id, newName)) {
+            updatePresetSelect();
+            showNotification('预设已重命名', 'success');
+        }
+    }
+}
+
+// 删除当前预设
+function deleteCurrentPreset() {
+    if (!window.GamePresetManager) return;
+
+    const current = window.GamePresetManager.getActivePreset();
+    if (!current) return;
+
+    if (confirm(`确定要删除预设"${current.name}"吗？`)) {
+        if (window.GamePresetManager.deletePreset(current.id)) {
+            updatePresetSelect();
+            showNotification('预设已删除', 'success');
+        }
+    }
+}
+
+// 保存当前预设
+function saveCurrentPreset() {
+    if (!window.GamePresetManager) return;
+
+    if (window.GamePresetManager.updateCurrentPreset()) {
+        showNotification('预设已保存', 'success');
+    } else {
+        showNotification('保存失败', 'error');
+    }
+}
+
+// 导出预设
+function exportPreset() {
+    if (!window.GamePresetManager) return;
+
+    const current = window.GamePresetManager.getActivePreset();
+    if (!current) return;
+
+    const json = window.GamePresetManager.exportPreset();
+    if (json) {
+        // 创建下载链接
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `preset_${current.name}_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showNotification('预设已导出', 'success');
+    }
+}
+
+// 处理预设导入
+function handlePresetImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const json = event.target.result;
+        if (window.GamePresetManager) {
+            const presetId = window.GamePresetManager.importPreset(json);
+            if (presetId) {
+                updatePresetSelect();
+                document.getElementById('game-preset-select').value = presetId;
+                window.GamePresetManager.switchPreset(presetId);
+                showNotification('预设导入成功', 'success');
+            }
+        }
+    };
+    reader.readAsText(file);
+
+    // 清空文件选择，以便可以再次导入同一文件
+    e.target.value = '';
+}
+
+// 显示通知
+function showNotification(message, type = 'info') {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.className = `preset-notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#8b5cf6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+
+    document.body.appendChild(notification);
+
+    // 3秒后自动消失
+    setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+
+// 打开自定义属性对话框
+function openCustomStatsDialog() {
+    // 创建对话框（如果不存在）
+    let dialog = document.getElementById('customStatsDialog');
+    if (!dialog) {
+        const dialogHTML = `
+            <div id="customStatsDialog" class="dialog-overlay hidden">
+                <div class="dialog-box" style="max-width: 500px;">
+                    <div class="dialog-header">
+                        <h3>⚙️ 自定义初始属性</h3>
+                        <button class="dialog-close" onclick="closeCustomStatsDialog()">×</button>
+                    </div>
+                    <div class="dialog-content">
+                        <div class="stats-info">
+                            <p>分配初始属性点（总计25点）</p>
+                            <div class="points-display">
+                                剩余点数: <span id="statsRemainingPoints">5</span>
+                            </div>
+                        </div>
+                        <div class="stats-sliders">
+                            <div class="stat-item">
+                                <label>力量 (Strength)</label>
+                                <input type="range" id="stat-strength" min="1" max="10" value="5"
+                                       oninput="updateStatPoints()">
+                                <span class="stat-value" id="stat-strength-value">5</span>
+                            </div>
+                            <div class="stat-item">
+                                <label>敏捷 (Agility)</label>
+                                <input type="range" id="stat-agility" min="1" max="10" value="5"
+                                       oninput="updateStatPoints()">
+                                <span class="stat-value" id="stat-agility-value">5</span>
+                            </div>
+                            <div class="stat-item">
+                                <label>智力 (Intelligence)</label>
+                                <input type="range" id="stat-intelligence" min="1" max="10" value="5"
+                                       oninput="updateStatPoints()">
+                                <span class="stat-value" id="stat-intelligence-value">5</span>
+                            </div>
+                            <div class="stat-item">
+                                <label>魅力 (Charisma)</label>
+                                <input type="range" id="stat-charisma" min="1" max="10" value="5"
+                                       oninput="updateStatPoints()">
+                                <span class="stat-value" id="stat-charisma-value">5</span>
+                            </div>
+                            <div class="stat-item">
+                                <label>幸运 (Luck)</label>
+                                <input type="range" id="stat-luck" min="1" max="10" value="5"
+                                       oninput="updateStatPoints()">
+                                <span class="stat-value" id="stat-luck-value">5</span>
+                            </div>
+                        </div>
+                        <div class="dialog-actions">
+                            <button class="setting-btn" onclick="resetStats()">重置</button>
+                            <button class="setting-btn" onclick="saveCustomStats()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', dialogHTML);
+        dialog = document.getElementById('customStatsDialog');
+    }
+
+    // 加载当前预设的属性值
+    if (window.GamePresetManager) {
+        const preset = window.GamePresetManager.getActivePreset();
+        if (preset && preset.settings.character.initialStats) {
+            const stats = preset.settings.character.initialStats;
+            document.getElementById('stat-strength').value = stats.strength || 5;
+            document.getElementById('stat-agility').value = stats.agility || 5;
+            document.getElementById('stat-intelligence').value = stats.intelligence || 5;
+            document.getElementById('stat-charisma').value = stats.charisma || 5;
+            document.getElementById('stat-luck').value = stats.luck || 5;
+            updateStatPoints();
+        }
+    }
+
+    // 显示对话框
+    dialog.classList.remove('hidden');
+    setTimeout(() => {
+        dialog.classList.add('active');
+    }, 10);
+}
+
+// 关闭自定义属性对话框
+function closeCustomStatsDialog() {
+    const dialog = document.getElementById('customStatsDialog');
+    if (dialog) {
+        dialog.classList.remove('active');
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+        }, 300);
+    }
+}
+
+// 更新属性点数显示
+function updateStatPoints() {
+    const stats = ['strength', 'agility', 'intelligence', 'charisma', 'luck'];
+    let totalUsed = 0;
+
+    stats.forEach(stat => {
+        const slider = document.getElementById(`stat-${stat}`);
+        const valueDisplay = document.getElementById(`stat-${stat}-value`);
+        if (slider && valueDisplay) {
+            const value = parseInt(slider.value);
+            valueDisplay.textContent = value;
+            totalUsed += value;
+        }
+    });
+
+    const remaining = 25 - totalUsed;
+    const remainingDisplay = document.getElementById('statsRemainingPoints');
+    if (remainingDisplay) {
+        remainingDisplay.textContent = remaining;
+        remainingDisplay.style.color = remaining < 0 ? '#f87171' : remaining === 0 ? '#4ade80' : '#e4e4e7';
+    }
+}
+
+// 重置属性
+function resetStats() {
+    const stats = ['strength', 'agility', 'intelligence', 'charisma', 'luck'];
+    stats.forEach(stat => {
+        const slider = document.getElementById(`stat-${stat}`);
+        if (slider) {
+            slider.value = 5;
+        }
+    });
+    updateStatPoints();
+}
+
+// 保存自定义属性
+function saveCustomStats() {
+    const remaining = parseInt(document.getElementById('statsRemainingPoints').textContent);
+    if (remaining < 0) {
+        alert('属性点分配超出限制！请重新分配。');
+        return;
+    }
+
+    if (remaining > 0) {
+        if (!confirm(`您还有${remaining}点未分配，确定要保存吗？`)) {
+            return;
+        }
+    }
+
+    // 收集属性值
+    const stats = {
+        strength: parseInt(document.getElementById('stat-strength').value),
+        agility: parseInt(document.getElementById('stat-agility').value),
+        intelligence: parseInt(document.getElementById('stat-intelligence').value),
+        charisma: parseInt(document.getElementById('stat-charisma').value),
+        luck: parseInt(document.getElementById('stat-luck').value)
+    };
+
+    // 保存到当前预设
+    if (window.GamePresetManager) {
+        const preset = window.GamePresetManager.getActivePreset();
+        if (preset) {
+            preset.settings.character.initialStats = stats;
+            window.GamePresetManager.save();
+            showNotification('初始属性已保存', 'success');
+        }
+    }
+
+    closeCustomStatsDialog();
+}
+
 // 导出函数到全局，供HTML的onclick使用
 window.handleLoadGame = handleLoadGame;
 window.startNewGame = startNewGame;
@@ -796,4 +1234,8 @@ window.loadFromMenu = loadFromMenu;
 window.renameSaveFromMenu = renameSaveFromMenu;
 window.deleteSaveFromMenu = deleteSaveFromMenu;
 window.closeSaveDialog = closeSaveDialog;
+window.closeCustomStatsDialog = closeCustomStatsDialog;
+window.updateStatPoints = updateStatPoints;
+window.resetStats = resetStats;
+window.saveCustomStats = saveCustomStats;
 // Version: 20250923_084913

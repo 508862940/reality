@@ -62,6 +62,25 @@
             </div>
 
             <div class="settings-content">
+                <!-- 游戏预设管理栏 -->
+                <div class="preset-management-bar">
+                    <div class="preset-selector">
+                        <label class="preset-label">当前预设：</label>
+                        <select id="game-preset-select" class="preset-select">
+                            <option value="default">默认预设</option>
+                        </select>
+                        <button class="preset-btn" id="new-preset-btn" title="新建预设">➕</button>
+                        <button class="preset-btn" id="rename-preset-btn" title="重命名">📝</button>
+                        <button class="preset-btn" id="delete-preset-btn" title="删除预设">🗑️</button>
+                    </div>
+                    <div class="preset-actions">
+                        <button class="setting-btn save-preset" id="save-preset-btn">💾 保存当前预设</button>
+                        <button class="preset-btn" id="export-preset-btn" title="导出预设">📤</button>
+                        <button class="preset-btn" id="import-preset-btn" title="导入预设">📥</button>
+                        <input type="file" id="import-preset-file" accept=".json" style="display:none">
+                    </div>
+                </div>
+
                 <!-- API设置 - 使用新的预设管理系统 -->
                 <div class="settings-section">
                     <div class="section-title">🤖 API 设置</div>
@@ -70,6 +89,38 @@
                         <div id="current-preset-info" class="preset-info"></div>
                         <button class="setting-btn" id="openAPISettingsBtn">配置AI服务</button>
                     </div>
+                </div>
+
+                <!-- 角色预设 -->
+                <div class="settings-section">
+                    <div class="section-title">👤 角色预设</div>
+                    <div class="setting-item">
+                        <span class="setting-label">默认性别</span>
+                        <select class="setting-select" id="default-gender">
+                            <option value="">游戏时选择</option>
+                            <option value="male">男性</option>
+                            <option value="female">女性</option>
+                            <option value="futanari">扶她</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">默认体型</span>
+                        <select class="setting-select" id="default-body-type">
+                            <option value="">游戏时选择</option>
+                            <option value="small">小体型（灵活）</option>
+                            <option value="medium">中体型（平衡）</option>
+                            <option value="large">大体型（强壮）</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">属性点模式</span>
+                        <select class="setting-select" id="stat-mode">
+                            <option value="balanced">平衡分配</option>
+                            <option value="custom">自定义分配</option>
+                            <option value="random">随机分配</option>
+                        </select>
+                    </div>
+                    <button class="setting-btn" id="customize-stats-btn">⚙️ 自定义初始属性</button>
                 </div>
 
                 <!-- 游戏设置 -->
@@ -147,6 +198,94 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 世界设置 -->
+                <div class="settings-section">
+                    <div class="section-title">🌍 世界设置</div>
+                    <div class="setting-item">
+                        <span class="setting-label">开局季节</span>
+                        <select class="setting-select" id="start-season">
+                            <option value="spring">春天</option>
+                            <option value="summer">夏天</option>
+                            <option value="autumn">秋天</option>
+                            <option value="winter">冬天</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">NPC密度</span>
+                        <select class="setting-select" id="npc-density">
+                            <option value="sparse">稀少</option>
+                            <option value="normal" selected>普通</option>
+                            <option value="crowded">繁多</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">经济难度</span>
+                        <select class="setting-select" id="economy-difficulty">
+                            <option value="easy">宽松</option>
+                            <option value="normal" selected>标准</option>
+                            <option value="hard">紧缩</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">时间流速</span>
+                        <select class="setting-select" id="time-speed">
+                            <option value="0.5">慢速 (0.5x)</option>
+                            <option value="1" selected>正常 (1x)</option>
+                            <option value="2">快速 (2x)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- NPC设置 -->
+                <div class="settings-section">
+                    <div class="section-title">👥 NPC设置</div>
+                    <div class="setting-item">
+                        <span class="setting-label">重要NPC个性</span>
+                        <select class="setting-select" id="important-npc-personality">
+                            <option value="canonical" selected>原作设定</option>
+                            <option value="randomized">随机化</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">NPC记忆深度</span>
+                        <select class="setting-select" id="npc-memory-depth">
+                            <option value="shallow">浅层（5条）</option>
+                            <option value="normal" selected>标准（20条）</option>
+                            <option value="deep">深度（50条）</option>
+                        </select>
+                    </div>
+                    <button class="setting-btn" id="customize-npcs-btn">⚙️ 自定义重要NPC</button>
+                </div>
+
+                <!-- 美化模组 -->
+                <div class="settings-section">
+                    <div class="section-title">🎨 美化模组</div>
+                    <div class="setting-item">
+                        <span class="setting-label">UI主题</span>
+                        <select class="setting-select" id="ui-theme">
+                            <option value="default" selected>默认紫色</option>
+                            <option value="dark">深色模式</option>
+                            <option value="light">浅色模式</option>
+                            <option value="cyberpunk">赛博朋克</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">字体大小</span>
+                        <select class="setting-select" id="font-size">
+                            <option value="small">小</option>
+                            <option value="normal" selected>标准</option>
+                            <option value="large">大</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">动画效果</span>
+                        <div class="toggle-switch active" data-setting="animations">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -163,13 +302,16 @@
     <script src="js/core/database.js"></script>
     <!-- 统一的存档系统 -->
     <script src="js/core/save-system.js"></script>
+    <!-- 游戏预设管理系统 -->
+    <script src="js/core/game-preset-manager.js"></script>
     <script src="js/pages/menu.js"></script>
-    <!-- 新的API预设管理系统 -->
+    <!-- API预设管理系统 -->
     <script src="js/api/api-preset-manager.js"></script>
     <script src="js/api/api-settings-screen.js"></script>
-    <!-- 兼容原有系统（可选） -->
+    <!-- API状态管理 -->
     <script src="js/api/api-state.js"></script>
-    <script src="js/api/api-settings-ui.js"></script>
+    <!-- 注意：api-settings-ui.js 和 api-settings-screen.js 可能有冲突，暂时禁用旧版本 -->
+    <!-- <script src="js/api/api-settings-ui.js"></script> -->
     <script>
         // 页面加载完成后更新预设信息
         window.addEventListener('DOMContentLoaded', function() {

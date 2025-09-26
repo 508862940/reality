@@ -1,0 +1,246 @@
+/**
+ * 立绘系统样式
+ * 支持emoji占位符和未来的分层立绘
+ * PWA适配，使用相对单位和CSS变量
+ */
+
+/* CSS变量定义 */
+:root {
+    --portrait-bg: rgba(255, 255, 255, 0.03);
+    --portrait-border: rgba(139, 92, 246, 0.2);
+    --portrait-glow: rgba(139, 92, 246, 0.4);
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --accent-purple: #8b5cf6;
+    --accent-pink: #f093fb;
+}
+
+/* 立绘容器 - 替代原有的sprite-placeholder */
+.portrait-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: portraitBreathe 4s ease-in-out infinite;
+}
+
+/* 呼吸动画 */
+@keyframes portraitBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* Emoji头像 */
+.emoji-avatar {
+    font-size: clamp(3rem, 8vw, 5rem); /* PWA响应式大小 */
+    filter: drop-shadow(0 0 15px var(--portrait-glow));
+    transition: all 0.3s ease;
+    user-select: none;
+    position: relative;
+}
+
+/* 表情状态效果 */
+.emoji-avatar.happy {
+    animation: happyBounce 0.5s ease;
+}
+
+.emoji-avatar.sad {
+    filter: drop-shadow(0 0 15px rgba(100, 100, 255, 0.4)) brightness(0.8);
+}
+
+.emoji-avatar.angry {
+    filter: drop-shadow(0 0 15px rgba(255, 100, 100, 0.4));
+    animation: angryShake 0.3s;
+}
+
+.emoji-avatar.shy {
+    filter: drop-shadow(0 0 15px rgba(255, 182, 193, 0.4));
+}
+
+/* 动画效果 */
+@keyframes happyBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes angryShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* 外观描述文字 */
+.appearance-desc {
+    margin-top: 0.8rem;
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 0.3rem 0.8rem;
+    background: var(--portrait-bg);
+    border-radius: 20px;
+    border: 1px solid var(--portrait-border);
+    backdrop-filter: blur(5px);
+    white-space: nowrap;
+}
+
+/* Q版小立绘（用于D区/F1区） */
+.chibi-portrait {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.chibi-emoji {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 3px var(--portrait-glow));
+}
+
+.chibi-name {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.chibi-mood {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* 立绘层级系统（未来用） */
+.portrait-layers {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.portrait-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* 层级顺序 */
+.layer-hair-back { z-index: 1; }
+.layer-body { z-index: 2; }
+.layer-clothes { z-index: 3; }
+.layer-face { z-index: 4; }
+.layer-eyes { z-index: 5; }
+.layer-hair-front { z-index: 6; }
+.layer-accessories { z-index: 7; }
+.layer-effects { z-index: 8; }
+
+/* 颜色滤镜（通过CSS变量控制） */
+.layer-hair-back,
+.layer-hair-front {
+    filter: hue-rotate(var(--hair-hue, 0deg))
+            saturate(var(--hair-saturation, 100%))
+            brightness(var(--hair-brightness, 100%));
+}
+
+.layer-body {
+    filter: hue-rotate(var(--skin-hue, 0deg))
+            saturate(var(--skin-saturation, 100%))
+            brightness(var(--skin-brightness, 100%));
+}
+
+.layer-eyes {
+    filter: hue-rotate(var(--eye-hue, 0deg))
+            saturate(var(--eye-saturation, 100%));
+}
+
+/* 状态栏中的角色显示（D区） */
+.character-status-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--portrait-bg);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.status-portrait {
+    font-size: 1.5rem;
+}
+
+.status-info {
+    flex: 1;
+}
+
+.status-name {
+    font-weight: bold;
+    color: var(--accent-purple);
+}
+
+.status-appearance {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* 对话框中的角色头像（F1区） */
+.dialogue-portrait {
+    display: inline-block;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 5px var(--portrait-glow));
+}
+
+/* 移动端适配 */
+@media (max-width: 430px) {
+    .emoji-avatar {
+        font-size: 3rem;
+    }
+
+    .appearance-desc {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+}
+
+/* 横屏适配 */
+@media (orientation: landscape) and (max-height: 430px) {
+    .portrait-container {
+        flex-direction: row;
+        gap: 1rem;
+    }
+
+    .appearance-desc {
+        margin-top: 0;
+    }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --portrait-bg: rgba(0, 0, 0, 0.2);
+        --portrait-border: rgba(139, 92, 246, 0.3);
+    }
+}
+
+/* 加载动画 */
+.portrait-loading {
+    opacity: 0.5;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* 过渡效果 */
+.portrait-container * {
+    transition: all 0.3s ease;
+}
+
+/* 交互效果 */
+.portrait-container:hover .emoji-avatar {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 20px var(--portrait-glow));
+}
