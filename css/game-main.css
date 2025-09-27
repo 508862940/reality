@@ -2107,10 +2107,14 @@ body {
 
 .save-actions-bar {
     margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .save-new-btn {
-    width: 100%;
+    flex: 1;
+    min-width: 150px;
     padding: 10px;
     background: linear-gradient(135deg, #10b981, #059669);
     color: #fff;
@@ -2124,6 +2128,29 @@ body {
 
 .save-new-btn:hover {
     background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+.save-io-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.save-io-btn {
+    padding: 10px 16px;
+    background: rgba(139, 92, 246, 0.2);
+    color: #a5b4fc;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.save-io-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    color: #fff;
     transform: translateY(-1px);
 }
 
@@ -2541,6 +2568,18 @@ body {
 .save-btn.load-btn:hover {
     transform: scale(1.05);
     box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+}
+
+.save-btn.export-btn {
+    background: rgba(139, 92, 246, 0.1);
+    color: #a5b4fc;
+    border-color: rgba(139, 92, 246, 0.2);
+}
+
+.save-btn.export-btn:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #fff;
 }
 
 .save-btn.delete-btn {

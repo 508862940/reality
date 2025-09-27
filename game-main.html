@@ -258,6 +258,15 @@
                     <button class="save-new-btn" id="createSaveBtn">
                         ➕ 新建存档
                     </button>
+                    <div class="save-io-buttons">
+                        <button class="save-io-btn" id="exportAllBtn" title="导出所有存档">
+                            📤 导出全部
+                        </button>
+                        <button class="save-io-btn" id="importSavesBtn" title="导入存档文件">
+                            📥 导入存档
+                        </button>
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                    </div>
                 </div>
                 <div class="saves-list" id="savesList">
                     <div class="loading">加载中...</div>

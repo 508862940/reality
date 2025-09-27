@@ -1107,6 +1107,46 @@ function setupEventListeners() {
     if (createSaveBtn) {
         createSaveBtn.addEventListener('click', createManualSave);
     }
+
+    // 导入导出按钮
+    const exportAllBtn = document.getElementById('exportAllBtn');
+    if (exportAllBtn) {
+        exportAllBtn.addEventListener('click', async () => {
+            try {
+                await window.Database.exportAllSaves();
+                showNotification('✅ 所有存档导出成功！', 'success');
+            } catch (error) {
+                showNotification('❌ 导出失败: ' + error.message, 'error');
+            }
+        });
+    }
+
+    const importSavesBtn = document.getElementById('importSavesBtn');
+    const importFileInput = document.getElementById('importFileInput');
+
+    if (importSavesBtn && importFileInput) {
+        importSavesBtn.addEventListener('click', () => {
+            importFileInput.click();
+        });
+
+        importFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    const count = await window.Database.importSaves(file);
+                    if (count > 0) {
+                        showNotification(`✅ 成功导入 ${count} 个存档！`, 'success');
+                        // 刷新存档列表
+                        loadSavesList();
+                    }
+                } catch (error) {
+                    showNotification('❌ 导入失败: ' + error.message, 'error');
+                }
+                // 清空文件输入
+                e.target.value = '';
+            }
+        });
+    }
 }
 
 // 开始游戏
@@ -1814,6 +1854,7 @@ async function loadSavesList() {
                         </div>
                         <div class="save-actions">
                             <button class="save-btn load-btn" onclick="loadSaveGame('${save.id}')">📂 读取</button>
+                            <button class="save-btn export-btn" onclick="exportSingleSave('${save.id}')">📤 导出</button>
                             <button class="save-btn delete-btn" onclick="deleteSaveGame('${save.id}')">🗑️ 删除</button>
                         </div>
                     </div>
@@ -1930,6 +1971,17 @@ async function loadSaveGame(saveId) {
     } catch (error) {
         console.error('读取存档失败:', error);
         showNotification('❌ 读取存档失败', 'error');
+    }
+}
+
+// 导出单个存档
+async function exportSingleSave(saveId) {
+    try {
+        await window.Database.exportSave(saveId);
+        showNotification('✅ 存档导出成功！', 'success');
+    } catch (error) {
+        console.error('导出存档失败:', error);
+        showNotification('❌ 导出失败: ' + error.message, 'error');
     }
 }
 
@@ -2194,5 +2246,6 @@ window.showSaveLoadDialog = showSaveLoadDialog;
 window.hideSaveLoadDialog = hideSaveLoadDialog;
 window.loadSaveGame = loadSaveGame;
 window.deleteSaveGame = deleteSaveGame;
+window.exportSingleSave = exportSingleSave;
 window.loadSavesList = loadSavesList;
 window.testModifyGameState = testModifyGameState;  // 导出测试函数
