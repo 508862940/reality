@@ -479,7 +479,10 @@ class SaveSystem {
                 money: worldSnapshot.player.stats.money,
                 energy: worldSnapshot.player.stats.energy,
                 spirit: worldSnapshot.player.stats.spirit,
-                location: worldSnapshot.player.position.location
+                location: worldSnapshot.player.position.location,
+                // 保存外观数据！
+                appearance: worldSnapshot.player.appearance,
+                appearanceData: worldSnapshot.player.appearance  // 保持兼容性
             };
 
             gameData.gameTime = worldSnapshot.time;

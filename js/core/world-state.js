@@ -430,11 +430,20 @@ class WorldState {
         console.log('🔄 loadFullState被调用，savedState包含:', {
             hasCurrentSceneData: !!savedState?.currentSceneData,
             hasF1Content: !!savedState?.f1Content,
-            sceneManagerExists: !!window.sceneManager
+            sceneManagerExists: !!window.sceneManager,
+            hasPlayerAppearance: !!savedState?.player?.appearance,
+            playerHairColor: savedState?.player?.appearance?.hairColor
         });
+
+        // 调试：检查加载前后的外观数据
+        console.log('🎨 加载前的appearance:', this.state.player.appearance);
+        console.log('🎨 要加载的appearance:', savedState?.player?.appearance);
 
         // 深度合并，保留未保存的默认值
         this.state = this.deepMerge(this.state, savedState);
+
+        // 调试：检查合并后的外观数据
+        console.log('🎨 合并后的appearance:', this.state.player.appearance);
 
         // 🌟 重新连接响应式系统
         this.reconnectReactiveSystems();

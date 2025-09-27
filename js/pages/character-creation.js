@@ -219,39 +219,13 @@ function updateCharacterPreview() {
 
     const currentHairColor = hairColorHex[characterData.appearance.hairColor] || '#1a1a1a';
 
-    // 更新预览HTML
+    // 更新预览HTML - 不要在innerHTML中包含style标签
     previewContainer.innerHTML = `
         <div class="preview-avatar-container">
             <div class="preview-avatar" id="previewAvatar">${emoji}</div>
             <div class="hair-color-indicator" style="background: ${currentHairColor};" title="发色"></div>
         </div>
         <div class="preview-description">${description}</div>
-        <style>
-            .preview-avatar-container {
-                position: relative;
-                display: inline-block;
-            }
-            .preview-description {
-                margin-top: 10px;
-                font-size: 12px;
-                color: #a1a1aa;
-                text-align: center;
-                padding: 4px 8px;
-                background: rgba(139, 92, 246, 0.1);
-                border-radius: 12px;
-                border: 1px solid rgba(139, 92, 246, 0.2);
-            }
-            .hair-color-indicator {
-                position: absolute;
-                top: -5px;
-                right: -5px;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                border: 2px solid #fff;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            }
-        </style>
     `;
 }
 
@@ -555,6 +529,12 @@ function enterReality() {
     }
 
     console.log('角色创建完成，数据：', characterData);
+    console.log('🎨 外观数据详情：', {
+        gender: characterData.gender,
+        hair: characterData.appearance.hair,
+        hairColor: characterData.appearance.hairColor,
+        body: characterData.appearance.body
+    });
 
     // 保存角色数据到localStorage
     localStorage.setItem('characterData', JSON.stringify(characterData));
@@ -602,8 +582,13 @@ function enterReality() {
         }
     }
 
-    // 保存初始游戏状态
-    localStorage.setItem('gameState', JSON.stringify(initialGameState));
+    // 保存初始游戏状态到IndexedDB（作为新的自动存档）
+    // 这样会覆盖旧的自动存档，实现"新游戏"的效果
+
+    // 临时保存到localStorage，供game-main.html初始化使用
+    localStorage.setItem('newGameState', JSON.stringify(initialGameState));
+    console.log('✅ 新游戏数据已保存到 localStorage.newGameState');
+    console.log('📋 验证保存:', localStorage.getItem('newGameState') ? '存在' : '不存在');
 
     // 跳转到游戏主界面
     window.location.href = 'game-main.html';

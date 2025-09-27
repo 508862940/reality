@@ -810,6 +810,7 @@ body {
     .preset-selector {
         flex-direction: column;
         align-items: stretch;
+        gap: 15px;
     }
 
     .preset-select {
@@ -820,14 +821,60 @@ body {
         display: flex;
         gap: 10px;
         justify-content: center;
+        flex-wrap: wrap;
     }
 
     .preset-actions {
-        flex-direction: column;
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .preset-btn {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 10px;
+        font-size: 12px;
     }
 
     .save-preset {
         width: 100%;
+    }
+}
+
+/* PWA模式特殊适配 */
+@media (display-mode: standalone) {
+    .settings-panel {
+        padding: 15px;
+    }
+
+    .preset-management-bar {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .preset-selector {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .preset-actions {
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .preset-btn {
+        padding: 10px 12px;
+        min-height: 44px; /* iOS touch target minimum */
+    }
+
+    /* 确保按钮在PWA模式下不会太小 */
+    @media (max-width: 380px) {
+        .preset-btn {
+            font-size: 11px;
+            padding: 8px;
+        }
     }
 }
 

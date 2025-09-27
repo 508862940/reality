@@ -32,14 +32,18 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             // 从gameState加载外观数据
             if (window.gameState && window.gameState.character) {
-                const appearanceData = window.gameState.character.appearanceData;
+                const appearanceData = window.gameState.character.appearanceData || window.gameState.character.appearance;
+                console.log('🎨 从gameState加载外观数据:', appearanceData);
+
                 if (appearanceData) {
-                    // 同步到WorldState
+                    // 同步到WorldState - 在init之前设置！
                     if (window.worldState) {
                         window.worldState.state.player.appearance = appearanceData;
+                        console.log('🎨 已同步外观到WorldState:', window.worldState.state.player.appearance);
                     }
-                    // 加载到立绘管理器
-                    window.portraitManager.updateAppearance(appearanceData);
+                    // 先更新外观，再初始化
+                    window.portraitManager.currentAppearance = appearanceData;
+                    console.log('🎨 已设置立绘管理器外观:', window.portraitManager.currentAppearance);
                 }
 
                 // 如果有角色名，更新它
@@ -47,7 +51,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.portraitManager.updateCharacterName(window.gameState.character.name);
                 }
             }
-            // 初始化立绘显示
+
+            // 最后才初始化立绘显示
             window.portraitManager.init();
             console.log('🎨 立绘系统已初始化');
         }, 100);

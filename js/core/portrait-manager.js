@@ -72,19 +72,46 @@ class PortraitManager {
     init() {
         console.log('🎨 立绘管理器初始化...');
 
-        // 从WorldState获取外观数据
-        if (window.worldState && window.worldState.state.player.appearance) {
-            this.currentAppearance = window.worldState.state.player.appearance;
+        // 如果currentAppearance已经被设置（从存档加载），不要覆盖它
+        if (!this.currentAppearance) {
+            // 从WorldState获取外观数据
+            if (window.worldState && window.worldState.state.player.appearance) {
+                this.currentAppearance = window.worldState.state.player.appearance;
+                console.log('📝 从WorldState获取外观数据:', this.currentAppearance);
+            } else {
+                // 使用默认外观
+                this.currentAppearance = this.getDefaultAppearance();
+                console.log('📝 使用默认外观数据');
+            }
         } else {
-            // 使用默认外观
-            this.currentAppearance = this.getDefaultAppearance();
+            console.log('📝 使用已设置的外观数据:', this.currentAppearance);
         }
 
         // 初始化显示
         this.updatePortrait();
         this.isInitialized = true;
 
-        console.log('✅ 立绘管理器初始化完成');
+        console.log('✅ 立绘管理器初始化完成，当前发色:', this.currentAppearance?.hairColor);
+    }
+
+    /**
+     * 更新角色外观数据
+     */
+    updateAppearance(appearanceData) {
+        if (!appearanceData) return;
+
+        console.log('🎨 更新角色外观:', appearanceData);
+        this.currentAppearance = { ...this.currentAppearance, ...appearanceData };
+
+        // 同步到WorldState
+        if (window.worldState && window.worldState.state.player) {
+            window.worldState.state.player.appearance = this.currentAppearance;
+        }
+
+        // 更新显示
+        if (this.isInitialized) {
+            this.updatePortrait();
+        }
     }
 
     /**

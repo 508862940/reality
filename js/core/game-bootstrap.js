@@ -388,7 +388,10 @@ class GameBootstrap {
                     // 应用开局季节
                     if (settings.startSeason && window.weatherSystem) {
                         console.log('🌍 应用开局季节:', settings.startSeason);
-                        window.weatherSystem.setSeason(settings.startSeason);
+                        // weatherSystem没有setSeason方法，直接设置currentSeason属性
+                        window.weatherSystem.currentSeason = settings.startSeason;
+                        window.weatherSystem.generateWeather(); // 重新生成天气
+                        window.weatherSystem.updateWeatherDisplay(); // 更新显示
                     }
                 }
             }

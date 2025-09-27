@@ -88,6 +88,15 @@ async function initializeGame() {
                     spirit: gameState.character.spirit || 60
                 };
                 window.worldState.state.player.position.location = gameState.character.location || 'awakening_room';
+
+                // 同步外观数据 - 优先使用appearanceData，如果没有则使用appearance
+                if (gameState.character.appearanceData) {
+                    window.worldState.state.player.appearance = gameState.character.appearanceData;
+                    console.log('📝 同步appearanceData到worldState:', gameState.character.appearanceData);
+                } else if (gameState.character.appearance) {
+                    window.worldState.state.player.appearance = gameState.character.appearance;
+                    console.log('📝 同步appearance到worldState:', gameState.character.appearance);
+                }
             }
 
             if (gameState.gameTime) {
@@ -249,6 +258,41 @@ async function loadGameState() {
             }
         }
 
+        // 检查是否是新游戏（从角色创建来的）
+        console.log('🔍 开始检查 newGameState...');
+        const newGameState = localStorage.getItem('newGameState');
+        console.log('🔍 newGameState 内容:', newGameState ? `存在，长度 ${newGameState.length}` : '不存在');
+
+        if (newGameState) {
+            console.log('🎮 检测到新游戏数据');
+            gameState = JSON.parse(newGameState);
+            window.gameState = gameState;
+
+            // 清除临时标记
+            localStorage.removeItem('newGameState');
+
+            console.log('🎉 使用新创建的角色数据');
+            console.log('👤 角色外观:', gameState.character?.appearanceData);
+            console.log('📋 详细外观数据：', {
+                appearance: gameState.character?.appearance,
+                appearanceData: gameState.character?.appearanceData,
+                gender: gameState.character?.gender
+            });
+
+            // 立即保存为自动存档（覆盖旧的）
+            if (window.saveSystem) {
+                try {
+                    // 创建初始的世界状态快照
+                    await window.saveSystem.autoSave();
+                    console.log('✅ 新游戏数据已保存为自动存档');
+                } catch (error) {
+                    console.error('保存新游戏自动存档失败:', error);
+                }
+            }
+
+            return;
+        }
+
         // 检查是否有自动存档（页面刷新时自动恢复）
         if (window.saveSystem) {
             console.log('🔍 正在检查自动存档...');
@@ -292,14 +336,21 @@ async function loadGameState() {
             }
         }
 
-        // 如果没有自动存档，从IndexedDB加载当前游戏状态
-        if (window.Database && window.Database.db) {
-            const savedState = await window.Database.loadGameState();
-            if (savedState) {
-                gameState = savedState;
-                window.gameState = gameState; // 同步到全局
-                console.log('✅ 从IndexedDB加载游戏状态:', gameState);
-                return;
+        // 如果没有自动存档，检查是否有新游戏数据
+        const checkNewGame = localStorage.getItem('newGameState');
+        if (checkNewGame) {
+            console.log('🎮 发现待处理的新游戏数据，优先处理');
+            // 不在这里处理，让下面的代码处理
+        } else {
+            // 只有在没有新游戏数据时，才从IndexedDB加载
+            if (window.Database && window.Database.db) {
+                const savedState = await window.Database.loadGameState();
+                if (savedState) {
+                    gameState = savedState;
+                    window.gameState = gameState; // 同步到全局
+                    console.log('✅ 从IndexedDB加载游戏状态:', gameState);
+                    return;
+                }
             }
         }
 

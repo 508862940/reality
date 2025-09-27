@@ -334,6 +334,9 @@ body {
     display: flex;
     flex-direction: column;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 0; /* PWA关键：允许flex项目收缩 */
+    overflow: hidden; /* 防止内容溢出容器 */
+    position: relative; /* 为滚动条定位 */
 }
 
 /* 功能按钮栏 */
@@ -377,30 +380,36 @@ body {
     padding: 8px;
     color: #e4e4e7;
     font-size: 13px;
-    max-height: calc(100% - 48px); /* 减去标签栏高度 */
-    /* 移动端触摸滚动优化 */
+    min-height: 0; /* PWA关键：允许内容区正确收缩 */
+    /* PWA触摸滚动优化 */
     -webkit-overflow-scrolling: touch; /* iOS流畅滚动 */
     overscroll-behavior: contain; /* 防止滚动链传递 */
-    /* 移除touch-action限制，让系统自己处理 */
+    scroll-behavior: smooth; /* 平滑滚动效果 */
+    /* 确保PWA中可以滚动 */
+    touch-action: pan-y; /* 只允许垂直滚动 */
 }
 
-/* D区滚动条样式 - Webkit */
+/* D区滚动条样式 - PWA优化版 */
+/* 默认：极简透明滚动条 */
 .function-content::-webkit-scrollbar {
-    width: 6px;
+    width: 4px; /* PWA更细的滚动条 */
+    height: 4px;
 }
 
 .function-content::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    background: transparent; /* PWA完全透明轨道 */
+    border-radius: 2px;
 }
 
 .function-content::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
-    border-radius: 3px;
+    background: rgba(139, 92, 246, 0.15); /* PWA超低透明度 */
+    border-radius: 2px;
+    transition: background 0.3s ease;
 }
 
-.function-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.5);
+/* 仅在悬停时稍微显示 */
+.function-content:hover::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.25); /* 悬停时稍微明显一点 */
 }
 
 /* D区滚动条样式 */
@@ -1380,30 +1389,31 @@ body {
         -ms-overflow-style: none;
     }
 
-    /* D区透明滚动条 - 仅在滚动时显示 */
+    /* PWA移动端：隐形滚动条 */
     .function-content::-webkit-scrollbar {
-        width: 4px; /* 更细的滚动条 */
+        width: 2px; /* PWA极细滚动条 */
+        opacity: 0; /* 默认完全透明 */
     }
 
     .function-content::-webkit-scrollbar-track {
-        background: transparent; /* 完全透明的轨道 */
+        background: transparent; /* 无轨道 */
     }
 
     .function-content::-webkit-scrollbar-thumb {
-        background: rgba(139, 92, 246, 0.15); /* 很透明的滑块 */
-        border-radius: 2px;
-        transition: background 0.3s ease;
+        background: rgba(139, 92, 246, 0.08); /* PWA几乎看不见 */
+        border-radius: 1px;
     }
 
-    /* 滚动时稍微显示一点 */
-    .function-content:hover::-webkit-scrollbar-thumb {
-        background: rgba(139, 92, 246, 0.25);
+    /* PWA滚动时临时显示 */
+    .function-content:active::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.15); /* 滚动时稍微可见 */
     }
 
-    /* 确保D区内容可以滚动 */
+    /* 确保PWA中D区正常滚动 */
     .function-content {
-        overflow-y: scroll; /* 强制显示滚动区域 */
-        -webkit-overflow-scrolling: touch;
+        overflow-y: auto; /* auto而非scroll，避免始终显示滚动条 */
+        -webkit-overflow-scrolling: touch; /* iOS必需 */
+        will-change: scroll-position; /* 优化滚动性能 */
     }
 }
 
