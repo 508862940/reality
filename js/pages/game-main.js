@@ -2397,7 +2397,20 @@ function initTimeDetailTooltip() {
     function showTooltip() {
         tooltip.innerHTML = updateTooltipContent();
         const rect = timeElement.getBoundingClientRect();
-        tooltip.style.left = (rect.left + rect.width / 2) + "px";
+        // 确保浮层不超出屏幕边界
+        const tooltipWidth = 260; // 预估宽度
+        let left = rect.left + rect.width / 2;
+        
+        // 防止超出右边界
+        if (left + tooltipWidth / 2 > window.innerWidth - 10) {
+            left = window.innerWidth - tooltipWidth / 2 - 10;
+        }
+        // 防止超出左边界
+        if (left - tooltipWidth / 2 < 10) {
+            left = tooltipWidth / 2 + 10;
+        }
+        
+        tooltip.style.left = left + "px";
         tooltip.style.top = (rect.bottom + 10) + "px";
         tooltip.style.transform = "translateX(-50%)";
         requestAnimationFrame(() => {

@@ -265,6 +265,7 @@ body {
     font-size: 12px;
     color: #e4e4e7;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;  /* 防止内容溢出 */
 }
 
 .location-info, .time-info {
@@ -273,10 +274,12 @@ body {
     gap: 5px;
     white-space: nowrap;
     flex-shrink: 0;
+    max-width: 48%;  /* 限制最大宽度，避免挤压 */
 }
 
 .time-info {
     min-width: fit-content;
+    justify-content: flex-end;  /* 右对齐 */
 }
 
 .location-icon, .time-icon {
@@ -288,6 +291,18 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* 移动端优化：隐藏季节图标，缩短日期格式 */
+@media (max-width: 430px) {
+    #currentTime {
+        font-size: 11px;  /* 稍微缩小字体 */
+    }
+
+    #currentLocation {
+        font-size: 11px;
+        max-width: 100px;  /* 限制位置文本宽度 */
+    }
 }
 
 /* 时间详情浮层（长按显示） */
@@ -302,18 +317,20 @@ body {
     z-index: 10000;
     pointer-events: none;
     opacity: 0;
-    transform: scale(0.8);
+    transform: scale(0.8) translateX(-50%);
     transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
                 0 0 20px rgba(139, 92, 246, 0.3);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     min-width: 220px;
+    max-width: 280px;
+    left: 50%;
 }
 
 .time-detail-tooltip.show {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateX(-50%);
 }
 
 .time-detail-tooltip::before {
