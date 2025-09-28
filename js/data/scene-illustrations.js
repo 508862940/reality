@@ -22,10 +22,12 @@ const SceneIllustrations = {
                 caption: '舒适的床',
                 description: '柔软的被子让人不想起床。'
             },
-            'choice_2': { // 查看手机
+            'choice_2': { // 查看手机 - 使用浮层显示
                 emoji: '📱',
                 caption: '手机屏幕',
-                description: '有几条未读消息和通知。'
+                description: '有几条未读消息和通知。',
+                type: 'modal',  // 标记为浮层显示
+                title: '手机界面'
             }
         }
     },
@@ -274,6 +276,39 @@ function getCombinationIllustration(sceneId, items) {
 
     return scene.choices[comboKey] || null;
 }
+
+// 添加更多演示用的场景插图（展示浮层功能）
+SceneIllustrations['modal_demo'] = {
+    default: {
+        emoji: '🎨',
+        caption: '浮层演示',
+        description: '这是一个使用浮层显示的插图示例',
+        type: 'modal',
+        title: '插图浮层系统',
+        isLarge: true
+    }
+};
+
+// 为现有的awakening场景添加浮层插图
+SceneIllustrations['awakening'] = {
+    default: {
+        emoji: '🏥',
+        caption: '神秘的房间',
+        description: '你在一个陌生的白色房间中醒来，墙上的监控摄像头正对着你...',
+        type: 'modal',
+        title: '苏醒之地',
+        isLarge: true
+    },
+    choices: {
+        'examine_mirror': {
+            emoji: '🪞',
+            caption: '墙上的镜子',
+            description: '镜子里映出一个陌生又熟悉的面孔，你的瞳孔中似乎有数字在闪烁...',
+            type: 'modal',
+            title: '镜中倒影'
+        }
+    }
+};
 
 // 导出
 window.SceneIllustrations = SceneIllustrations;

@@ -12,10 +12,21 @@ class WorldState {
 
             // 世界时间（核心驱动）
             time: {
+                // 核心：总分钟数（180天年历）
+                totalMinutes: 450,  // 第1年春季3月8日 07:30
+
+                // 新年历系统
+                year: 1,
+                month: 3,
+                dayOfMonth: 8,
+                dayOfYear: 8,
+                season: 'spring',
+
+                // 基础时间（兼容旧版）
                 day: 1,
                 hour: 7,
                 minute: 30,
-                weekday: 1
+                weekday: 1  // 1-5（一周5天）
             },
 
             // 环境
@@ -698,8 +709,18 @@ class WorldState {
 
         // 连接时间系统
         if (window.timeSystem) {
-            // 同步时间
-            window.timeSystem.currentTime = this.state.time;
+            // 如果有totalMinutes，使用新系统
+            if (this.state.time.totalMinutes !== undefined) {
+                window.timeSystem.totalMinutes = this.state.time.totalMinutes;
+                window.timeSystem.currentTime = window.timeSystem.calculateTimeFromMinutes(this.state.time.totalMinutes);
+            } else {
+                // 兼容旧存档：从day/hour/minute计算
+                const day = this.state.time.day || 1;
+                const hour = this.state.time.hour || 0;
+                const minute = this.state.time.minute || 0;
+                window.timeSystem.totalMinutes = (day - 1) * 24 * 60 + hour * 60 + minute;
+                window.timeSystem.currentTime = window.timeSystem.calculateTimeFromMinutes(window.timeSystem.totalMinutes);
+            }
         }
 
         // 连接关系系统
@@ -749,7 +770,18 @@ class WorldState {
 
         // 更新时间系统
         if (window.timeSystem && this.state.time) {
-            window.timeSystem.currentTime = this.state.time;
+            // 如果有totalMinutes，使用新系统
+            if (this.state.time.totalMinutes !== undefined) {
+                window.timeSystem.totalMinutes = this.state.time.totalMinutes;
+                window.timeSystem.currentTime = window.timeSystem.calculateTimeFromMinutes(this.state.time.totalMinutes);
+            } else {
+                // 兼容旧存档
+                const day = this.state.time.day || 1;
+                const hour = this.state.time.hour || 0;
+                const minute = this.state.time.minute || 0;
+                window.timeSystem.totalMinutes = (day - 1) * 24 * 60 + hour * 60 + minute;
+                window.timeSystem.currentTime = window.timeSystem.calculateTimeFromMinutes(window.timeSystem.totalMinutes);
+            }
             // 如果有更新时间显示的函数，调用它
             if (window.updateLocationTime) {
                 window.updateLocationTime();

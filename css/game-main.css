@@ -290,6 +290,90 @@ body {
     text-overflow: ellipsis;
 }
 
+/* 时间详情浮层（长按显示） */
+.time-detail-tooltip {
+    position: fixed;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(45, 45, 75, 0.98));
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    border-radius: 12px;
+    padding: 15px 20px;
+    color: white;
+    font-size: 14px;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(139, 92, 246, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    min-width: 220px;
+}
+
+.time-detail-tooltip.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.time-detail-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid rgba(139, 92, 246, 0.5);
+}
+
+.time-detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.time-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.time-detail-row:last-child {
+    border-bottom: none;
+}
+
+.time-detail-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+
+.time-detail-value {
+    color: #fff;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.time-detail-highlight {
+    color: #8b5cf6;
+    text-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+/* PWA适配：确保触摸反馈 */
+#currentTime {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(139, 92, 246, 0.2);
+    transition: color 0.2s ease;
+}
+
+#currentTime:active {
+    color: #8b5cf6;
+}
+
 
 /* C区 - 景色预览 */
 .area-c {
@@ -2609,4 +2693,258 @@ body {
     padding: 40px;
     color: rgba(255, 255, 255, 0.4);
     font-style: italic;
+}
+
+/* ===== 插图浮层模态框样式 ===== */
+.illustration-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.illustration-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* 模态框内容 */
+.illustration-modal-content {
+    background: linear-gradient(135deg, #1e1e2e, #2a2a3e);
+    border-radius: 20px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 100px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: scale(0.8) translateY(20px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.illustration-modal-overlay.active .illustration-modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* 模态框头部 */
+.illustration-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.illustration-modal-title {
+    color: #f093fb;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.illustration-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #e4e4e7;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    font-size: 18px;
+}
+
+.illustration-modal-close:hover {
+    background: rgba(255, 71, 87, 0.2);
+    transform: rotate(90deg);
+}
+
+/* 模态框主体 */
+.illustration-modal-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.illustration-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.illustration-modal-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.illustration-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 4px;
+}
+
+/* 插图容器 */
+.illustration-modal-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.illustration-modal-image {
+    width: 100%;
+    max-width: 600px;
+    min-height: 200px;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(240, 147, 251, 0.1));
+    border: 2px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 120px;
+    position: relative;
+    overflow: hidden;
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+}
+
+.illustration-modal-image:hover {
+    transform: scale(1.02);
+}
+
+.illustration-modal-image.zoomed {
+    cursor: zoom-out;
+    transform: scale(1.5);
+}
+
+/* 真实图片样式 */
+.illustration-modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* 插图信息 */
+.illustration-modal-info {
+    text-align: center;
+    max-width: 600px;
+}
+
+.illustration-modal-caption {
+    color: #e4e4e7;
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.illustration-modal-desc {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* 模态框底部 */
+.illustration-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    justify-content: center;
+}
+
+.illustration-modal-action {
+    padding: 10px 24px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #e4e4e7;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.illustration-modal-action:hover {
+    background: rgba(139, 92, 246, 0.3);
+    transform: translateY(-1px);
+}
+
+.illustration-modal-action.primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+}
+
+/* 加载动画 */
+.illustration-loading {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(139, 92, 246, 0.1);
+    border-top-color: #8b92f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* PWA移动端优化 */
+@media (max-width: 768px) {
+    .illustration-modal-content {
+        max-width: 95%;
+        max-height: 90vh;
+    }
+
+    .illustration-modal-image {
+        font-size: 80px;
+    }
+
+    .illustration-modal-header {
+        padding: 15px;
+    }
+
+    .illustration-modal-body {
+        padding: 15px;
+    }
+}
+
+/* 触摸设备优化 */
+@media (pointer: coarse) {
+    .illustration-modal-image {
+        touch-action: pinch-zoom;
+    }
+
+    .illustration-modal-close {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
 }

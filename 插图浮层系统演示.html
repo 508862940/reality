@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>插图浮层系统演示 - Reality游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* 游戏容器 */
+        .game-container {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 430px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .title {
+            color: #f093fb;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* F1区模拟 */
+        .f1-area {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 20px;
+            color: #e4e4e7;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .f1-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .f1-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .f1-area::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 2px;
+        }
+
+        .location-tag {
+            color: #8b92f6;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .story-text {
+            margin-bottom: 20px;
+        }
+
+        .story-text p {
+            margin-bottom: 12px;
+        }
+
+        /* 内嵌插图提示 */
+        .inline-illustration-hint {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, rgba(240, 147, 251, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(240, 147, 251, 0.3);
+            border-radius: 16px;
+            color: #f093fb;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+        }
+
+        .inline-illustration-hint:hover {
+            background: linear-gradient(135deg, rgba(240, 147, 251, 0.2), rgba(139, 92, 246, 0.2));
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(240, 147, 251, 0.2);
+        }
+
+        .inline-illustration-hint::before {
+            content: "🖼️ ";
+            margin-right: 4px;
+        }
+
+        /* 选项 */
+        .choice-item {
+            display: block;
+            padding: 12px 16px;
+            margin: 10px 0;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            color: #a5b4fc;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .choice-item:hover {
+            background: rgba(139, 92, 246, 0.2);
+            transform: translateX(5px);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+
+        /* 有插图的选项标记 */
+        .choice-item.has-illustration::after {
+            content: "🖼️";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        /* F2区模拟 */
+        .f2-area {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(30, 30, 45, 0.95);
+            border-radius: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #e4e4e7;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .zoom-btn {
+            background: rgba(240, 147, 251, 0.2);
+            border-color: rgba(240, 147, 251, 0.3);
+        }
+
+        .zoom-btn.has-content::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            background: #f093fb;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        /* ===== 核心：浮层模态框 ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0);
+            backdrop-filter: blur(0px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        /* 模态框内容 */
+        .modal-content {
+            background: linear-gradient(135deg, #1e1e2e, #2a2a3e);
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 100px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: scale(0.8) translateY(20px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        /* 模态框头部 */
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-title {
+            color: #f093fb;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #e4e4e7;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 18px;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 71, 87, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* 模态框主体 */
+        .modal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 4px;
+        }
+
+        /* 插图容器 */
+        .illustration-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .illustration-image {
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(240, 147, 251, 0.1));
+            border: 2px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            position: relative;
+            overflow: hidden;
+            cursor: zoom-in;
+            transition: transform 0.3s ease;
+        }
+
+        .illustration-image:hover {
+            transform: scale(1.02);
+        }
+
+        .illustration-image.zoomed {
+            cursor: zoom-out;
+            transform: scale(1.5);
+        }
+
+        /* 插图描述 */
+        .illustration-info {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .illustration-caption {
+            color: #e4e4e7;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .illustration-desc {
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* 模态框底部 */
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-action {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #e4e4e7;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .modal-action:hover {
+            background: rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .modal-action.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+        }
+
+        /* 多图指示器 */
+        .image-indicators {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .indicator-dot.active {
+            width: 24px;
+            border-radius: 4px;
+            background: #f093fb;
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(139, 92, 246, 0.1);
+            border-top-color: #8b92f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* PWA触摸优化 */
+        @media (pointer: coarse) {
+            .modal-content {
+                max-height: 90vh;
+            }
+
+            .illustration-image {
+                touch-action: pinch-zoom;
+            }
+        }
+
+        /* 提示信息 */
+        .tips {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            color: #fbbf24;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">🎨 插图浮层系统演示</h1>
+
+        <!-- F1区 -->
+        <div class="f1-area">
+            <div class="location-tag">📍 废弃的实验室</div>
+            <div class="story-text">
+                <p>昏暗的应急灯光下，实验室显得格外诡异。</p>
+                <p>墙上贴满了复杂的图表和公式，其中一张特别引人注目...</p>
+
+                <span class="inline-illustration-hint" onclick="showIllustration('diagram')">
+                    查看墙上的神秘图表
+                </span>
+
+                <p>桌上散落着各种实验器材，一本打开的日记本吸引了你的注意。</p>
+                <p>你该如何选择？</p>
+            </div>
+
+            <div class="choice-item has-illustration" onclick="showIllustration('diary')">
+                → 查看日记本
+            </div>
+            <div class="choice-item has-illustration" onclick="showIllustration('device')">
+                → 检查实验设备
+            </div>
+            <div class="choice-item" onclick="selectChoice(this)">
+                → 离开实验室
+            </div>
+            <div class="choice-item has-illustration" onclick="showIllustration('photo')">
+                → 拿起桌上的照片
+            </div>
+        </div>
+
+        <!-- F2区 -->
+        <div class="f2-area">
+            <button class="control-btn" onclick="continueStory()">▶️ 继续</button>
+            <button class="control-btn" onclick="resetScene()">↩️ 重置</button>
+            <button class="control-btn zoom-btn has-content" onclick="showIllustration('scene')">
+                🔍 场景
+            </button>
+        </div>
+
+        <!-- 提示 -->
+        <div class="tips">
+            💡 <strong>演示说明：</strong><br>
+            • 点击文本中的提示或带🖼️的选项查看插图<br>
+            • 浮层支持点击图片放大、ESC关闭<br>
+            • 未来可扩展为手机界面、日记本、烹饪界面等
+        </div>
+    </div>
+
+    <!-- 浮层模态框 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeOnBackground(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">插图标题</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="illustration-container">
+                    <div class="illustration-image" id="illustrationImage" onclick="toggleZoom()">
+                        <!-- 插图内容 -->
+                    </div>
+
+                    <div class="illustration-info">
+                        <div class="illustration-caption" id="illustrationCaption">
+                            插图说明
+                        </div>
+                        <div class="illustration-desc" id="illustrationDesc">
+                            详细描述
+                        </div>
+                    </div>
+
+                    <!-- 多图指示器（未来扩展） -->
+                    <div class="image-indicators" id="imageIndicators" style="display: none;">
+                        <span class="indicator-dot active"></span>
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-dot"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="modal-action" onclick="previousImage()" id="prevBtn" style="display: none;">
+                    ⬅️ 上一张
+                </button>
+                <button class="modal-action primary" onclick="closeModal()">
+                    确定
+                </button>
+                <button class="modal-action" onclick="nextImage()" id="nextBtn" style="display: none;">
+                    下一张 ➡️
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 插图数据库
+        const illustrations = {
+            scene: {
+                emoji: '🏚️',
+                title: '废弃的实验室',
+                caption: '「尘封已久的秘密基地」',
+                desc: '这个实验室似乎已经废弃了很久，但奇怪的是，某些设备似乎还在运转...'
+            },
+            diagram: {
+                emoji: '📊',
+                title: '神秘的实验图表',
+                caption: '「Project: Reality」',
+                desc: '图表上详细记录着某种人体改造计划，其中"User"和"Zero"的代号反复出现。红色的线条连接着各个节点，最中心写着"记忆植入"四个大字。'
+            },
+            diary: {
+                emoji: '📔',
+                title: '研究员的日记',
+                caption: '「2024年3月15日 - 最后的记录」',
+                desc: '字迹潦草："实验体觉醒了自我意识...这不在计划之内...B组织的人要来了...必须销毁一切证据..."'
+            },
+            device: {
+                emoji: '🔬',
+                title: '奇怪的实验设备',
+                caption: '「记忆扫描仪 MK-VII」',
+                desc: '设备的显示屏还在微微发光，上面显示着"最后扫描：72小时前"。旁边的培养皿里有一些发光的液体。'
+            },
+            photo: {
+                emoji: '📷',
+                title: '泛黄的合影',
+                caption: '「实验团队 - 2023」',
+                desc: '照片上有五个穿着白大褂的研究员，其中一个人的脸被刻意涂黑了。背景是这个实验室，但看起来要整洁得多。'
+            }
+        };
+
+        let currentIllustration = null;
+        let isZoomed = false;
+
+        // 显示插图
+        function showIllustration(type) {
+            const data = illustrations[type];
+            if (!data) return;
+
+            currentIllustration = data;
+
+            // 更新模态框内容
+            document.getElementById('modalTitle').textContent = data.title;
+            document.getElementById('illustrationImage').innerHTML = data.emoji;
+            document.getElementById('illustrationCaption').textContent = data.caption;
+            document.getElementById('illustrationDesc').textContent = data.desc;
+
+            // 显示模态框
+            const overlay = document.getElementById('modalOverlay');
+            overlay.classList.add('active');
+
+            // 重置缩放
+            isZoomed = false;
+            document.getElementById('illustrationImage').classList.remove('zoomed');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            const overlay = document.getElementById('modalOverlay');
+            overlay.classList.remove('active');
+
+            // 延迟清理内容
+            setTimeout(() => {
+                currentIllustration = null;
+                isZoomed = false;
+            }, 400);
+        }
+
+        // 点击背景关闭
+        function closeOnBackground(event) {
+            if (event.target === event.currentTarget) {
+                closeModal();
+            }
+        }
+
+        // 切换缩放
+        function toggleZoom() {
+            const image = document.getElementById('illustrationImage');
+            isZoomed = !isZoomed;
+
+            if (isZoomed) {
+                image.classList.add('zoomed');
+            } else {
+                image.classList.remove('zoomed');
+            }
+        }
+
+        // 选择选项
+        function selectChoice(element) {
+            // 添加选中效果
+            element.style.background = 'rgba(139, 92, 246, 0.3)';
+
+            setTimeout(() => {
+                element.style.background = '';
+                continueStory();
+            }, 300);
+        }
+
+        // 继续故事
+        function continueStory() {
+            const f1 = document.querySelector('.f1-area');
+            f1.style.opacity = '0.5';
+
+            setTimeout(() => {
+                f1.innerHTML = `
+                    <div class="location-tag">📍 实验室深处</div>
+                    <div class="story-text">
+                        <p>你的选择推动了故事的发展...</p>
+                        <p>新的场景已加载。</p>
+                    </div>
+                `;
+                f1.style.opacity = '1';
+            }, 300);
+        }
+
+        // 重置场景
+        function resetScene() {
+            location.reload();
+        }
+
+        // ESC键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // 触摸手势支持（PWA）
+        let touchStartY = 0;
+        const modalBody = document.querySelector('.modal-body');
+
+        modalBody?.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+
+        modalBody?.addEventListener('touchend', (e) => {
+            const touchEndY = e.changedTouches[0].clientY;
+            const diff = touchStartY - touchEndY;
+
+            // 下滑关闭
+            if (diff < -100) {
+                closeModal();
+            }
+        });
+
+        // 防止iOS橡皮筋效果
+        document.body.addEventListener('touchmove', (e) => {
+            if (document.getElementById('modalOverlay').classList.contains('active')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>

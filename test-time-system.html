@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间系统测试 - 180天年历</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .time-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        .time-format {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .season-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .info-card {
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 5px;
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            border: 2px solid #4caf50;
+        }
+        .test-pass {
+            color: #2e7d32;
+        }
+        .test-fail {
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏰ Reality游戏时间系统测试</h1>
+
+        <div class="time-display">
+            <h2>当前游戏时间</h2>
+            <div class="time-format">
+                <strong>简短格式:</strong> <span id="short">-</span>
+            </div>
+            <div class="time-format">
+                <strong>日期格式:</strong> <span id="date">-</span>
+            </div>
+            <div class="time-format">
+                <strong>详细格式:</strong> <span id="detail">-</span>
+            </div>
+            <div class="time-format">
+                <strong>图标格式:</strong> <span id="icon">-</span>
+            </div>
+            <div class="time-format">
+                <strong>完整格式:</strong> <span id="full">-</span>
+            </div>
+        </div>
+
+        <div class="season-info">
+            <div class="info-card">
+                <div class="info-label">总分钟数</div>
+                <div class="info-value" id="totalMinutes">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">年份</div>
+                <div class="info-value" id="year">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">季节</div>
+                <div class="info-value" id="season">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">月份</div>
+                <div class="info-value" id="month">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">月内日期</div>
+                <div class="info-value" id="dayOfMonth">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">年内天数</div>
+                <div class="info-value" id="dayOfYear">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">节日</div>
+                <div class="info-value" id="holiday">无</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">星期</div>
+                <div class="info-value" id="weekday">-</div>
+            </div>
+            <div class="info-card">
+                <div class="info-label">休息日</div>
+                <div class="info-value" id="restDay">-</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="advanceTime(1)">+1分钟</button>
+            <button onclick="advanceTime(30)">+30分钟</button>
+            <button onclick="advanceTime(60)">+1小时</button>
+            <button onclick="advanceTime(60*6)">+6小时</button>
+            <button onclick="advanceTime(60*24)">+1天</button>
+            <button onclick="advanceTime(60*24*15)">+1月(15天)</button>
+            <button onclick="advanceTime(60*24*45)">+1季(45天)</button>
+            <button onclick="jumpToSeason('spring')">跳到春季</button>
+            <button onclick="jumpToSeason('summer')">跳到夏季</button>
+            <button onclick="jumpToSeason('autumn')">跳到秋季</button>
+            <button onclick="jumpToSeason('winter')">跳到冬季</button>
+            <button onclick="testSaveLoad()">测试存档</button>
+            <button onclick="testOldSave()">测试旧存档兼容</button>
+        </div>
+
+        <div class="test-results" id="testResults" style="display: none;">
+            <h3>测试结果</h3>
+            <div id="testContent"></div>
+        </div>
+
+        <div class="log">
+            <strong>事件日志：</strong>
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <!-- 加载时间系统 -->
+    <script src="js/core/time-system.js"></script>
+    <script>
+        // 开启调试模式
+        window.timeSystem.setDebugMode(true);
+
+        // 日志记录
+        function addLog(message) {
+            const logContent = document.getElementById('logContent');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.insertBefore(entry, logContent.firstChild);
+
+            // 限制日志条数
+            while (logContent.children.length > 10) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            const time = window.timeSystem.currentTime;
+
+            // 更新各种格式
+            document.getElementById('short').textContent = window.timeSystem.formatTime('short');
+            document.getElementById('date').textContent = window.timeSystem.formatTime('date');
+            document.getElementById('detail').textContent = window.timeSystem.formatTime('detail');
+            document.getElementById('icon').textContent = window.timeSystem.formatTime('icon');
+            document.getElementById('full').textContent = window.timeSystem.formatTime('full');
+
+            // 更新详细信息
+            document.getElementById('totalMinutes').textContent = window.timeSystem.totalMinutes;
+            document.getElementById('year').textContent = time.year;
+            document.getElementById('season').textContent =
+                window.timeSystem.getSeasonIcon() + ' ' + window.timeSystem.getSeasonName();
+            document.getElementById('month').textContent = time.month + '月';
+            document.getElementById('dayOfMonth').textContent = time.dayOfMonth + '日';
+            document.getElementById('dayOfYear').textContent = time.dayOfYear + '/180';
+
+            // 检查节日
+            const holiday = window.timeSystem.isHoliday();
+            document.getElementById('holiday').textContent = holiday || '无';
+
+            // 星期和休息日
+            document.getElementById('weekday').textContent = window.timeSystem.getWeekdayName();
+            document.getElementById('restDay').textContent = window.timeSystem.isRestDay() ? '是' : '否';
+        }
+
+        // 推进时间
+        function advanceTime(minutes) {
+            const result = window.timeSystem.advanceTime(minutes);
+
+            if (result) {
+                addLog(`时间推进 ${minutes} 分钟`);
+
+                if (result.dayChanged) {
+                    addLog('🌅 新的一天！');
+                }
+                if (result.monthChanged) {
+                    addLog('📅 进入新月份！');
+                }
+                if (result.seasonChanged) {
+                    addLog(`🌍 季节变化：${window.timeSystem.getSeasonName()}`);
+                }
+                if (result.yearChanged) {
+                    addLog('🎊 新年到了！');
+                }
+            }
+
+            updateDisplay();
+        }
+
+        // 跳转到特定季节
+        function jumpToSeason(season) {
+            const seasonStartDays = {
+                'spring': 1,
+                'summer': 46,
+                'autumn': 91,
+                'winter': 136
+            };
+
+            const targetDay = seasonStartDays[season];
+            window.timeSystem.setTime({
+                year: 1,
+                month: season === 'spring' ? 3 : season === 'summer' ? 6 : season === 'autumn' ? 9 : 12,
+                dayOfMonth: 1,
+                hour: 8,
+                minute: 0
+            });
+
+            addLog(`跳转到${window.timeSystem.getSeasonName()}`);
+            updateDisplay();
+        }
+
+        // 测试存档功能
+        function testSaveLoad() {
+            const testContent = document.getElementById('testContent');
+            const results = document.getElementById('testResults');
+            results.style.display = 'block';
+            testContent.innerHTML = '';
+
+            // 保存当前状态
+            const saved = window.timeSystem.save();
+            testContent.innerHTML += `<div class="test-pass">✅ 保存成功</div>`;
+            testContent.innerHTML += `<div>存档数据: ${JSON.stringify(saved, null, 2)}</div>`;
+
+            // 修改时间
+            window.timeSystem.advanceTime(60 * 24 * 30);
+            testContent.innerHTML += `<div>时间推进30天后: ${window.timeSystem.formatTime('full')}</div>`;
+
+            // 恢复存档
+            window.timeSystem.load(saved);
+            testContent.innerHTML += `<div class="test-pass">✅ 读档成功</div>`;
+            testContent.innerHTML += `<div>恢复后: ${window.timeSystem.formatTime('full')}</div>`;
+
+            // 验证
+            if (window.timeSystem.totalMinutes === saved.totalMinutes) {
+                testContent.innerHTML += `<div class="test-pass">✅ 时间恢复正确！</div>`;
+                addLog('存档测试通过');
+            } else {
+                testContent.innerHTML += `<div class="test-fail">❌ 时间恢复错误！</div>`;
+                addLog('存档测试失败');
+            }
+
+            updateDisplay();
+        }
+
+        // 测试旧存档兼容性
+        function testOldSave() {
+            const testContent = document.getElementById('testContent');
+            const results = document.getElementById('testResults');
+            results.style.display = 'block';
+            testContent.innerHTML = '';
+
+            // 模拟旧版本存档
+            const oldSave = {
+                currentTime: {
+                    day: 10,
+                    hour: 14,
+                    minute: 30,
+                    weekday: 3
+                },
+                version: '1.0'
+            };
+
+            testContent.innerHTML += `<div>旧存档数据: ${JSON.stringify(oldSave, null, 2)}</div>`;
+
+            // 加载旧存档
+            window.timeSystem.load(oldSave);
+            testContent.innerHTML += `<div class="test-pass">✅ 旧存档加载成功</div>`;
+
+            // 显示转换后的数据
+            testContent.innerHTML += `<div>转换后时间: ${window.timeSystem.formatTime('full')}</div>`;
+            testContent.innerHTML += `<div>总分钟数: ${window.timeSystem.totalMinutes}</div>`;
+
+            // 验证
+            const expectedMinutes = (10 - 1) * 24 * 60 + 14 * 60 + 30;
+            if (window.timeSystem.totalMinutes === expectedMinutes) {
+                testContent.innerHTML += `<div class="test-pass">✅ 旧存档转换正确！</div>`;
+                addLog('旧存档兼容性测试通过');
+            } else {
+                testContent.innerHTML += `<div class="test-fail">❌ 转换错误！期望 ${expectedMinutes}，实际 ${window.timeSystem.totalMinutes}</div>`;
+                addLog('旧存档兼容性测试失败');
+            }
+
+            updateDisplay();
+        }
+
+        // 监听时间变化
+        window.timeSystem.addTimeListener((change) => {
+            updateDisplay();
+        });
+
+        // 初始更新
+        updateDisplay();
+        addLog('时间系统测试页面加载完成');
+    </script>
+</body>
+</html>

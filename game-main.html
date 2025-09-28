@@ -229,6 +229,39 @@
     <!-- 加载高级游戏系统（如果需要） -->
     <!-- <script src="js/core/advanced-game.js"></script> -->
 
+    <!-- 插图浮层模态框 -->
+    <div class="illustration-modal-overlay" id="illustrationModal" onclick="window.illustrationManager?.closeModalOnBackground(event)">
+        <div class="illustration-modal-content" onclick="event.stopPropagation()">
+            <div class="illustration-modal-header">
+                <h3 class="illustration-modal-title" id="illustrationModalTitle">插图</h3>
+                <button class="illustration-modal-close" onclick="window.illustrationManager?.closeModal()">✕</button>
+            </div>
+
+            <div class="illustration-modal-body">
+                <div class="illustration-modal-container">
+                    <div class="illustration-modal-image" id="illustrationModalImage" onclick="window.illustrationManager?.toggleZoom()">
+                        <!-- 插图内容 -->
+                    </div>
+
+                    <div class="illustration-modal-info">
+                        <div class="illustration-modal-caption" id="illustrationModalCaption">
+                            <!-- 插图说明 -->
+                        </div>
+                        <div class="illustration-modal-desc" id="illustrationModalDesc">
+                            <!-- 详细描述 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="illustration-modal-footer">
+                <button class="illustration-modal-action primary" onclick="window.illustrationManager?.closeModal()">
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 返回主菜单确认对话框 -->
     <div id="returnMenuDialog" class="game-dialog-overlay hidden">
         <div class="game-dialog">

@@ -420,6 +420,12 @@ function initializeUI() {
 
     // 初始化标签页内容
     initializeTabContents();
+    
+    // 初始化时间详情浮层（如果函数已定义）
+    if (typeof window.initTimeDetailTooltip === 'function') {
+        window.initTimeDetailTooltip();
+        console.log('✅ 时间详情浮层已初始化');
+    }
 }
 
 // 更新状态显示
@@ -618,10 +624,31 @@ function updateLocationTime() {
 
     document.getElementById('currentLocation').textContent = locationNames[location] || location;
 
-    // 更新时间（使用TimeSystem）
+    // 更新时间（使用新的TimeSystem格式）
     if (window.timeSystem) {
+        // 使用新的icon格式：显示季节图标+日期+时间
         const timeStr = window.timeSystem.formatTime('icon');
         document.getElementById('currentTime').textContent = timeStr;
+
+        // 在title属性显示详细信息
+        const detailStr = window.timeSystem.formatTime('detail');
+        document.getElementById('currentTime').title = detailStr;
+
+        // 检查是否是休息日或节日，显示特殊提示
+        if (window.timeSystem.isRestDay()) {
+            document.getElementById('currentTime').style.color = '#4fc3f7';  // 蓝色表示休息日
+        } else {
+            document.getElementById('currentTime').style.color = '';  // 恢复默认颜色
+        }
+
+        const holiday = window.timeSystem.isHoliday();
+        if (holiday) {
+            // 如果是节日，在E区显示提醒
+            const noticeEl = document.getElementById('noticeText');
+            if (noticeEl && !noticeEl.textContent.includes(holiday)) {
+                noticeEl.textContent = `🎉 今天是${holiday}！` + noticeEl.textContent;
+            }
+        }
     } else {
         // 备用方案：使用旧的时间系统
         const time = gameState.gameTime;
@@ -2300,3 +2327,129 @@ window.deleteSaveGame = deleteSaveGame;
 window.exportSingleSave = exportSingleSave;
 window.loadSavesList = loadSavesList;
 window.testModifyGameState = testModifyGameState;  // 导出测试函数
+
+// ==================== 时间详情浮层系统 ====================
+
+function initTimeDetailTooltip() {
+    const timeElement = document.getElementById("currentTime");
+    if (!timeElement) return;
+
+    let tooltip = document.getElementById("timeDetailTooltip");
+    if (!tooltip) {
+        tooltip = document.createElement("div");
+        tooltip.id = "timeDetailTooltip";
+        tooltip.className = "time-detail-tooltip";
+        document.body.appendChild(tooltip);
+    }
+
+    let longPressTimer = null;
+    let isTooltipVisible = false;
+
+    function updateTooltipContent() {
+        if (!window.timeSystem) return "";
+
+        const time = window.timeSystem.currentTime;
+        const holiday = window.timeSystem.isHoliday();
+        const isRest = window.timeSystem.isRestDay();
+
+        let content = `
+            <div class="time-detail-content">
+                <div class="time-detail-row">
+                    <span class="time-detail-label">📅 完整时间</span>
+                    <span class="time-detail-value">${window.timeSystem.formatTime("long")}</span>
+                </div>
+                <div class="time-detail-row">
+                    <span class="time-detail-label">🌍 年份/季节</span>
+                    <span class="time-detail-value">第${time.year}年 ${window.timeSystem.getSeasonName()}</span>
+                </div>
+                <div class="time-detail-row">
+                    <span class="time-detail-label">📆 年内进度</span>
+                    <span class="time-detail-value">${time.dayOfYear}/180天</span>
+                </div>
+                <div class="time-detail-row">
+                    <span class="time-detail-label">⏰ 时段</span>
+                    <span class="time-detail-value">${window.timeSystem.getTimeIcon()} ${window.timeSystem.getPeriodName()}</span>
+                </div>
+        `;
+
+        if (isRest) {
+            content += `
+                <div class="time-detail-row">
+                    <span class="time-detail-label">🏖️ 特殊</span>
+                    <span class="time-detail-value time-detail-highlight">休息日</span>
+                </div>
+            `;
+        }
+
+        if (holiday) {
+            content += `
+                <div class="time-detail-row">
+                    <span class="time-detail-label">🎉 节日</span>
+                    <span class="time-detail-value time-detail-highlight">${holiday}</span>
+                </div>
+            `;
+        }
+
+        content += `</div>`;
+        return content;
+    }
+
+    function showTooltip() {
+        tooltip.innerHTML = updateTooltipContent();
+        const rect = timeElement.getBoundingClientRect();
+        tooltip.style.left = (rect.left + rect.width / 2) + "px";
+        tooltip.style.top = (rect.bottom + 10) + "px";
+        tooltip.style.transform = "translateX(-50%)";
+        requestAnimationFrame(() => {
+            tooltip.classList.add("show");
+        });
+        isTooltipVisible = true;
+    }
+
+    function hideTooltip() {
+        tooltip.classList.remove("show");
+        isTooltipVisible = false;
+    }
+
+    timeElement.addEventListener("mouseenter", () => {
+        if (window.innerWidth > 768) showTooltip();
+    });
+
+    timeElement.addEventListener("mouseleave", () => {
+        if (window.innerWidth > 768) hideTooltip();
+    });
+
+    timeElement.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        longPressTimer = setTimeout(() => {
+            showTooltip();
+            if (navigator.vibrate) navigator.vibrate(50);
+        }, 500);
+    }, { passive: false });
+
+    timeElement.addEventListener("touchend", () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        if (isTooltipVisible) {
+            setTimeout(hideTooltip, 2000);
+        }
+    });
+
+    timeElement.addEventListener("touchmove", () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        if (isTooltipVisible && !timeElement.contains(e.target)) hideTooltip();
+    });
+
+    console.log("⏰ 时间详情浮层已初始化");
+}
+
+window.initTimeDetailTooltip = initTimeDetailTooltip;
+

@@ -186,10 +186,126 @@ class IllustrationManager {
             return;
         }
 
-        if (this.isVisible) {
-            this.hide();
+        // 检查是否应该使用浮层模式
+        if (this.shouldUseModal(this.currentIllustration)) {
+            this.showModal(this.currentIllustration);
         } else {
-            this.show();
+            if (this.isVisible) {
+                this.hide();
+            } else {
+                this.show();
+            }
+        }
+    }
+
+    /**
+     * 判断是否应该使用浮层模式
+     */
+    shouldUseModal(illustration) {
+        // 如果指定了type为modal，或者有showInModal标记，或者有url（真实图片）
+        return illustration.type === 'modal' ||
+               illustration.showInModal === true ||
+               illustration.url ||
+               illustration.isLarge;
+    }
+
+    /**
+     * 显示浮层模态框
+     */
+    showModal(illustration) {
+        if (!illustration) return;
+
+        // 获取DOM元素
+        const modal = document.getElementById('illustrationModal');
+        const modalTitle = document.getElementById('illustrationModalTitle');
+        const modalImage = document.getElementById('illustrationModalImage');
+        const modalCaption = document.getElementById('illustrationModalCaption');
+        const modalDesc = document.getElementById('illustrationModalDesc');
+
+        if (!modal) {
+            console.warn('插图浮层DOM未找到');
+            return;
+        }
+
+        // 设置内容
+        modalTitle.textContent = illustration.title || illustration.caption || '插图';
+
+        // 设置图片或emoji
+        if (illustration.url) {
+            modalImage.innerHTML = `<img src="${illustration.url}" alt="${illustration.caption || '插图'}">`;
+        } else if (illustration.emoji) {
+            modalImage.innerHTML = illustration.emoji;
+            modalImage.style.fontSize = '120px';
+        } else {
+            modalImage.innerHTML = '🖼️';
+        }
+
+        // 设置说明文字
+        modalCaption.textContent = illustration.caption || '';
+        modalDesc.textContent = illustration.description || illustration.desc || '';
+
+        // 显示模态框
+        modal.classList.add('active');
+        this.isModalOpen = true;
+
+        // 绑定ESC键关闭
+        this.modalEscHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeModal();
+            }
+        };
+        document.addEventListener('keydown', this.modalEscHandler);
+
+        console.log('📸 显示插图浮层:', illustration.caption);
+    }
+
+    /**
+     * 关闭浮层模态框
+     */
+    closeModal() {
+        const modal = document.getElementById('illustrationModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+
+        // 移除ESC监听
+        if (this.modalEscHandler) {
+            document.removeEventListener('keydown', this.modalEscHandler);
+            this.modalEscHandler = null;
+        }
+
+        this.isModalOpen = false;
+        this.isZoomed = false;
+
+        // 重置缩放
+        const modalImage = document.getElementById('illustrationModalImage');
+        if (modalImage) {
+            modalImage.classList.remove('zoomed');
+        }
+    }
+
+    /**
+     * 点击背景关闭
+     */
+    closeModalOnBackground(event) {
+        if (event.target === event.currentTarget) {
+            this.closeModal();
+        }
+    }
+
+    /**
+     * 切换图片缩放
+     */
+    toggleZoom() {
+        const modalImage = document.getElementById('illustrationModalImage');
+        if (!modalImage) return;
+
+        this.isZoomed = !this.isZoomed;
+
+        if (this.isZoomed) {
+            modalImage.classList.add('zoomed');
+        } else {
+            modalImage.classList.remove('zoomed');
         }
     }
 
