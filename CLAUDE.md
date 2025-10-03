@@ -160,6 +160,251 @@ class TimeSystem {
 
 ---
 
+## 🎲 条件与概率系统（2025-10-02 新增）
+
+### ⚖️ 条件判断引擎（ConditionEngine）
+**用于场景选项的显示控制和准入判断**
+
+#### 核心理念
+游戏中的"智能门卫系统" - 统一管理所有条件判断，无需每个场景自己写 if/else。
+
+#### 两种模式
+
+| 模式 | 属性名 | 效果 | 使用场景 |
+|------|--------|------|----------|
+| **灰化模式** | `conditions` | 显示🔒图标，不可点击，鼠标悬停显示原因 | 告诉玩家"有这个选项，但现在不能选" |
+| **隐藏模式** | `showConditions` | 完全不显示选项 | 秘密分支、彩蛋、特殊结局 |
+
+#### 支持的条件类型（10种）
+
+- 💰 **金钱/属性**：`attribute: {money: {min: 100}}`
+- 🎒 **物品**：`inventory: {items: ['钥匙']}`
+- ⏰ **时间**：`time: {hour: {min: 6, max: 18}}`
+- 🌤️ **天气**：`weather: 'sunny'` 或 `weather: ['rainy', 'stormy']`
+- ❄️ **季节**：`season: 'winter'`
+- 📍 **位置**：`location: '公园'`
+- ❤️ **关系**：`relationship: {zero_affection: {min: 60}}`
+- 🚩 **标记**：`flag: 'met_zero'`
+- 🔗 **逻辑运算**：`AND` / `OR` / `NOT`
+
+#### 快速示例
+
+```javascript
+// 场景定义示例
+{
+    id: 'shop',
+    title: '商店',
+    text: ['欢迎光临！'],
+    choices: [
+        {
+            text: '购买装备（100金钱）',
+            conditions: {                    // 灰化模式
+                attribute: { money: { min: 100 } }
+            },
+            effects: { money: -100 },
+            next: 'buy_equipment'
+        },
+        {
+            text: '🌟 隐藏宝藏',
+            showConditions: {                // 隐藏模式
+                AND: [
+                    { attribute: { money: { min: 500 } } },
+                    { flag: 'secret_discovered' }
+                ]
+            },
+            next: 'secret_treasure'
+        }
+    ]
+}
+```
+
+#### 复杂条件示例
+
+```javascript
+// AND条件（全部满足）
+conditions: {
+    AND: [
+        { attribute: { money: { min: 100 } } },
+        { time: { hour: { min: 6, max: 18 } } },
+        { weather: 'sunny' }
+    ]
+}
+
+// OR条件（任一满足）
+conditions: {
+    OR: [
+        { attribute: { strength: { min: 20 } } },
+        { inventory: { items: ['钥匙'] } }
+    ]
+}
+
+// NOT条件（条件不满足）
+conditions: {
+    NOT: [
+        { flag: 'in_combat' }
+    ]
+}
+```
+
+#### 使用方法
+
+**在场景中使用（自动）：**
+```javascript
+// SceneManager 已自动集成，只需在场景数据中添加条件即可
+{
+    text: '进入VIP房间',
+    conditions: { attribute: { money: { min: 100 } } },
+    next: 'vip_room'
+}
+```
+
+**手动调用（代码中）：**
+```javascript
+// 检查条件
+const canBuy = window.ConditionEngine.check({
+    attribute: { money: { min: 100 } }
+});
+
+// 获取失败原因
+const reasons = window.ConditionEngine.getFailReasons({
+    attribute: { money: { min: 100 } }
+});
+// 返回：["金钱不足（当前30，需要100）"]
+
+// 生成条件描述
+const desc = window.ConditionEngine.describe({
+    attribute: { money: { min: 100 } }
+});
+// 返回："金钱≥100"
+```
+
+#### 相关文件
+- [/js/core/condition-engine.js](js/core/condition-engine.js) - 引擎核心（695行）
+- [/docs/condition-system-guide.md](docs/condition-system-guide.md) - 完整使用指南（640行）
+- [/条件系统测试.html](条件系统测试.html) - 测试页面
+
+---
+
+### 🎲 概率决策引擎（RandomEngine）
+**用于游戏中的不确定性模拟（博德之门3风格）**
+
+#### 核心理念
+统一的概率计算引擎，支持加权随机、骰子检定、修正值系统。
+
+#### 核心功能
+1. **加权随机**：天气生成、战利品掉落
+2. **骰子检定**：技能判定、战斗命中（支持修正值）
+3. **随机数生成**：范围随机、数组洗牌
+4. **D&D风格**：d20、大成功/大失败
+
+#### 快速示例
+
+```javascript
+// 1. 加权随机（天气系统已用）
+const weather = RandomEngine.weightedRandom([
+    {value: 'sunny', weight: 60},    // 60%概率
+    {value: 'rainy', weight: 30},    // 30%概率
+    {value: 'stormy', weight: 10}    // 10%概率
+]);
+
+// 2. 骰子检定（含修正值）
+const result = RandomEngine.rollCheck({
+    base: 0.5,                              // 基础成功率50%
+    modifiers: [
+        {attribute: 'intelligence', weight: 0.01},  // 智力加成（智力*1%）
+        {item: '幸运符', bonus: 0.1},               // 物品+10%
+        {weather: 'rainy', penalty: 0.2}            // 雨天-20%
+    ]
+});
+// 返回：{success: true/false, finalRate: 0.65, roll: 0.42, critical: false, fumble: false}
+
+// 3. 简单概率判定
+if (RandomEngine.roll(0.3)) {
+    console.log('30%概率触发！');
+}
+
+// 4. D&D风格骰子
+const d20 = RandomEngine.rollD20(5);  // 掷d20+5
+// 返回：{total: 18, roll: 13, modifier: 5, critical: false, fumble: false}
+
+// 5. 随机工具
+const num = RandomEngine.randomInt(1, 100);      // 1-100随机整数
+const item = RandomEngine.randomChoice(array);   // 从数组随机选一个
+const shuffled = RandomEngine.shuffle(array);    // 洗牌
+```
+
+#### 修正值系统
+
+支持多种修正值类型：
+
+```javascript
+{
+    base: 0.6,
+    modifiers: [
+        // 属性修正
+        {attribute: 'strength', weight: 0.01},
+
+        // 物品加成
+        {item: '幸运符', bonus: 0.1},
+
+        // 天气影响
+        {weather: 'rainy', penalty: 0.2},
+
+        // 时间影响
+        {time: {hour: {min: 22}}, penalty: 0.1},
+
+        // 直接加成/惩罚
+        {bonus: 0.05},
+        {penalty: 0.1}
+    ]
+}
+```
+
+#### 已集成系统
+- ✅ **天气系统**：使用 `weightedRandom` 生成天气
+- ✅ **时间系统**：随机事件触发
+- ⏳ **战斗系统**（待集成）：命中判定、暴击检定
+- ⏳ **对话系统**（待集成）：技能检定、魅力判定
+
+#### 相关文件
+- [/js/core/random-engine.js](js/core/random-engine.js) - 引擎核心（455行）
+- [/js/test/test-random-engine-unit.js](js/test/test-random-engine-unit.js) - 单元测试
+- [/docs/condition-random-engine-design.md](docs/condition-random-engine-design.md) - 设计文档
+
+---
+
+### ⚠️ 开发规范补充（条件与概率系统）
+
+#### 使用条件系统的规范
+- ✅ **必须遵守**：场景选项优先使用 `conditions` 和 `showConditions`，不要手写条件判断
+- ✅ **必须遵守**：新系统需要概率计算时，使用 `RandomEngine`，不要直接用 `Math.random()`
+- ❌ **禁止**：在场景中写 `if (window.gameState.character.money >= 100)` 这种判断
+- ❌ **禁止**：在系统中写 `Math.random() * 100 < 30` 这种概率计算
+
+**正确示例：**
+```javascript
+// ✅ 正确：使用 ConditionEngine
+{
+    text: '购买',
+    conditions: { attribute: { money: { min: 100 } } }
+}
+
+// ✅ 正确：使用 RandomEngine
+const weather = RandomEngine.weightedRandom(weatherOptions);
+
+// ❌ 错误：手写判断
+if (window.gameState.character.money >= 100) {
+    showBuyButton();
+}
+
+// ❌ 错误：直接用Math.random
+if (Math.random() < 0.3) {
+    triggerEvent();
+}
+```
+
+---
+
 ## 文件结构速查
 ```
 根目录HTML文件：

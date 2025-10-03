@@ -1,6 +1,7 @@
 /**
  * 游戏主界面初始化和事件处理
  * 处理所有UI交互事件，确保代码分离
+ * 包含音频系统初始化
  */
 
 // 等待DOM加载完成
@@ -24,6 +25,37 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof AIDialogueManager !== 'undefined') {
         window.aiDialogueManager = new AIDialogueManager();
         console.log('🤖 AI对话管理器已初始化');
+    }
+
+    // 初始化音频系统
+    console.log('🎵 检查AudioSystem类:', typeof AudioSystem);
+    console.log('🎵 当前window.audioSystem:', window.audioSystem);
+
+    if (typeof AudioSystem !== 'undefined') {
+        if (!window.audioSystem) {
+            console.log('🎵 开始创建AudioSystem实例...');
+            window.audioSystem = new AudioSystem();
+            console.log('🔊 音频系统已初始化');
+            console.log('🎵 创建后的window.audioSystem:', window.audioSystem);
+
+            // 从worldState恢复音量设置（如果有）
+            if (window.worldState?.state?.player?.settings?.audio?.volumes) {
+                const volumes = window.worldState.state.player.settings.audio.volumes;
+                // 转换0-100到0-1
+                window.audioSystem.setMasterVolume(volumes.master / 100);
+                window.audioSystem.setLayerVolume('bgm', volumes.bgm / 100);
+                window.audioSystem.setLayerVolume('sfx', volumes.sfx / 100);
+                console.log('🔊 音量设置已恢复');
+            }
+
+            // 添加测试命令提示
+            console.log('📻 测试播放BGM: window.audioSystem.playBGM("assets/sounds/bgm/zero1.wav")');
+            console.log('📻 测试播放SFX: window.audioSystem.playSFX("assets/sounds/sfx/click.mp3")');
+        } else {
+            console.log('🎵 audioSystem已存在，跳过初始化');
+        }
+    } else {
+        console.warn('⚠️ AudioSystem类未定义，音频系统未能初始化');
     }
 
     // 初始化立绘系统
