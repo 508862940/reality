@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气预报系统测试 - Stage 3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button.secondary {
+            background: #95a5a6;
+        }
+
+        .output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .forecast-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .forecast-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .forecast-card .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .forecast-card .day {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .forecast-card .weather {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .forecast-card .temp {
+            color: #e74c3c;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ 天气预报系统测试 - Stage 3</h1>
+
+        <div id="systemStatus" class="status info">
+            正在加载系统...
+        </div>
+
+        <!-- 测试1：查看当前状态 -->
+        <div class="test-section">
+            <h2>📊 当前状态</h2>
+            <div class="button-group">
+                <button onclick="showCurrentWeather()">查看当前天气</button>
+                <button onclick="showForecast()">查看预报数据</button>
+                <button onclick="showWorldState()">查看WorldState</button>
+            </div>
+            <div id="currentStateOutput" class="output">点击按钮查看状态...</div>
+        </div>
+
+        <!-- 测试2：天气预报可视化 -->
+        <div class="test-section">
+            <h2>🌈 天气预报可视化</h2>
+            <div id="forecastDisplay" class="forecast-display">
+                <!-- 动态生成 -->
+            </div>
+        </div>
+
+        <!-- 测试3：时间推进测试 -->
+        <div class="test-section">
+            <h2>⏰ 时间推进测试</h2>
+            <div class="button-group">
+                <button onclick="advanceToNextDay()">推进到第二天5:00</button>
+                <button onclick="advanceDays(3)">推进3天</button>
+                <button onclick="advanceDays(7)">推进7天</button>
+                <button class="secondary" onclick="resetTime()">重置时间</button>
+            </div>
+            <div id="timeOutput" class="output">点击按钮推进时间...</div>
+        </div>
+
+        <!-- 测试4：手动生成预报 -->
+        <div class="test-section">
+            <h2>🎲 手动测试</h2>
+            <div class="button-group">
+                <button onclick="manualGenerateForecast()">手动生成预报</button>
+                <button onclick="testRandomEngine()">测试RandomEngine</button>
+                <button onclick="testConsistency()">测试一致性（load后）</button>
+            </div>
+            <div id="manualOutput" class="output">点击按钮测试...</div>
+        </div>
+    </div>
+
+    <!-- 加载引擎 -->
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/condition-engine.js"></script>
+    <script src="js/core/random-engine.js"></script>
+    <script src="js/core/world-state.js"></script>
+    <script src="js/core/time-system.js"></script>
+    <script src="js/core/climate-manager.js"></script>
+    <script src="js/core/weather-system.js"></script>
+
+    <script>
+        // ========================================
+        // 初始化检查
+        // ========================================
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const statusDiv = document.getElementById('systemStatus');
+
+            if (window.weatherSystem && window.timeSystem && window.worldState) {
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ 所有系统已加载成功！';
+                showCurrentWeather();
+                updateForecastDisplay();
+            } else {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ 系统加载失败，请检查控制台';
+            }
+        });
+
+        // ========================================
+        // 测试1：查看当前状态
+        // ========================================
+
+        function showCurrentWeather() {
+            const output = document.getElementById('currentStateOutput');
+            const weatherInfo = window.weatherSystem.getCurrentWeatherInfo();
+
+            output.textContent = `
+🌤️ 当前天气信息：
+━━━━━━━━━━━━━━━━━━━━━━━━━
+天气: ${weatherInfo.icon} ${weatherInfo.weather}
+温度: ${weatherInfo.temperature}°C
+季节: ${weatherInfo.season}
+能见度: ${weatherInfo.visibility}%
+描述: ${weatherInfo.description}
+
+预报数量: ${weatherInfo.forecast?.length || 0} 天
+            `;
+
+            updateForecastDisplay();
+        }
+
+        function showForecast() {
+            const output = document.getElementById('currentStateOutput');
+            const forecast = window.weatherSystem.forecast;
+
+            if (!forecast || forecast.length === 0) {
+                output.textContent = '⚠️ 暂无预报数据';
+                return;
+            }
+
+            let text = `🌤️ 天气预报（${forecast.length}天）：\n━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            forecast.forEach((day, index) => {
+                const weatherType = window.weatherSystem.weatherTypes[day.weather];
+                text += `
+第${index + 1}天（游戏第${day.day}天）
+  天气: ${weatherType.icon} ${weatherType.name}
+  温度: ${day.temperature}°C
+`;
+            });
+
+            output.textContent = text;
+            updateForecastDisplay();
+        }
+
+        function showWorldState() {
+            const output = document.getElementById('currentStateOutput');
+            const env = window.worldState.state.environment;
+
+            output.textContent = `
+🌍 WorldState.environment：
+━━━━━━━━━━━━━━━━━━━━━━━━━
+当前天气: ${env.weather}
+当前季节: ${env.season}
+当前温度: ${env.temperature}°C
+
+天气预报:
+${JSON.stringify(env.forecast, null, 2)}
+            `;
+        }
+
+        function updateForecastDisplay() {
+            const container = document.getElementById('forecastDisplay');
+            const forecast = window.weatherSystem.forecast;
+
+            if (!forecast || forecast.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">暂无预报数据</div>';
+                return;
+            }
+
+            const dayLabels = ['明天', '后天', '第3天'];
+
+            container.innerHTML = forecast.map((day, index) => {
+                const weatherType = window.weatherSystem.weatherTypes[day.weather];
+                return `
+                    <div class="forecast-card">
+                        <div class="icon">${weatherType.icon}</div>
+                        <div class="day">${dayLabels[index]}</div>
+                        <div class="weather">${weatherType.name}</div>
+                        <div class="temp">${day.temperature}°C</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========================================
+        // 测试3：时间推进
+        // ========================================
+
+        function advanceToNextDay() {
+            const output = document.getElementById('timeOutput');
+            const currentTime = window.timeSystem.currentTime;
+
+            output.textContent = `当前时间: 第${currentTime.dayOfYear}天 ${currentTime.hour}:${String(currentTime.minute).padStart(2, '0')}\n\n`;
+            output.textContent += '推进到第二天5:00...\n';
+
+            // 计算需要推进的分钟数
+            const minutesUntil5AM = (24 - currentTime.hour + 5) * 60 - currentTime.minute;
+
+            window.timeSystem.advanceTime(minutesUntil5AM, '测试推进到5:00');
+
+            const newTime = window.timeSystem.currentTime;
+            output.textContent += `\n✅ 时间推进完成！\n`;
+            output.textContent += `新时间: 第${newTime.dayOfYear}天 ${newTime.hour}:${String(newTime.minute).padStart(2, '0')}\n`;
+
+            showForecast();
+            updateForecastDisplay();
+        }
+
+        function advanceDays(days) {
+            const output = document.getElementById('timeOutput');
+            const beforeTime = window.timeSystem.currentTime;
+
+            output.textContent = `推进 ${days} 天...\n`;
+
+            for (let i = 0; i < days; i++) {
+                window.timeSystem.advanceTime(24 * 60, `推进第${i + 1}天`);
+            }
+
+            const afterTime = window.timeSystem.currentTime;
+
+            output.textContent += `\n✅ 完成！\n`;
+            output.textContent += `之前: 第${beforeTime.dayOfYear}天\n`;
+            output.textContent += `之后: 第${afterTime.dayOfYear}天\n`;
+
+            showForecast();
+            updateForecastDisplay();
+        }
+
+        function resetTime() {
+            window.timeSystem.currentTime.dayOfYear = 1;
+            window.timeSystem.currentTime.hour = 7;
+            window.timeSystem.currentTime.minute = 30;
+
+            const output = document.getElementById('timeOutput');
+            output.textContent = '✅ 时间已重置到第1天 07:30';
+
+            window.weatherSystem.generateForecast();
+            showForecast();
+            updateForecastDisplay();
+        }
+
+        // ========================================
+        // 测试4：手动测试
+        // ========================================
+
+        function manualGenerateForecast() {
+            const output = document.getElementById('manualOutput');
+            output.textContent = '正在生成天气预报...\n';
+
+            window.weatherSystem.generateForecast();
+
+            output.textContent += '\n✅ 预报已生成！\n';
+            showForecast();
+            updateForecastDisplay();
+        }
+
+        function testRandomEngine() {
+            const output = document.getElementById('manualOutput');
+
+            if (!window.RandomEngine) {
+                output.textContent = '❌ RandomEngine 未加载';
+                return;
+            }
+
+            output.textContent = '测试 RandomEngine:\n━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+            // 测试权重随机
+            const weatherOptions = [
+                { value: 'sunny', weight: 30 },
+                { value: 'cloudy', weight: 30 },
+                { value: 'rainy', weight: 40 }
+            ];
+
+            output.textContent += '10次权重随机测试:\n';
+            for (let i = 0; i < 10; i++) {
+                const result = window.RandomEngine.weightedRandom(weatherOptions);
+                output.textContent += `  ${i + 1}. ${result}\n`;
+            }
+
+            // 测试温度生成
+            output.textContent += '\n10次温度生成测试（10-25°C）:\n';
+            for (let i = 0; i < 10; i++) {
+                const temp = window.RandomEngine.randomInt(10, 25);
+                output.textContent += `  ${i + 1}. ${temp}°C\n`;
+            }
+        }
+
+        function testConsistency() {
+            const output = document.getElementById('manualOutput');
+
+            // 保存当前预报
+            const beforeForecast = JSON.parse(JSON.stringify(window.weatherSystem.forecast));
+
+            output.textContent = '测试一致性:\n━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+            output.textContent += '生成前的预报:\n';
+            beforeForecast.forEach((day, i) => {
+                output.textContent += `  ${i + 1}. 第${day.day}天 ${day.weather} ${day.temperature}°C\n`;
+            });
+
+            // 模拟存档和读档
+            const savedData = JSON.stringify(window.worldState.state.environment.forecast);
+
+            output.textContent += '\n🔄 模拟存档...\n';
+            output.textContent += `存档数据: ${savedData}\n`;
+
+            output.textContent += '\n🔄 模拟读档...\n';
+            const loadedForecast = JSON.parse(savedData);
+            window.weatherSystem.forecast = loadedForecast;
+
+            output.textContent += '\n读档后的预报:\n';
+            loadedForecast.forEach((day, i) => {
+                output.textContent += `  ${i + 1}. 第${day.day}天 ${day.weather} ${day.temperature}°C\n`;
+            });
+
+            // 验证一致性
+            const isConsistent = JSON.stringify(beforeForecast) === JSON.stringify(loadedForecast);
+            output.textContent += `\n✅ 一致性测试: ${isConsistent ? '通过' : '失败'}`;
+
+            updateForecastDisplay();
+        }
+    </script>
+</body>
+</html>

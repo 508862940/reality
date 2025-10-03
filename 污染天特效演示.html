@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>☣️ 污染天特效演示 - Reality游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 模拟游戏界面布局 */
+        .game-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .upper-section {
+            height: 45vh;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-bottom: 2px solid #374151;
+            padding: 20px;
+            color: #9ca3af;
+        }
+
+        .lower-section {
+            height: 55vh;
+            background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+            padding: 20px;
+            color: #d1d5db;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 10000;
+            max-width: 350px;
+            border: 1px solid #374151;
+        }
+
+        .control-panel h2 {
+            color: #a78bfa;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .control-item {
+            margin-bottom: 15px;
+        }
+
+        .control-item label {
+            display: block;
+            color: #fbbf24;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .control-item input[type="range"] {
+            width: 100%;
+        }
+
+        .control-value {
+            color: #a78bfa;
+            font-weight: bold;
+            float: right;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-group {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        /* ===== 污染特效容器 ===== */
+        .pollution-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* 1. 污染雾气效果 */
+        .pollution-fog {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease;
+        }
+
+        .pollution-fog.active {
+            opacity: 1;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(139, 69, 19, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 60%, rgba(107, 114, 128, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(75, 85, 99, 0.2) 0%, transparent 60%);
+            animation: fogDrift 30s ease-in-out infinite;
+        }
+
+        @keyframes fogDrift {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            33% { transform: translateX(-20px) translateY(10px); }
+            66% { transform: translateX(20px) translateY(-10px); }
+        }
+
+        /* 2. 灰尘粒子 */
+        .dust-particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #6b7280;
+            border-radius: 50%;
+            opacity: 0.3;
+            will-change: transform;
+        }
+
+        /* 3. 污染滤镜层 */
+        .pollution-filter {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+            mix-blend-mode: multiply;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        .pollution-filter.active {
+            opacity: 0.15;
+            background: linear-gradient(180deg,
+                rgba(139, 69, 19, 0.1) 0%,
+                rgba(107, 114, 128, 0.05) 50%,
+                rgba(75, 85, 99, 0.1) 100%);
+        }
+
+        /* 4. 边缘暗化效果 */
+        .vignette-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 98;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        .vignette-effect.active {
+            opacity: 0.4;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+        }
+
+        /* 5. 酸雨效果 */
+        .acid-rain {
+            position: absolute;
+            width: 1px;
+            height: 15px;
+            background: linear-gradient(to bottom,
+                transparent 0%,
+                rgba(154, 230, 180, 0.3) 50%,
+                rgba(134, 239, 172, 0.5) 100%);
+            opacity: 0.4;
+            will-change: transform;
+        }
+
+        /* 6. 警告标志 */
+        .warning-badge {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10001;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s ease;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+            pointer-events: none;
+        }
+
+        .warning-badge.active {
+            opacity: 1;
+            transform: translateY(0);
+            animation: warningPulse 1s ease-in-out 3; /* 只闪烁3次 */
+        }
+
+        .warning-badge.fade-out {
+            animation: fadeOutWarning 1s ease-out forwards;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(220, 38, 38, 0.6); }
+        }
+
+        @keyframes fadeOutWarning {
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* 统计信息 */
+        .stats {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* 模拟内容 */
+        .demo-content {
+            padding: 20px;
+            color: #e5e7eb;
+        }
+
+        .demo-content h3 {
+            color: #a78bfa;
+            margin-bottom: 10px;
+        }
+
+        .demo-content p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <!-- 游戏容器 -->
+    <div class="game-container">
+        <div class="upper-section">
+            <div class="demo-content">
+                <h3>上半部分 (45vh)</h3>
+                <p>📍 当前位置：废弃工业区</p>
+                <p>🕐 游戏时间：14:30</p>
+                <p>🌡️ 空气质量：严重污染</p>
+            </div>
+        </div>
+        <div class="lower-section">
+            <div class="demo-content">
+                <h3>下半部分 (55vh)</h3>
+                <p>环境恶劣，空气中弥漫着灰尘和化学物质的气味...</p>
+                <p>你感到呼吸有些困难，视线也变得模糊。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 污染特效层 -->
+    <div class="vignette-effect" id="vignetteEffect"></div>
+    <div class="pollution-filter" id="pollutionFilter"></div>
+    <div class="pollution-fog" id="pollutionFog"></div>
+    <div class="pollution-container" id="pollutionContainer"></div>
+
+    <!-- 警告标志 -->
+    <div class="warning-badge" id="warningBadge">
+        ⚠️ 空气污染警告
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <h2>☣️ 污染天特效控制器</h2>
+
+        <div class="control-item">
+            <label>
+                污染强度: <span class="control-value" id="intensityValue">70%</span>
+            </label>
+            <input type="range" id="intensity" min="0" max="100" value="70" oninput="updateIntensity()">
+        </div>
+
+        <div class="control-item">
+            <label>
+                灰尘密度: <span class="control-value" id="dustValue">50</span>
+            </label>
+            <input type="range" id="dustCount" min="0" max="100" value="50" oninput="updateDust()">
+        </div>
+
+        <div class="control-item">
+            <label>
+                酸雨强度: <span class="control-value" id="rainValue">0</span>
+            </label>
+            <input type="range" id="rainIntensity" min="0" max="50" value="0" oninput="updateRain()">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn" onclick="toggleEffect()">🎮 开启/关闭</button>
+            <button class="btn" onclick="testLightPollution()">💨 轻度污染</button>
+            <button class="btn" onclick="testHeavyPollution()">☢️ 重度污染</button>
+        </div>
+
+        <div class="stats">
+            <div>🌫️ 雾气效果：渐变叠加</div>
+            <div>💨 灰尘粒子：<span id="dustCountDisplay">0</span> 个</div>
+            <div>🌧️ 酸雨粒子：<span id="rainCountDisplay">0</span> 个</div>
+            <div>📊 性能影响：低</div>
+        </div>
+    </div>
+
+    <script>
+        let isActive = false;
+        let dustParticles = [];
+        let rainParticles = [];
+        let animationFrame;
+
+        // 灰尘粒子类
+        class DustParticle {
+            constructor(container) {
+                this.element = document.createElement('div');
+                this.element.className = 'dust-particle';
+
+                // 随机属性
+                this.reset();
+                container.appendChild(this.element);
+            }
+
+            reset() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = 0.05 + Math.random() * 0.1;
+                this.size = 1 + Math.random() * 2;
+                this.opacity = 0.2 + Math.random() * 0.3;
+
+                this.updateStyle();
+            }
+
+            updateStyle() {
+                this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+                this.element.style.width = this.size + 'px';
+                this.element.style.height = this.size + 'px';
+                this.element.style.opacity = this.opacity;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // 布朗运动
+                this.speedX += (Math.random() - 0.5) * 0.01;
+
+                // 边界检查
+                if (this.y > window.innerHeight + 10) {
+                    this.y = -10;
+                    this.x = Math.random() * window.innerWidth;
+                }
+                if (this.x < -10) this.x = window.innerWidth + 10;
+                if (this.x > window.innerWidth + 10) this.x = -10;
+
+                this.updateStyle();
+            }
+
+            remove() {
+                this.element.remove();
+            }
+        }
+
+        // 酸雨粒子类
+        class AcidRainDrop {
+            constructor(container) {
+                this.element = document.createElement('div');
+                this.element.className = 'acid-rain';
+
+                this.reset();
+                container.appendChild(this.element);
+            }
+
+            reset() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = -20;
+                this.speed = 2 + Math.random() * 3;
+                this.opacity = 0.2 + Math.random() * 0.2;
+
+                this.updateStyle();
+            }
+
+            updateStyle() {
+                this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+                this.element.style.opacity = this.opacity;
+            }
+
+            update() {
+                this.y += this.speed;
+
+                if (this.y > window.innerHeight) {
+                    this.reset();
+                }
+
+                this.updateStyle();
+            }
+
+            remove() {
+                this.element.remove();
+            }
+        }
+
+        // 动画循环
+        function animate() {
+            if (!isActive) return;
+
+            dustParticles.forEach(particle => particle.update());
+            rainParticles.forEach(drop => drop.update());
+
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        // 开关特效
+        function toggleEffect() {
+            isActive = !isActive;
+
+            const elements = ['vignetteEffect', 'pollutionFilter', 'pollutionFog'];
+            elements.forEach(id => {
+                document.getElementById(id).classList.toggle('active', isActive);
+            });
+
+            if (isActive) {
+                createDustParticles();
+                animate();
+                // 显示警告3秒后消失
+                showWarning();
+            } else {
+                clearParticles();
+                if (animationFrame) cancelAnimationFrame(animationFrame);
+                hideWarning();
+            }
+        }
+
+        // 显示警告（临时）
+        function showWarning() {
+            const badge = document.getElementById('warningBadge');
+            badge.classList.add('active');
+
+            // 3秒后开始淡出
+            setTimeout(() => {
+                badge.classList.remove('active');
+                badge.classList.add('fade-out');
+
+                // 1秒后完全移除类
+                setTimeout(() => {
+                    badge.classList.remove('fade-out');
+                }, 1000);
+            }, 3000);
+        }
+
+        // 隐藏警告
+        function hideWarning() {
+            const badge = document.getElementById('warningBadge');
+            badge.classList.remove('active', 'fade-out');
+        }
+
+        // 创建灰尘粒子
+        function createDustParticles() {
+            const container = document.getElementById('pollutionContainer');
+            const count = parseInt(document.getElementById('dustCount').value);
+
+            clearDust();
+
+            for (let i = 0; i < count; i++) {
+                dustParticles.push(new DustParticle(container));
+            }
+
+            document.getElementById('dustCountDisplay').textContent = count;
+        }
+
+        // 创建酸雨
+        function createRainDrops() {
+            const container = document.getElementById('pollutionContainer');
+            const count = parseInt(document.getElementById('rainIntensity').value);
+
+            clearRain();
+
+            for (let i = 0; i < count; i++) {
+                rainParticles.push(new AcidRainDrop(container));
+            }
+
+            document.getElementById('rainCountDisplay').textContent = count;
+        }
+
+        // 更新强度
+        function updateIntensity() {
+            const value = document.getElementById('intensity').value;
+            document.getElementById('intensityValue').textContent = value + '%';
+
+            const opacity = value / 100;
+            document.getElementById('pollutionFog').style.opacity = opacity;
+            document.getElementById('pollutionFilter').style.opacity = opacity * 0.15;
+            document.getElementById('vignetteEffect').style.opacity = opacity * 0.4;
+        }
+
+        // 更新灰尘
+        function updateDust() {
+            document.getElementById('dustValue').textContent = document.getElementById('dustCount').value;
+            if (isActive) createDustParticles();
+        }
+
+        // 更新酸雨
+        function updateRain() {
+            document.getElementById('rainValue').textContent = document.getElementById('rainIntensity').value;
+            if (isActive) createRainDrops();
+        }
+
+        // 清理粒子
+        function clearDust() {
+            dustParticles.forEach(p => p.remove());
+            dustParticles = [];
+        }
+
+        function clearRain() {
+            rainParticles.forEach(p => p.remove());
+            rainParticles = [];
+        }
+
+        function clearParticles() {
+            clearDust();
+            clearRain();
+            document.getElementById('dustCountDisplay').textContent = '0';
+            document.getElementById('rainCountDisplay').textContent = '0';
+        }
+
+        // 预设效果
+        function testLightPollution() {
+            document.getElementById('intensity').value = 40;
+            document.getElementById('dustCount').value = 30;
+            document.getElementById('rainIntensity').value = 0;
+
+            updateIntensity();
+            updateDust();
+            updateRain();
+
+            if (!isActive) toggleEffect();
+        }
+
+        function testHeavyPollution() {
+            document.getElementById('intensity').value = 85;
+            document.getElementById('dustCount').value = 80;
+            document.getElementById('rainIntensity').value = 20;
+
+            updateIntensity();
+            updateDust();
+            updateRain();
+
+            if (!isActive) toggleEffect();
+        }
+
+        // 初始化
+        window.addEventListener('load', () => {
+            // 自动开启轻度效果演示
+            setTimeout(() => testLightPollution(), 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q版立绘动画演示（内置示例）</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #2d2863, #4a3c8c);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #b794f6;
+            text-shadow: 0 0 20px rgba(183, 148, 246, 0.5);
+            margin-bottom: 40px;
+        }
+
+        /* A区模拟 */
+        .area-a {
+            background: rgba(46, 41, 78, 0.8);
+            border: 2px solid #6b46c1;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .area-title {
+            color: #b794f6;
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* 立绘展示舞台 */
+        .portrait-stage {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            min-height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 像素小人容器 */
+        .sprite-container {
+            position: relative;
+        }
+
+        .pixel-sprite {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            width: 128px;
+            height: 256px;
+            display: block;
+            filter: drop-shadow(0 10px 20px rgba(183, 148, 246, 0.4));
+        }
+
+        /* 动画控制台 */
+        .control-panel {
+            background: rgba(46, 41, 78, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-title {
+            color: #b794f6;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: #b794f6;
+            color: #2d2863;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #d6bcfa;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(183, 148, 246, 0.5);
+        }
+
+        button.active {
+            background: #9c4dc7;
+            color: white;
+        }
+
+        /* 表情切换 */
+        .emotion-buttons {
+            margin-top: 10px;
+        }
+
+        .emotion-btn {
+            background: rgba(183, 148, 246, 0.2);
+            border: 1px solid #b794f6;
+            padding: 8px 16px;
+            font-size: 20px;
+        }
+
+        /* 尺寸控制 */
+        .size-control {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 帧预览 */
+        .frame-preview {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .frame-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .frame-box {
+            background: rgba(183, 148, 246, 0.1);
+            border: 1px solid #6b46c1;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .frame-box:hover {
+            background: rgba(183, 148, 246, 0.3);
+            transform: scale(1.05);
+        }
+
+        .frame-box.active {
+            border-color: #d6bcfa;
+            background: rgba(183, 148, 246, 0.4);
+        }
+
+        .frame-box canvas {
+            width: 40px;
+            height: 80px;
+            image-rendering: pixelated;
+        }
+
+        .frame-label {
+            font-size: 11px;
+            color: #b794f6;
+            margin-top: 5px;
+        }
+
+        /* 呼吸动画 */
+        @keyframes breathe {
+            0%, 100% { transform: scaleX(1) scaleY(1); }
+            50% { transform: scaleX(0.98) scaleY(1.02); }
+        }
+
+        .breathing {
+            animation: breathe 3s ease-in-out infinite;
+        }
+
+        /* 飘浮动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .floating {
+            animation: float 2s ease-in-out infinite;
+        }
+
+        /* 信息提示 */
+        .info-box {
+            background: rgba(183, 148, 246, 0.1);
+            border-left: 3px solid #b794f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .info-box h3 {
+            color: #b794f6;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            line-height: 1.6;
+            color: #e4e4e7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Q版立绘动画系统演示</h1>
+
+        <!-- A区模拟 -->
+        <div class="area-a">
+            <div class="area-title">
+                <span>🎮</span>
+                <span>A区 - 角色立绘</span>
+                <span>🎭</span>
+            </div>
+
+            <div class="portrait-stage">
+                <div class="sprite-container" id="spriteContainer">
+                    <canvas class="pixel-sprite" id="pixelCanvas" width="48" height="96"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <div class="control-group">
+                <div class="control-title">👁️ 眨眼动画</div>
+                <button onclick="toggleBlink()" id="blinkBtn">▶️ 开始眨眼</button>
+                <button onclick="blinkOnce()">眨眼一次</button>
+                <button onclick="setBlinkSpeed('slow')">慢速</button>
+                <button onclick="setBlinkSpeed('normal')" class="active">正常</button>
+                <button onclick="setBlinkSpeed('fast')">快速</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">🚶 行走动画</div>
+                <button onclick="toggleWalk()" id="walkBtn">▶️ 开始行走</button>
+                <button onclick="toggleBreathing()">呼吸效果</button>
+                <button onclick="toggleFloating()">飘浮效果</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">😊 表情切换</div>
+                <div class="emotion-buttons">
+                    <button class="emotion-btn" onclick="setEmotion('normal')">😊</button>
+                    <button class="emotion-btn" onclick="setEmotion('happy')">😄</button>
+                    <button class="emotion-btn" onclick="setEmotion('sad')">😢</button>
+                    <button class="emotion-btn" onclick="setEmotion('angry')">😠</button>
+                    <button class="emotion-btn" onclick="setEmotion('shy')">😳</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">📏 显示大小</div>
+                <div class="size-control">
+                    <button onclick="setSize(1)">原始 (48px)</button>
+                    <button onclick="setSize(2)" class="active">2倍 (96px)</button>
+                    <button onclick="setSize(3)">3倍 (144px)</button>
+                    <button onclick="setSize(4)">4倍 (192px)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 帧预览 -->
+        <div class="frame-preview">
+            <div class="control-title">🎞️ 动画帧序列</div>
+            <div class="frame-grid" id="frameGrid"></div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="info-box">
+            <h3>💡 使用说明</h3>
+            <p>
+                这是一个内置示例像素画的动画演示系统。<br>
+                • <strong>眨眼动画</strong>：4帧序列，自动循环<br>
+                • <strong>行走动画</strong>：3帧循环，持续播放<br>
+                • <strong>表情切换</strong>：点击表情按钮切换不同表情<br>
+                • <strong>特效</strong>：可叠加呼吸、飘浮效果<br>
+                • <strong>快捷键</strong>：空格-眨眼，W-行走，B-单次眨眼
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Canvas绘图上下文
+        const canvas = document.getElementById('pixelCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        // 定义像素小人数据（简化的48x96像素）
+        // 这里用代码绘制示例小人
+        function createSpriteFrames() {
+            const frames = {
+                blink: [],
+                walk: [],
+                emotions: {}
+            };
+
+            // 创建基础小人形状
+            function drawBasicCharacter(ctx, eyeState = 'open', legPosition = 'stand') {
+                ctx.clearRect(0, 0, 48, 96);
+
+                // 身体颜色
+                const skinColor = '#FDBCB4';
+                const hairColor = '#8B4513';
+                const clothColor = '#4A90E2';
+                const shoeColor = '#333333';
+
+                // 头部 (圆形)
+                ctx.fillStyle = skinColor;
+                ctx.fillRect(16, 8, 16, 16); // 简化的方形头
+
+                // 头发
+                ctx.fillStyle = hairColor;
+                ctx.fillRect(16, 8, 16, 6);
+                ctx.fillRect(14, 10, 20, 4);
+
+                // 眼睛
+                ctx.fillStyle = '#000000';
+                if (eyeState === 'open') {
+                    // 睁眼
+                    ctx.fillRect(20, 16, 2, 2);
+                    ctx.fillRect(26, 16, 2, 2);
+                } else if (eyeState === 'half') {
+                    // 半闭
+                    ctx.fillRect(20, 17, 2, 1);
+                    ctx.fillRect(26, 17, 2, 1);
+                } else {
+                    // 闭眼 - 横线
+                    ctx.fillRect(20, 17, 3, 1);
+                    ctx.fillRect(26, 17, 3, 1);
+                }
+
+                // 嘴巴
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(23, 20, 2, 1);
+
+                // 身体
+                ctx.fillStyle = clothColor;
+                ctx.fillRect(18, 26, 12, 20);
+
+                // 手臂
+                ctx.fillStyle = skinColor;
+                ctx.fillRect(14, 28, 4, 12);
+                ctx.fillRect(30, 28, 4, 12);
+
+                // 腿和脚
+                ctx.fillStyle = '#333333'; // 裤子
+                if (legPosition === 'stand') {
+                    ctx.fillRect(20, 46, 4, 12);
+                    ctx.fillRect(24, 46, 4, 12);
+                } else if (legPosition === 'walk1') {
+                    ctx.fillRect(19, 46, 4, 12);
+                    ctx.fillRect(25, 46, 4, 11);
+                } else {
+                    ctx.fillRect(21, 46, 4, 11);
+                    ctx.fillRect(23, 46, 4, 12);
+                }
+
+                // 鞋子
+                ctx.fillStyle = shoeColor;
+                if (legPosition === 'stand') {
+                    ctx.fillRect(19, 58, 5, 3);
+                    ctx.fillRect(24, 58, 5, 3);
+                } else if (legPosition === 'walk1') {
+                    ctx.fillRect(18, 58, 5, 3);
+                    ctx.fillRect(25, 57, 5, 3);
+                } else {
+                    ctx.fillRect(21, 57, 5, 3);
+                    ctx.fillRect(23, 58, 5, 3);
+                }
+            }
+
+            // 生成眨眼帧
+            for (let i = 0; i < 4; i++) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 48;
+                tempCanvas.height = 96;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.imageSmoothingEnabled = false;
+
+                if (i === 0) {
+                    drawBasicCharacter(tempCtx, 'open', 'stand');
+                } else if (i === 1) {
+                    drawBasicCharacter(tempCtx, 'half', 'stand');
+                } else {
+                    drawBasicCharacter(tempCtx, 'closed', 'stand');
+                }
+
+                frames.blink.push(tempCanvas);
+            }
+
+            // 生成行走帧
+            const walkStates = ['walk1', 'stand', 'walk2'];
+            for (let state of walkStates) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 48;
+                tempCanvas.height = 96;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.imageSmoothingEnabled = false;
+
+                drawBasicCharacter(tempCtx, 'open', state);
+                frames.walk.push(tempCanvas);
+            }
+
+            return frames;
+        }
+
+        // 创建所有帧
+        const spriteFrames = createSpriteFrames();
+        let currentFrame = spriteFrames.blink[0];
+
+        // 动画控制变量
+        let isBlinking = false;
+        let isWalking = false;
+        let blinkTimer = null;
+        let blinkInterval = null;
+        let walkTimer = null;
+        let blinkSpeed = 150;
+        let currentEmotion = 'normal';
+        let currentSize = 2;
+
+        // 绘制当前帧
+        function drawCurrentFrame() {
+            ctx.clearRect(0, 0, 48, 96);
+            ctx.drawImage(currentFrame, 0, 0);
+        }
+
+        // 眨眼动画
+        function toggleBlink() {
+            if (isBlinking) {
+                stopBlink();
+            } else {
+                startBlink();
+            }
+        }
+
+        function startBlink() {
+            isBlinking = true;
+            document.getElementById('blinkBtn').textContent = '⏸ 停止眨眼';
+            document.getElementById('blinkBtn').classList.add('active');
+
+            function playBlinkAnimation() {
+                let frameIndex = 0;
+                function nextFrame() {
+                    if (frameIndex >= spriteFrames.blink.length) {
+                        if (!isWalking) {
+                            currentFrame = spriteFrames.blink[0];
+                            drawCurrentFrame();
+                        }
+                        return;
+                    }
+
+                    if (!isWalking) {
+                        currentFrame = spriteFrames.blink[frameIndex];
+                        drawCurrentFrame();
+                    }
+
+                    updateFrameHighlight('blink', frameIndex);
+                    frameIndex++;
+
+                    // 后半段更快
+                    const delay = frameIndex < 2 ? blinkSpeed : blinkSpeed * 0.7;
+                    blinkTimer = setTimeout(nextFrame, delay);
+                }
+                nextFrame();
+            }
+
+            playBlinkAnimation();
+            blinkInterval = setInterval(playBlinkAnimation, 3000);
+        }
+
+        function stopBlink() {
+            isBlinking = false;
+            document.getElementById('blinkBtn').textContent = '▶️ 开始眨眼';
+            document.getElementById('blinkBtn').classList.remove('active');
+
+            clearTimeout(blinkTimer);
+            clearInterval(blinkInterval);
+
+            if (!isWalking) {
+                currentFrame = spriteFrames.blink[0];
+                drawCurrentFrame();
+            }
+        }
+
+        function blinkOnce() {
+            let frameIndex = 0;
+            function nextFrame() {
+                if (frameIndex >= spriteFrames.blink.length) {
+                    if (!isWalking) {
+                        currentFrame = spriteFrames.blink[0];
+                        drawCurrentFrame();
+                    }
+                    return;
+                }
+
+                currentFrame = spriteFrames.blink[frameIndex];
+                drawCurrentFrame();
+                frameIndex++;
+
+                const delay = frameIndex < 2 ? 150 : 100;
+                setTimeout(nextFrame, delay);
+            }
+            nextFrame();
+        }
+
+        // 行走动画
+        function toggleWalk() {
+            if (isWalking) {
+                stopWalk();
+            } else {
+                startWalk();
+            }
+        }
+
+        function startWalk() {
+            isWalking = true;
+            document.getElementById('walkBtn').textContent = '⏸ 停止行走';
+            document.getElementById('walkBtn').classList.add('active');
+
+            let frameIndex = 0;
+            function animate() {
+                if (!isWalking) return;
+
+                currentFrame = spriteFrames.walk[frameIndex];
+                drawCurrentFrame();
+                updateFrameHighlight('walk', frameIndex);
+
+                frameIndex = (frameIndex + 1) % spriteFrames.walk.length;
+                walkTimer = setTimeout(animate, 300);
+            }
+            animate();
+        }
+
+        function stopWalk() {
+            isWalking = false;
+            document.getElementById('walkBtn').textContent = '▶️ 开始行走';
+            document.getElementById('walkBtn').classList.remove('active');
+
+            clearTimeout(walkTimer);
+            currentFrame = spriteFrames.blink[0];
+            drawCurrentFrame();
+        }
+
+        // 设置眨眼速度
+        function setBlinkSpeed(speed) {
+            const speeds = { slow: 250, normal: 150, fast: 80 };
+            blinkSpeed = speeds[speed];
+
+            document.querySelectorAll('.control-group button').forEach(btn => {
+                if (btn.textContent.includes('速')) {
+                    btn.classList.remove('active');
+                }
+            });
+            event.target.classList.add('active');
+
+            if (isBlinking) {
+                stopBlink();
+                startBlink();
+            }
+        }
+
+        // 切换效果
+        function toggleBreathing() {
+            document.getElementById('spriteContainer').classList.toggle('breathing');
+        }
+
+        function toggleFloating() {
+            document.getElementById('spriteContainer').classList.toggle('floating');
+        }
+
+        // 设置表情
+        function setEmotion(emotion) {
+            currentEmotion = emotion;
+            // 这里可以切换不同表情的帧
+            console.log('切换到表情:', emotion);
+        }
+
+        // 设置大小
+        function setSize(scale) {
+            currentSize = scale;
+            const canvas = document.getElementById('pixelCanvas');
+            canvas.style.width = (48 * scale) + 'px';
+            canvas.style.height = (96 * scale) + 'px';
+
+            document.querySelectorAll('.size-control button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // 更新帧高亮
+        function updateFrameHighlight(type, index) {
+            const boxes = document.querySelectorAll('.frame-box');
+            boxes.forEach(box => box.classList.remove('active'));
+
+            if (type === 'blink' && boxes[index]) {
+                boxes[index].classList.add('active');
+            } else if (type === 'walk' && boxes[4 + index]) {
+                boxes[4 + index].classList.add('active');
+            }
+        }
+
+        // 生成帧预览
+        function generateFramePreviews() {
+            const grid = document.getElementById('frameGrid');
+
+            // 眨眼帧
+            spriteFrames.blink.forEach((frame, i) => {
+                const box = document.createElement('div');
+                box.className = 'frame-box';
+                if (i === 0) box.classList.add('active');
+
+                const preview = document.createElement('canvas');
+                preview.width = 48;
+                preview.height = 96;
+                const pctx = preview.getContext('2d');
+                pctx.imageSmoothingEnabled = false;
+                pctx.drawImage(frame, 0, 0);
+
+                const label = document.createElement('div');
+                label.className = 'frame-label';
+                label.textContent = `眨眼${i + 1}`;
+
+                box.appendChild(preview);
+                box.appendChild(label);
+                grid.appendChild(box);
+            });
+
+            // 行走帧
+            spriteFrames.walk.forEach((frame, i) => {
+                const box = document.createElement('div');
+                box.className = 'frame-box';
+
+                const preview = document.createElement('canvas');
+                preview.width = 48;
+                preview.height = 96;
+                const pctx = preview.getContext('2d');
+                pctx.imageSmoothingEnabled = false;
+                pctx.drawImage(frame, 0, 0);
+
+                const label = document.createElement('div');
+                label.className = 'frame-label';
+                label.textContent = `行走${i + 1}`;
+
+                box.appendChild(preview);
+                box.appendChild(label);
+                grid.appendChild(box);
+            });
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    toggleBlink();
+                    break;
+                case 'w':
+                    toggleWalk();
+                    break;
+                case 'b':
+                    blinkOnce();
+                    break;
+            }
+        });
+
+        // 初始化
+        window.onload = () => {
+            drawCurrentFrame();
+            generateFramePreviews();
+            console.log('✨ Q版立绘动画系统已启动！');
+        };
+    </script>
+</body>
+</html>

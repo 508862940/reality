@@ -3,6 +3,163 @@
 ## 项目概述
 一个中文互动小说游戏，具有AI驱动的NPC对话系统。
 
+---
+
+## 📅 最近更新
+
+### 2025-10-03 - 天气系统RandomEngine集成 + BGM响应式修复
+- ✅ **Stage 4-5完成**：天气系统集成RandomEngine，完成单元测试
+- ✅ **修复重要bug**：ClimateManager降水修正（平和年无雨）
+- ✅ **修复BGM响应式**：DailyBGM系统改用reactiveSystem.watch监听天气
+- ✅ **测试验证**：8项单元测试全部通过，性能优秀（10000次调用5.20ms）
+- 📝 详见：[天气系统使用指南 v1.2](docs/weather-system-guide.md)
+
+---
+
+## ⚠️ 核心开发规范（必读！）
+
+### 🌍 世界快照系统（WorldState）
+**所有游戏系统必须与世界快照集成！**
+
+- ✅ **必须遵守**：所有游戏数据的变化都必须同步到 `window.worldState.state`
+- ✅ **必须遵守**：系统初始化时必须从 `worldState` 加载数据
+- ✅ **必须遵守**：数据变更时必须通知 `worldState` 更新
+- ❌ **禁止**：各系统独立存储数据，导致数据不一致
+
+**示例：**
+```javascript
+// ✅ 正确：从worldState同步
+this.currentSeason = window.worldState.state.environment.season;
+
+// ❌ 错误：自己计算，导致不一致
+this.currentSeason = this.calculateSeason(date);
+```
+
+### 🔄 响应式系统（ReactiveSystem）
+**所有系统必须通过响应式监听自动响应数据变化！**
+
+#### 工作原理
+1. **数据源系统**（如时间系统）变化时 → 调用 `reactiveSystem.notify()`
+2. **消费系统**（如天气系统）通过 `reactiveSystem.watch()` 监听 → 自动响应变化
+3. **UI组件**也通过 `watch()` 监听 → 自动更新显示
+
+#### 开发规范
+
+- ✅ **必须遵守**：系统初始化时设置 `watch()` 监听器，自动响应变化
+- ✅ **必须遵守**：数据变化时调用 `notify()` 通知所有监听者
+- ❌ **禁止**：手动轮询检查数据变化
+- ❌ **禁止**：直接操作DOM，绕过响应式系统
+
+**正确示例（自动响应）：**
+```javascript
+// ✅ 天气系统：监听季节变化，自动调整天气概率
+class WeatherSystem {
+    init() {
+        // 设置监听器：季节变了自动响应
+        window.reactiveSystem.watch('gameTime.season', (newSeason) => {
+            this.currentSeason = newSeason;
+            this.generateWeather(); // 自动根据新季节概率生成天气
+        });
+    }
+}
+
+// ✅ 时间系统：推进时间后通知所有监听者
+class TimeSystem {
+    advanceTime(minutes) {
+        this.currentTime.season = this.calculateSeason();
+        // 通知所有监听季节的系统
+        window.reactiveSystem.notify('gameTime.season', this.currentTime.season);
+    }
+}
+```
+
+**错误示例（手动同步）：**
+```javascript
+// ❌ 错误：每次手动调用同步
+class WeatherSystem {
+    updateWeather() {
+        this.currentSeason = window.timeSystem.getSeason(); // 手动获取
+        this.generateWeather();
+    }
+}
+
+// ❌ 错误：直接改DOM
+document.getElementById('weather').textContent = 'rainy';
+```
+
+### 💾 存档系统（IndexedDB）
+**所有存档数据必须使用IndexedDB存储！**
+
+- ✅ **必须遵守**：使用 `window.saveSystem` 进行存档操作
+- ✅ **必须遵守**：自动存档存储在 IndexedDB，类型为 `type: 'auto'`
+- ✅ **必须遵守**：手动存档提供10个槽位，类型为 `type: 'manual'`
+- ⚠️ **可选**：localStorage 仅作为降级备份，不作为主存储
+- ❌ **禁止**：直接使用 localStorage 存储游戏主数据
+
+**示例：**
+```javascript
+// ✅ 正确：使用saveSystem
+await window.saveSystem.createAutoSave();
+
+// ❌ 错误：直接用localStorage
+localStorage.setItem('gameData', JSON.stringify(data));
+```
+
+### 🔗 系统同步优先级
+**时间系统 → 其他系统 → 世界快照**
+
+1. **时间系统（TimeSystem）**是所有时间相关数据的唯一来源
+2. **其他系统**（天气、经济等）从时间系统获取时间信息
+3. **世界快照（WorldState）**汇总所有系统数据用于存档
+
+**正确的系统集成流程：**
+```javascript
+// 1. 时间系统初始化
+class TimeSystem {
+    constructor() {
+        this.currentTime = { season: 'spring', ... };
+    }
+}
+
+// 2. 天气系统初始化：设置响应式监听
+class WeatherSystem {
+    init() {
+        // ✅ 获取初始季节
+        this.currentSeason = window.timeSystem.getSeason();
+
+        // ✅ 设置监听器：自动响应季节变化
+        window.reactiveSystem.watch('gameTime.season', (newSeason) => {
+            this.currentSeason = newSeason;
+            this.generateWeather(); // 自动重新生成天气
+            this.syncToWorldState(); // 自动同步到世界快照
+        });
+    }
+
+    setWeather(weather) {
+        this.currentWeather = weather;
+        // ✅ 同步到世界快照
+        this.syncToWorldState();
+        // ✅ 通知其他系统和UI
+        window.reactiveSystem.notify('environment.weather', weather);
+    }
+}
+
+// 3. 时间推进时自动触发连锁反应
+class TimeSystem {
+    advanceTime(minutes) {
+        const oldSeason = this.currentTime.season;
+        this.currentTime.season = this.calculateSeason();
+
+        if (oldSeason !== this.currentTime.season) {
+            // ✅ 通知所有监听者（天气系统会自动响应）
+            window.reactiveSystem.notify('gameTime.season', this.currentTime.season);
+        }
+    }
+}
+```
+
+---
+
 ## 文件结构速查
 ```
 根目录HTML文件：
@@ -602,6 +759,93 @@ aiMemory: {
 
 ---
 
+## 🌤️ 天气UI系统（2025-10-01 更新）
+
+### 概述
+Reality游戏已集成完整的天气可视化系统，包括天气图标、详情浮层和全屏粒子特效。
+
+### 核心功能
+1. **B区天气图标**：简洁的emoji显示当前天气
+2. **悬停浮层（v1.1完整版）**：详细天气信息（参考时间浮层设计）
+   - **📊 当前状况区**：温度（带颜色标识）、季节、能见度、详细描述
+   - **🌍 世界状态区**：年份周期（平和/动荡）、季节活动（金色高亮）、极端天气（红色警告）
+   - **📅 未来3天预报区**：3天天气预报（带温度和图标）
+   - **完整占位符系统**：无数据时显示友好占位提示
+3. **全屏天气特效**：
+   - 🌧️ 雨滴动画（普通雨/暴雨）
+   - ❄️ 雪花飘落动画
+   - 🌸 樱花花瓣动画（季节活动）
+   - ⚠️ 待细化：特效强度、密度、动画细节需商讨
+4. **响应式监听**：使用reactiveSystem自动更新
+5. **E区通知**：天气变化时自动提醒
+
+### 使用方法
+
+#### 查看天气详情
+- **PC端**：鼠标悬停在B区天气图标上
+- **移动端**：长按天气图标
+
+#### 手动控制天气
+```javascript
+// 强制改变天气
+window.weatherSystem.forceWeather('rainy', 4); // 雨天持续4小时
+
+// 更新天气图标
+window.updateWeatherIcon();
+
+// 显示天气特效
+window.createWeatherEffects('rainy', 0.7); // 雨天，强度0.7
+
+// 特殊：樱花特效（季节活动）
+window.createWeatherEffects('sakura', 1.0);
+
+// 停止所有特效
+window.createWeatherEffects('sunny', 0);
+```
+
+#### 天气类型
+- `sunny` - 晴天 ☀️
+- `cloudy` - 多云 ☁️
+- `rainy` - 雨天 🌧️
+- `stormy` - 暴雨 ⛈️
+- `snowy` - 雪天 ❄️
+- `foggy` - 雾天 🌫️
+
+### 相关文件
+- [/game-main.html](game-main.html) - 天气UI HTML结构（第65-67, 71-120, 336-344行）
+- [/css/game-main.css](css/game-main.css) - 天气UI样式（第3799-4158行）
+- [/js/pages/game-main.js](js/pages/game-main.js) - 天气UI逻辑（第2620-2755行）
+- [/js/core/weather-system.js](js/core/weather-system.js) - 天气系统核心（含详细描述）
+- [/js/core/climate-manager.js](js/core/climate-manager.js) - 气候管理器
+- [/js/test/test-weather-system.js](js/test/test-weather-system.js) - 测试工具
+- [/docs/weather-system-guide.md](docs/weather-system-guide.md) - 完整使用文档
+- [/天气UI系统演示.html](天气UI系统演示.html) - 独立演示文件
+
+### 技术特点
+- ✅ 与时间浮层保持一致的交互模式
+- ✅ 响应式设计（PC鼠标悬停/移动端长按）
+- ✅ 高性能CSS3动画（GPU加速）
+- ✅ 自动监听环境变化并更新
+- ✅ 模块化设计，易于扩展
+- ✅ 完整的section分区设计（当前状况/世界状态/预报）
+- ✅ 智能占位符系统（无数据友好提示）
+- ✅ 视觉高亮（季节活动金色、极端天气红色）
+
+### 待完善功能
+1. **天气粒子特效细化**
+   - 需商讨：雨/雪/樱花特效的强度、密度、动画细节
+2. **响应权重系统**
+   - 定义不同事件的优先级
+   - 实现权重冲突处理机制
+
+### 未来扩展
+- C区场景图片应用天气滤镜效果
+- A区角色立绘根据天气变化（雨伞等）
+- 更多天气类型和粒子特效
+- 天气音效同步
+
+---
+
 ## 🎨 插图浮层系统（2024-12-28 新增）
 
 ### 概述
@@ -682,3 +926,115 @@ Reality游戏现已集成先进的插图浮层系统，支持两种显示模式�
 2. 性能优化：大图使用懒加载
 3. 移动适配：确保触摸手势流畅
 4. 主题一致：使用游戏统一配色
+---
+
+## ⏰ 时间消耗系统使用指南
+
+### 快速接入方法
+
+在场景的选项中添加 `timeLevel` 属性即可：
+
+```javascript
+// 场景定义示例
+{
+    id: 'morning_choice',
+    title: '早晨选择',
+    text: ['新的一天开始了，你要做什么？'],
+    choices: [
+        {
+            text: '洗漱',
+            timeLevel: 'quick',  // 5分钟
+            next: 'after_wash'
+        },
+        {
+            text: '去食堂吃早餐',
+            timeLevel: 'medium',  // 30分钟
+            effects: { energy: 20 },
+            next: 'cafeteria'
+        },
+        {
+            text: '去操场跑步',
+            timeLevel: 'long',  // 1小时
+            effects: { health: 10, energy: -10 },
+            next: 'playground'
+        },
+        {
+            text: '继续睡觉',
+            timeLevel: 'very_long',  // 2小时
+            effects: { energy: 30 },
+            next: 'wake_up_late'
+        }
+    ]
+}
+```
+
+### 时间等级参考表（24小时制）
+
+| 等级 | 时长 | 适用场景 | 示例 |
+|------|------|----------|------|
+| `instant` | 0分钟 | UI操作、查看信息 | 打开地图、查看状态 |
+| `quick` | 5分钟 | 简单互动 | 打招呼、捡东西、喝水 |
+| `short` | 15分钟 | 日常小事 | 洗漱、换衣服、整理背包 |
+| `medium` | 30分钟 | 一般活动 | 吃饭、跨区移动、对话 |
+| `long` | 1小时 | 重要活动 | 上课、训练、约会喝咖啡 |
+| `very_long` | 2小时 | 耗时活动 | 看电影、大型战斗、探索 |
+| `half_day` | 6小时 | 半天活动 | 上午班/下午班工作 |
+| `full_day` | 12小时 | 全天活动 | 全天工作、长途旅行 |
+| `entire_day` | 24小时 | 整天活动 | 睡眠、昏迷、时间跳跃 |
+
+### 特殊场景：多选/什么都不选
+
+```javascript
+// 多选场景（如整理背包）
+{
+    id: 'organize_bag',
+    multiChoice: true,
+    actionTimeCost: 15,  // 基础时间（无论选不选都消耗）
+    zeroChoiceEffect: {
+        timeCost: 5,     // 什么都不选的额外惩罚
+        text: '你犹豫不决，浪费了一些时间'
+    },
+    choices: [ /* ... */ ]
+}
+```
+
+### 代码中手动消耗时间
+
+```javascript
+// 方法1：使用时间等级（推荐）
+window.timeSystem.consumeTime('medium', '认真思考');
+
+// 方法2：直接推进时间
+window.timeSystem.advanceTime(45, '做某事');
+
+// 方法3：使用旧接口（兼容）
+window.timeSystem.performAction('standard', 'organize_inventory');
+```
+
+### 自动功能
+
+- ✅ **背包整理**：在背包页停留超过3秒，离开时自动消耗15分钟
+- ✅ **时间提示**：
+  - 15分钟：简短提示"片刻过去了..."
+  - 30分钟以上：详细时间"X小时X分钟过去了..."
+  - 2小时以上：显示时间流逝特效
+- ✅ **跨天自动存档**：每天早上5:00自动存档
+- ✅ **特殊时间提醒**：21:00提醒睡觉，7:00显示早安
+
+### 相关文件
+
+- `/js/core/time-system.js` - 时间系统核心（585-1074行）
+- `/js/core/scene-manager.js` - 场景时间消耗集成（1666-1735行）
+- `/js/pages/game-main.js` - 背包时间消耗（807-823行）
+- `/css/game-main.css` - 时间流逝特效样式（90-134行）
+
+### 测试命令
+
+```javascript
+// 在浏览器控制台测试
+testTime.testActions()  // 自动测试各种动作
+testTime.advance(60)    // 推进1小时
+testTime.rest(30)       // 休息30分钟
+testTime.sleep(8)       // 睡8小时
+testTime.now()          // 查看当前时间
+```

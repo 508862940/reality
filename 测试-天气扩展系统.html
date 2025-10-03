@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气扩展系统测试 - Temperature + Special Weather</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .status-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .status-value {
+            font-family: 'Consolas', monospace;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .status-ok {
+            color: #28a745;
+        }
+
+        .status-error {
+            color: #dc3545;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .weather-display {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            margin: 15px 0;
+        }
+
+        .weather-icon {
+            font-size: 5em;
+            margin-bottom: 10px;
+        }
+
+        .weather-name {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .weather-desc {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .temp-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .temp-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .temp-box.hot {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        }
+
+        .temp-box.cold {
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+        }
+
+        .temp-box.comfortable {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .temp-label {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .temp-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .comfort-display {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .comfort-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .comfort-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .comfort-suggestion {
+            color: #666;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+
+        #logOutput {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(0,255,0,0.1);
+        }
+
+        .special-weather-info {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+
+        .special-weather-info strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3436;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌡️ 天气扩展系统测试</h1>
+
+        <div class="test-grid">
+            <!-- 系统状态面板 -->
+            <div class="test-panel">
+                <div class="panel-title">📊 系统状态</div>
+                <div class="status-row">
+                    <span class="status-label">时间系统</span>
+                    <span class="status-value" id="timeSystemStatus">❌</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">天气系统</span>
+                    <span class="status-value" id="weatherSystemStatus">❌</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">温度系统</span>
+                    <span class="status-value" id="tempSystemStatus">❌</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">气候管理器</span>
+                    <span class="status-value" id="climateStatus">❌</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">条件引擎</span>
+                    <span class="status-value" id="conditionStatus">❌</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">随机引擎</span>
+                    <span class="status-value" id="randomStatus">❌</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">响应式系统</span>
+                    <span class="status-value" id="reactiveStatus">❌</span>
+                </div>
+            </div>
+
+            <!-- 当前天气显示 -->
+            <div class="test-panel">
+                <div class="panel-title">🌤️ 当前天气</div>
+                <div class="weather-display" id="weatherDisplay">
+                    <div class="weather-icon">☀️</div>
+                    <div class="weather-name">晴天</div>
+                    <div class="weather-desc">正在加载...</div>
+                </div>
+                <div class="special-weather-info" id="specialInfo" style="display:none;">
+                    <strong>特殊天气效果：</strong>
+                    <div id="specialEffects"></div>
+                </div>
+            </div>
+
+            <!-- 温度状态显示 -->
+            <div class="test-panel">
+                <div class="panel-title">🌡️ 温度状态</div>
+                <div class="temp-display">
+                    <div class="temp-box comfortable" id="envTempBox">
+                        <div class="temp-label">环境温度</div>
+                        <div class="temp-value" id="envTemp">20°C</div>
+                    </div>
+                    <div class="temp-box comfortable" id="apparentTempBox">
+                        <div class="temp-label">体感温度</div>
+                        <div class="temp-value" id="apparentTemp">20°C</div>
+                    </div>
+                </div>
+                <div class="comfort-display" id="comfortDisplay">
+                    <div class="comfort-icon">😊</div>
+                    <div class="comfort-name">舒适</div>
+                    <div class="comfort-suggestion">体感温度适宜</div>
+                </div>
+            </div>
+
+            <!-- 天气控制 -->
+            <div class="test-panel">
+                <div class="panel-title">🎮 天气控制</div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="testWeather('sunny')">☀️ 晴天</button>
+                    <button class="btn-primary" onclick="testWeather('rainy')">🌧️ 雨天</button>
+                    <button class="btn-primary" onclick="testWeather('stormy')">⛈️ 暴雨</button>
+                    <button class="btn-primary" onclick="testWeather('snowy')">❄️ 雪天</button>
+                </div>
+                <div class="button-group">
+                    <button class="btn-success" onclick="testWeather('sakura')">🌸 樱花</button>
+                    <button class="btn-success" onclick="testWeather('rainbow')">🌈 彩虹</button>
+                    <button class="btn-success" onclick="testWeather('meteor_shower')">🌠 流星雨</button>
+                    <button class="btn-danger" onclick="testWeather('polluted')">☢️ 污染</button>
+                </div>
+                <div class="button-group">
+                    <button class="btn-info" onclick="generateRandomWeather()">🎲 随机天气</button>
+                    <button class="btn-warning" onclick="testRainToRainbow()">🌈 测试雨→彩虹</button>
+                </div>
+            </div>
+
+            <!-- 温度控制 -->
+            <div class="test-panel">
+                <div class="panel-title">🌡️ 温度控制</div>
+                <div class="status-row">
+                    <span class="status-label">衣服修正</span>
+                    <span class="status-value" id="clothingMod">0°C</span>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="setClothing(-10)">🩱 夏装(-10°C)</button>
+                    <button class="btn-primary" onclick="setClothing(0)">👔 普通(0°C)</button>
+                    <button class="btn-primary" onclick="setClothing(10)">🧥 冬装(+10°C)</button>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">食物buff</span>
+                    <span class="status-value" id="foodBuffs">无</span>
+                </div>
+                <div class="button-group">
+                    <button class="btn-success" onclick="addFoodBuff('ice_cream', -5, 0.5)">🍦 冰淇淋(-5°C)</button>
+                    <button class="btn-success" onclick="addFoodBuff('hot_soup', 5, 0.5)">🍲 热汤(+5°C)</button>
+                    <button class="btn-danger" onclick="clearFoodBuffs()">清除buff</button>
+                </div>
+            </div>
+
+            <!-- 气候事件控制 -->
+            <div class="test-panel">
+                <div class="panel-title">🌍 气候事件测试</div>
+                <div class="button-group">
+                    <button class="btn-success" onclick="triggerClimateEvent('SAKURA_WEEK')">🌸 触发樱花周</button>
+                    <button class="btn-success" onclick="triggerClimateEvent('METEOR_SHOWER_EVENT')">🌠 触发流星雨</button>
+                    <button class="btn-danger" onclick="triggerClimateEvent('POLLUTION_CRISIS')">☢️ 触发污染危机</button>
+                    <button class="btn-warning" onclick="clearClimateEvent()">🔄 清除事件</button>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">当前事件</span>
+                    <span class="status-value" id="currentEvent">无</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="test-panel">
+            <div class="panel-title">📝 系统日志</div>
+            <div id="logOutput"></div>
+        </div>
+    </div>
+
+    <!-- 加载系统文件 -->
+    <script src="js/core/random-engine.js"></script>
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/world-state.js"></script>
+    <script src="js/core/condition-engine.js"></script>
+    <script src="js/core/time-system.js"></script>
+    <script src="js/core/climate-manager.js"></script>
+    <script src="js/core/weather-system.js"></script>
+    <script src="js/core/temperature-system.js"></script>
+
+    <script>
+        // ==================== 日志系统 ====================
+        const logOutput = document.getElementById('logOutput');
+        const originalLog = console.log;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logOutput.appendChild(logEntry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        };
+
+        // ==================== 初始化系统 ====================
+        function initSystems() {
+            console.log('🚀 开始初始化系统...');
+
+            // 初始化WorldState
+            if (!window.worldState) {
+                window.worldState = new WorldState();
+            }
+
+            // 初始化时间系统
+            if (!window.timeSystem) {
+                window.timeSystem = new TimeSystem();
+            }
+
+            // 初始化气候管理器
+            if (!window.climateManager) {
+                window.climateManager = new ClimateManager();
+            }
+
+            // 初始化天气系统（会自动调用init）
+            if (!window.weatherSystem) {
+                // WeatherSystem构造函数会自动调用init
+            }
+
+            // 初始化温度系统
+            if (window.temperatureSystem) {
+                window.temperatureSystem.init();
+            }
+
+            updateSystemStatus();
+            updateWeatherDisplay();
+            updateTemperatureDisplay();
+
+            console.log('✅ 系统初始化完成');
+        }
+
+        // ==================== 状态更新 ====================
+        function updateSystemStatus() {
+            document.getElementById('timeSystemStatus').textContent = window.timeSystem ? '✅ 运行中' : '❌ 未加载';
+            document.getElementById('weatherSystemStatus').textContent = window.weatherSystem ? '✅ 运行中' : '❌ 未加载';
+            document.getElementById('tempSystemStatus').textContent = window.temperatureSystem ? '✅ 运行中' : '❌ 未加载';
+            document.getElementById('climateStatus').textContent = window.climateManager ? '✅ 运行中' : '❌ 未加载';
+            document.getElementById('conditionStatus').textContent = window.ConditionEngine ? '✅ 运行中' : '❌ 未加载';
+            document.getElementById('randomStatus').textContent = window.RandomEngine ? '✅ 运行中' : '❌ 未加载';
+            document.getElementById('reactiveStatus').textContent = window.reactiveSystem ? '✅ 运行中' : '❌ 未加载';
+
+            document.querySelectorAll('.status-value').forEach(el => {
+                if (el.textContent.includes('✅')) {
+                    el.classList.add('status-ok');
+                    el.classList.remove('status-error');
+                } else if (el.textContent.includes('❌')) {
+                    el.classList.add('status-error');
+                    el.classList.remove('status-ok');
+                }
+            });
+        }
+
+        function updateWeatherDisplay() {
+            if (!window.weatherSystem) return;
+
+            const weather = window.weatherSystem.weatherTypes[window.weatherSystem.currentWeather];
+            if (!weather) return;
+
+            const iconEl = document.querySelector('.weather-icon');
+            const nameEl = document.querySelector('.weather-name');
+            const descEl = document.querySelector('.weather-desc');
+
+            if (!iconEl || !nameEl || !descEl) {
+                console.warn('⚠️ 天气显示元素未加载');
+                return;
+            }
+
+            iconEl.textContent = weather.icon;
+            nameEl.textContent = weather.name;
+            descEl.textContent = weather.detailDescription || weather.description;
+
+            // 显示特殊天气信息
+            if (weather.isSpecial) {
+                document.getElementById('specialInfo').style.display = 'block';
+                let effectsHTML = '';
+                for (const [key, value] of Object.entries(weather.effects)) {
+                    if (key !== 'visibility') {
+                        effectsHTML += `<div>${key}: ${value > 0 ? '+' : ''}${value}</div>`;
+                    }
+                }
+                document.getElementById('specialEffects').innerHTML = effectsHTML;
+            } else {
+                document.getElementById('specialInfo').style.display = 'none';
+            }
+        }
+
+        function updateTemperatureDisplay() {
+            if (!window.temperatureSystem) return;
+
+            const state = window.temperatureSystem.getState();
+            const comfort = state.comfort;
+
+            // 检查元素是否存在
+            const envTempEl = document.getElementById('envTemp');
+            const apparentTempEl = document.getElementById('apparentTemp');
+
+            if (!envTempEl || !apparentTempEl) {
+                console.warn('⚠️ 温度显示元素未加载');
+                return;
+            }
+
+            // 更新温度值
+            envTempEl.textContent = `${state.environment}°C`;
+            apparentTempEl.textContent = `${state.apparent}°C`;
+
+            // 更新温度盒子颜色
+            const envBox = document.getElementById('envTempBox');
+            const appBox = document.getElementById('apparentTempBox');
+
+            envBox.className = 'temp-box ' + getTemperatureClass(state.environment);
+            appBox.className = 'temp-box ' + getTemperatureClass(state.apparent);
+
+            // 更新舒适度显示
+            const comfortDisplay = document.getElementById('comfortDisplay');
+            comfortDisplay.style.background = getComfortColor(comfort.level);
+            comfortDisplay.querySelector('.comfort-icon').textContent = comfort.icon;
+            comfortDisplay.querySelector('.comfort-name').textContent = comfort.name;
+            comfortDisplay.querySelector('.comfort-suggestion').textContent = comfort.suggestion;
+
+            // 更新修正值显示
+            document.getElementById('clothingMod').textContent = `${state.modifiers.clothing > 0 ? '+' : ''}${state.modifiers.clothing}°C`;
+
+            // 更新食物buff显示
+            if (state.foodBuffs.length > 0) {
+                const buffText = state.foodBuffs.map(b =>
+                    `${b.foodId}(${b.modifier > 0 ? '+' : ''}${b.modifier}°C, 剩${b.remainingDays}天)`
+                ).join(', ');
+                document.getElementById('foodBuffs').textContent = buffText;
+            } else {
+                document.getElementById('foodBuffs').textContent = '无';
+            }
+        }
+
+        function getTemperatureClass(temp) {
+            if (temp < 10) return 'cold';
+            if (temp > 30) return 'hot';
+            return 'comfortable';
+        }
+
+        function getComfortColor(level) {
+            const colors = {
+                freezing: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                cold: 'linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%)',
+                cool: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                comfortable: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+                warm: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)',
+                hot: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)',
+                scorching: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)'
+            };
+            return colors[level] || colors.comfortable;
+        }
+
+        // ==================== 测试函数 ====================
+        function testWeather(weatherType) {
+            console.log(`🎮 手动设置天气: ${weatherType}`);
+            if (window.weatherSystem) {
+                window.weatherSystem.forceWeather(weatherType, 4);
+                updateWeatherDisplay();
+                updateTemperatureDisplay();
+            }
+        }
+
+        function generateRandomWeather() {
+            console.log('🎲 生成随机天气');
+            if (window.weatherSystem) {
+                window.weatherSystem.generateWeather();
+                updateWeatherDisplay();
+                updateTemperatureDisplay();
+            }
+        }
+
+        function testRainToRainbow() {
+            console.log('🌈 测试雨天→彩虹转换');
+            testWeather('rainy');
+            setTimeout(() => {
+                console.log('☀️ 转为晴天，检查彩虹条件...');
+                generateRandomWeather();
+            }, 2000);
+        }
+
+        function setClothing(modifier) {
+            console.log(`👔 设置衣服修正: ${modifier}°C`);
+            if (window.temperatureSystem) {
+                window.temperatureSystem.setClothingModifier(modifier);
+                updateTemperatureDisplay();
+            }
+        }
+
+        function addFoodBuff(foodId, modifier, durationDays) {
+            console.log(`🍔 添加食物buff: ${foodId} (${modifier}°C, ${durationDays}天)`);
+            if (window.temperatureSystem) {
+                window.temperatureSystem.addFoodBuff(foodId, modifier, durationDays);
+                updateTemperatureDisplay();
+            }
+        }
+
+        function clearFoodBuffs() {
+            console.log('🗑️ 清除所有食物buff');
+            if (window.temperatureSystem) {
+                window.temperatureSystem.currentState.foodBuffs = [];
+                window.temperatureSystem.calculateApparentTemp();
+                updateTemperatureDisplay();
+            }
+        }
+
+        function triggerClimateEvent(eventName) {
+            console.log(`🌍 触发气候事件: ${eventName}`);
+            if (window.climateManager) {
+                window.climateManager.currentState.seasonActivity = eventName;
+                document.getElementById('currentEvent').textContent = eventName;
+                console.log('✅ 事件已触发，尝试重新生成天气...');
+                generateRandomWeather();
+            }
+        }
+
+        function clearClimateEvent() {
+            console.log('🔄 清除气候事件');
+            if (window.climateManager) {
+                window.climateManager.currentState.seasonActivity = null;
+                document.getElementById('currentEvent').textContent = '无';
+                generateRandomWeather();
+            }
+        }
+
+        // ==================== 响应式监听 ====================
+        if (window.reactiveSystem) {
+            window.reactiveSystem.watch('environment.weather', () => {
+                console.log('🔔 响应式：天气变化，更新UI');
+                updateWeatherDisplay();
+            });
+
+            window.reactiveSystem.watch('temperature.apparent', () => {
+                console.log('🔔 响应式：体感温度变化，更新UI');
+                updateTemperatureDisplay();
+            });
+        }
+
+        // ==================== 页面加载完成 ====================
+        window.addEventListener('load', () => {
+            console.log('📄 页面加载完成');
+            initSystems();
+        });
+    </script>
+</body>
+</html>

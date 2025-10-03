@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>天气随机测试调试</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .section {
+            background: #252526;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .section h3 {
+            color: #4ec9b0;
+            margin-top: 0;
+        }
+        .log {
+            background: #1e1e1e;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #007acc;
+            font-size: 12px;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .stat-item {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .stat-label {
+            color: #858585;
+            font-size: 11px;
+        }
+        .stat-value {
+            color: #4fc1ff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐛 天气随机引擎调试</h1>
+
+    <div class="section">
+        <h3>1. 测试RandomEngine.weightedRandom()</h3>
+        <button onclick="testWeightedRandom()">测试基础加权随机（1000次）</button>
+        <div id="weighted-log"></div>
+    </div>
+
+    <div class="section">
+        <h3>2. 测试春季天气生成</h3>
+        <p>配置：晴30% 多云30% 雨30% 暴雨5% 雾5% 雪0%</p>
+        <button onclick="testSpringWeather()">生成春季天气（1000次）</button>
+        <div id="spring-log"></div>
+    </div>
+
+    <div class="section">
+        <h3>3. 逐步调试单次生成</h3>
+        <button onclick="debugSingleGeneration()">单步调试天气生成</button>
+        <div id="debug-log"></div>
+    </div>
+
+    <script src="js/core/world-state.js"></script>
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/time-system.js"></script>
+    <script src="js/core/random-engine.js"></script>
+    <script src="js/core/climate-manager.js"></script>
+    <script src="js/core/weather-system.js"></script>
+
+    <script>
+        // 初始化系统
+        window.worldState = new WorldState();
+        window.reactiveSystem = new ReactiveSystem();
+        window.timeSystem = new TimeSystem();
+        window.timeSystem.init();
+        window.climateManager = new ClimateManager();
+        window.climateManager.init();
+        window.weatherSystem = new WeatherSystem();
+        window.weatherSystem.init();
+
+        // 测试1：基础加权随机
+        function testWeightedRandom() {
+            const log = document.getElementById('weighted-log');
+            log.innerHTML = '<div class="log">开始测试...</div>';
+
+            const options = [
+                { value: 'A', weight: 0.3 },
+                { value: 'B', weight: 0.3 },
+                { value: 'C', weight: 0.3 },
+                { value: 'D', weight: 0.05 },
+                { value: 'E', weight: 0.05 }
+            ];
+
+            const results = {};
+            const testCount = 1000;
+
+            for (let i = 0; i < testCount; i++) {
+                const result = window.RandomEngine.weightedRandom(options);
+                results[result] = (results[result] || 0) + 1;
+            }
+
+            let html = '<div class="log"><strong>RandomEngine.weightedRandom() 测试结果：</strong></div>';
+            html += '<div class="stats">';
+            for (const [key, count] of Object.entries(results)) {
+                const percent = (count / testCount * 100).toFixed(1);
+                const option = options.find(o => o.value === key);
+                const expected = (option.weight * 100).toFixed(0);
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-label">${key} (期望${expected}%)</div>
+                        <div class="stat-value">${percent}%</div>
+                        <div class="stat-label">${count}次</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            log.innerHTML = html;
+        }
+
+        // 测试2：春季天气生成
+        function testSpringWeather() {
+            const log = document.getElementById('spring-log');
+            log.innerHTML = '<div class="log">开始测试...</div>';
+
+            window.weatherSystem.currentSeason = 'spring';
+
+            const results = {};
+            const testCount = 1000;
+
+            for (let i = 0; i < testCount; i++) {
+                window.weatherSystem.generateWeather();
+                const weather = window.weatherSystem.currentWeather;
+                results[weather] = (results[weather] || 0) + 1;
+            }
+
+            let html = '<div class="log"><strong>春季天气生成测试结果：</strong></div>';
+            html += '<div class="stats">';
+
+            const weatherConfig = window.weatherSystem.seasons.spring.weatherProbability;
+            for (const [weather, count] of Object.entries(results)) {
+                const percent = (count / testCount * 100).toFixed(1);
+                const expected = (weatherConfig[weather] * 100).toFixed(0);
+                const weatherInfo = window.weatherSystem.weatherTypes[weather];
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-label">${weatherInfo.icon} ${weatherInfo.name} (期望${expected}%)</div>
+                        <div class="stat-value">${percent}%</div>
+                        <div class="stat-label">${count}次</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            log.innerHTML = html;
+        }
+
+        // 测试3：单步调试
+        function debugSingleGeneration() {
+            const log = document.getElementById('debug-log');
+            let html = '<div class="log"><strong>单步调试天气生成流程：</strong></div>';
+
+            window.weatherSystem.currentSeason = 'spring';
+            const season = window.weatherSystem.seasons.spring;
+
+            html += `<div class="log">当前季节: ${season.name}</div>`;
+            html += `<div class="log">天气概率配置:</div>`;
+
+            const probabilities = season.weatherProbability;
+            for (const [weather, prob] of Object.entries(probabilities)) {
+                const weatherInfo = window.weatherSystem.weatherTypes[weather];
+                html += `<div class="log">  ${weatherInfo.icon} ${weatherInfo.name}: ${(prob * 100).toFixed(0)}%</div>`;
+            }
+
+            // 检查气候修正
+            let rainfallModifier = 1.0;
+            if (window.climateManager) {
+                rainfallModifier = window.climateManager.getRainfallModifier('spring');
+            }
+            html += `<div class="log">降水修正: ${rainfallModifier}x</div>`;
+
+            // 构建选项
+            const weatherOptions = [];
+            for (const [weather, probability] of Object.entries(probabilities)) {
+                let adjustedWeight = probability;
+                if ((weather === 'rainy' || weather === 'stormy') && rainfallModifier !== 1.0) {
+                    adjustedWeight = Math.min(1, probability * rainfallModifier);
+                }
+                weatherOptions.push({
+                    value: weather,
+                    weight: adjustedWeight
+                });
+            }
+
+            html += `<div class="log">加权选项数组:</div>`;
+            for (const option of weatherOptions) {
+                html += `<div class="log">  { value: "${option.value}", weight: ${option.weight} }</div>`;
+            }
+
+            const totalWeight = weatherOptions.reduce((sum, opt) => sum + opt.weight, 0);
+            html += `<div class="log">总权重: ${totalWeight}</div>`;
+
+            // 执行随机选择（带详细日志）
+            const randomValue = Math.random() * totalWeight;
+            html += `<div class="log">随机值: ${randomValue.toFixed(4)} (范围: 0 ~ ${totalWeight})</div>`;
+
+            let cumulative = 0;
+            let selected = null;
+            html += `<div class="log">累积判定过程:</div>`;
+            for (const option of weatherOptions) {
+                cumulative += option.weight;
+                const weatherInfo = window.weatherSystem.weatherTypes[option.value];
+                html += `<div class="log">  ${weatherInfo.icon} ${weatherInfo.name}: 累积=${cumulative.toFixed(4)} ${randomValue <= cumulative ? '✅ 选中！' : ''}</div>`;
+                if (randomValue <= cumulative && !selected) {
+                    selected = option.value;
+                }
+            }
+
+            html += `<div class="log" style="border-color: #4ec9b0; margin-top: 10px;"><strong>最终结果: ${window.weatherSystem.weatherTypes[selected].icon} ${window.weatherSystem.weatherTypes[selected].name}</strong></div>`;
+
+            log.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

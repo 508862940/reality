@@ -420,11 +420,31 @@ function initializeUI() {
 
     // 初始化标签页内容
     initializeTabContents();
-    
+
     // 初始化时间详情浮层（如果函数已定义）
     if (typeof window.initTimeDetailTooltip === 'function') {
         window.initTimeDetailTooltip();
         console.log('✅ 时间详情浮层已初始化');
+    }
+
+    // 初始化天气UI系统
+    if (typeof window.initWeatherDetailTooltip === 'function') {
+        window.initWeatherDetailTooltip();
+        console.log('✅ 天气详情浮层已初始化');
+    }
+
+    if (typeof window.updateWeatherIcon === 'function') {
+        window.updateWeatherIcon();
+    }
+
+    if (typeof window.setupWeatherListeners === 'function') {
+        window.setupWeatherListeners();
+    }
+
+    // 初始化天气特效
+    if (window.weatherSystem && typeof window.createWeatherEffects === 'function') {
+        const currentWeather = window.weatherSystem.currentWeather;
+        window.createWeatherEffects(currentWeather);
     }
 }
 
@@ -626,8 +646,18 @@ function updateLocationTime() {
 
     // 更新时间（使用新的TimeSystem格式）
     if (window.timeSystem) {
-        // 使用新的icon格式：显示季节图标+日期+时间
-        const timeStr = window.timeSystem.formatTime('icon');
+        // 根据屏幕宽度选择不同格式
+        let timeStr;
+        if (window.innerWidth <= 380) {
+            // 超小屏幕：使用超简短格式
+            timeStr = window.timeSystem.formatTime('mobile');  // "3/8 07:30"
+        } else if (window.innerWidth <= 430) {
+            // 一般移动端：使用简短格式，不带图标
+            timeStr = window.timeSystem.formatTime('short');  // "3月8日 07:30"
+        } else {
+            // 桌面端：使用图标格式
+            timeStr = window.timeSystem.formatTime('icon');  // "🌸 3月8日 🌅 07:30"
+        }
         document.getElementById('currentTime').textContent = timeStr;
 
         // 在title属性显示详细信息
@@ -793,6 +823,30 @@ function showSaveProgress(show = true) {
 // 切换标签页
 function switchTab(tabName) {
     console.log('🎯 切换到标签页:', tabName);
+
+    // 🕐 处理背包时间消耗
+    if (currentTab === 'inventory' && tabName !== 'inventory') {
+        // 离开背包页面时，如果打开了足够长时间，消耗时间
+        if (window.inventoryOpenTime) {
+            const timeSpent = Date.now() - window.inventoryOpenTime;
+            // 如果在背包页面停留超过3秒，就算作整理背包
+            if (timeSpent > 3000) {
+                if (window.timeSystem) {
+                    window.timeSystem.performAction('standard', 'organize_inventory');
+                    if (window.showNotification) {
+                        window.showNotification('⏳ 整理背包花费了15分钟', 'info');
+                    }
+                }
+            }
+            window.inventoryOpenTime = null;
+        }
+    }
+
+    // 记录进入背包的时间
+    if (tabName === 'inventory') {
+        window.inventoryOpenTime = Date.now();
+        console.log('📦 开始整理背包...');
+    }
 
     // 更新按钮状态
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1501,14 +1555,69 @@ function saveGame() {
 
 // 切换音效
 function toggleSound() {
-    // 这里可以添加音效切换逻辑
-    console.log('切换音效');
+    if (window.audioSystem) {
+        window.audioSystem.enabled.sfx = !window.audioSystem.enabled.sfx;
+        const btn = document.querySelector('[data-action="sound"]');
+        if (btn) {
+            btn.textContent = `🔊 音效: ${window.audioSystem.enabled.sfx ? '开启' : '关闭'}`;
+        }
+
+        // 播放确认音效（如果开启）
+        if (window.audioSystem.enabled.sfx) {
+            window.audioSystem.playSFX('assets/sounds/sfx/ui/toggle_on.mp3');
+        }
+
+        // 保存到worldState
+        if (window.worldState?.state?.player?.settings?.audio) {
+            window.worldState.state.player.settings.audio.enabled.sfx = window.audioSystem.enabled.sfx;
+        }
+
+        console.log(`音效已${window.audioSystem.enabled.sfx ? '开启' : '关闭'}`);
+    }
 }
 
 // 切换音乐
 function toggleMusic() {
-    // 这里可以添加音乐切换逻辑
-    console.log('切换音乐');
+    if (window.audioSystem) {
+        const wasEnabled = window.audioSystem.enabled.bgm;
+        window.audioSystem.enabled.bgm = !wasEnabled;
+        window.audioSystem.enabled.ambient = !wasEnabled;
+
+        const btn = document.querySelector('[data-action="music"]');
+        if (btn) {
+            btn.textContent = `🎵 音乐: ${!wasEnabled ? '开启' : '关闭'}`;
+        }
+
+        // 如果关闭音乐，暂停所有背景音
+        if (wasEnabled) {
+            window.audioSystem.bgmPlayer.pause();
+            Object.values(window.audioSystem.ambientLayers).forEach(layer => layer.pause());
+        } else {
+            // 恢复播放
+            if (window.audioSystem.currentBGM) {
+                window.audioSystem.bgmPlayer.play();
+            }
+            // 恢复环境音
+            Object.values(window.audioSystem.ambientLayers).forEach(layer => {
+                if (layer.src && layer.paused) {
+                    layer.play();
+                }
+            });
+        }
+
+        // 保存到worldState
+        if (window.worldState?.state?.player?.settings?.audio) {
+            window.worldState.state.player.settings.audio.enabled.bgm = window.audioSystem.enabled.bgm;
+            window.worldState.state.player.settings.audio.enabled.ambient = window.audioSystem.enabled.ambient;
+        }
+
+        // 播放确认音效
+        if (window.audioSystem.enabled.sfx) {
+            window.audioSystem.playSFX('assets/sounds/sfx/ui/toggle_on.mp3');
+        }
+
+        console.log(`音乐已${!wasEnabled ? '开启' : '关闭'}`);
+    }
 }
 
 // 返回主菜单
@@ -2395,12 +2504,18 @@ function initTimeDetailTooltip() {
     }
 
     function showTooltip() {
+        // 🔥 关键：如果天气浮层正在显示，先关闭它
+        const weatherTooltip = document.getElementById("weatherDetailTooltip");
+        if (weatherTooltip && weatherTooltip.classList.contains("show")) {
+            weatherTooltip.classList.remove("show");
+        }
+
         tooltip.innerHTML = updateTooltipContent();
         const rect = timeElement.getBoundingClientRect();
         // 确保浮层不超出屏幕边界
         const tooltipWidth = 260; // 预估宽度
         let left = rect.left + rect.width / 2;
-        
+
         // 防止超出右边界
         if (left + tooltipWidth / 2 > window.innerWidth - 10) {
             left = window.innerWidth - tooltipWidth / 2 - 10;
@@ -2409,7 +2524,7 @@ function initTimeDetailTooltip() {
         if (left - tooltipWidth / 2 < 10) {
             left = tooltipWidth / 2 + 10;
         }
-        
+
         tooltip.style.left = left + "px";
         tooltip.style.top = (rect.bottom + 10) + "px";
         tooltip.style.transform = "translateX(-50%)";
@@ -2466,3 +2581,757 @@ function initTimeDetailTooltip() {
 
 window.initTimeDetailTooltip = initTimeDetailTooltip;
 
+
+// ==================== 天气UI系统 ====================
+
+/**
+ * 初始化天气详情浮层
+ */
+function initWeatherDetailTooltip() {
+    const weatherIcon = document.getElementById("currentWeatherIcon");
+    const timeElement = document.getElementById("currentTime");
+
+    if (!weatherIcon) {
+        console.warn('❌ 天气图标元素未找到');
+        return;
+    }
+
+    // 动态创建天气浮层（与时间浮层一致）
+    let tooltip = document.getElementById("weatherDetailTooltip");
+    if (!tooltip) {
+        tooltip = document.createElement("div");
+        tooltip.id = "weatherDetailTooltip";
+        tooltip.className = "weather-detail-tooltip";
+        document.body.appendChild(tooltip);
+    }
+
+    let longPressTimer = null;
+    let isTooltipVisible = false;
+
+    function updateTooltipContent() {
+        if (!window.weatherSystem) {
+            return `<div class="weather-detail-content">
+                <div class="weather-detail-row">
+                    <span class="weather-detail-label">⚠️ 天气系统未初始化</span>
+                </div>
+            </div>`;
+        }
+
+        const weatherInfo = window.weatherSystem.getCurrentWeatherInfo();
+        const climateInfo = window.climateManager ? window.climateManager.getCurrentClimate() : null;
+
+        const tempClass = weatherInfo.temperature > 30 ? 'temp-hot' :
+                         weatherInfo.temperature < 10 ? 'temp-cold' : 'temp-normal';
+
+        // 获取详细描述
+        const currentWeatherType = window.weatherSystem.weatherTypes[window.weatherSystem.currentWeather];
+        const detailDesc = currentWeatherType?.detailDescription || weatherInfo.description;
+
+        let content = `
+            <div class="weather-detail-content">
+                <div class="weather-detail-header">
+                    <span class="weather-icon-large">${weatherInfo.icon}</span>
+                    <span class="weather-name">${weatherInfo.weather}</span>
+                    <span class="weather-description">${detailDesc}</span>
+                </div>
+
+                <div class="weather-detail-section">
+                    <div class="weather-detail-section-title">📊 当前状况</div>
+                    <div class="weather-detail-row">
+                        <span class="weather-detail-label">🌡️ 温度</span>
+                        <span class="weather-detail-value ${tempClass}">${weatherInfo.temperature}°C</span>
+                    </div>
+                    <div class="weather-detail-row">
+                        <span class="weather-detail-label">🍂 季节</span>
+                        <span class="weather-detail-value">${weatherInfo.season}</span>
+                    </div>
+                    <div class="weather-detail-row">
+                        <span class="weather-detail-label">👁️ 能见度</span>
+                        <span class="weather-detail-value">${weatherInfo.visibility}%</span>
+                    </div>
+                </div>
+        `;
+
+        // 年份周期和特殊事件部分（总是显示，有占位）
+        content += `<div class="weather-detail-divider"></div>`;
+        content += `<div class="weather-detail-section">`;
+        content += `<div class="weather-detail-section-title">🌍 世界状态</div>`;
+
+        if (climateInfo) {
+            const yearNames = {
+                'peaceful': '🕊️ 平和之年',
+                'turbulent_1': '⚠️ 小动荡之年',
+                'turbulent_2': '☢️ 大动荡之年'
+            };
+            const yearDisplay = yearNames[climateInfo.yearType] || climateInfo.yearType;
+
+            content += `
+                <div class="weather-detail-row">
+                    <span class="weather-detail-label">📅 年份周期</span>
+                    <span class="weather-detail-value weather-detail-highlight">${yearDisplay}</span>
+                </div>
+            `;
+        } else {
+            content += `
+                <div class="weather-detail-row">
+                    <span class="weather-detail-label">📅 年份周期</span>
+                    <span class="weather-detail-value weather-detail-placeholder">加载中...</span>
+                </div>
+            `;
+        }
+
+        // 季节活动/节日（总是显示格子）
+        let hasEvent = false;
+        if (climateInfo) {
+            const hasSeasonalEvent = climateInfo.seasonalEvent;
+            const hasExtremeEvent = climateInfo.extremeEvent;
+
+            if (hasExtremeEvent) {
+                content += `
+                    <div class="weather-detail-row weather-detail-row-danger">
+                        <span class="weather-detail-label">⚠️ 极端天气</span>
+                        <span class="weather-detail-value weather-detail-warning">${climateInfo.extremeEvent.name}</span>
+                    </div>
+                `;
+                hasEvent = true;
+            } else if (hasSeasonalEvent) {
+                content += `
+                    <div class="weather-detail-row weather-detail-row-highlight">
+                        <span class="weather-detail-label">🎊 季节活动</span>
+                        <span class="weather-detail-value weather-detail-highlight">${climateInfo.seasonalEvent}</span>
+                    </div>
+                `;
+                hasEvent = true;
+            }
+        }
+
+        // 如果没有事件，显示占位
+        if (!hasEvent) {
+            content += `
+                <div class="weather-detail-row">
+                    <span class="weather-detail-label">🎊 特殊事件</span>
+                    <span class="weather-detail-value weather-detail-placeholder">暂无活动</span>
+                </div>
+            `;
+        }
+
+        content += `</div>`; // 结束世界状态section
+
+        // 添加天气预报部分
+        content += `
+            <div class="weather-detail-divider"></div>
+            <div class="weather-detail-section">
+                <div class="weather-detail-section-title">📅 未来3天预报</div>
+        `;
+
+        if (weatherInfo.forecast && weatherInfo.forecast.length > 0) {
+            weatherInfo.forecast.forEach((dayForecast, index) => {
+                const forecastTemp = dayForecast.temperature;
+                const forecastTempClass = forecastTemp > 30 ? 'temp-hot' :
+                                         forecastTemp < 10 ? 'temp-cold' : 'temp-normal';
+                const forecastWeatherType = window.weatherSystem.weatherTypes[dayForecast.weather];
+                const forecastIcon = forecastWeatherType ? forecastWeatherType.icon : '☀️';
+                const forecastName = forecastWeatherType ? forecastWeatherType.name : '未知';
+
+                // 🌤️ Stage 3: 显示相对日期
+                const dayLabels = ['明天', '后天', '第3天'];
+                const dayLabel = dayLabels[index] || `第${index + 1}天`;
+
+                content += `
+                    <div class="weather-forecast-item">
+                        <span class="forecast-day">${dayLabel}</span>
+                        <span class="forecast-icon">${forecastIcon}</span>
+                        <span class="forecast-name">${forecastName}</span>
+                        <span class="forecast-temp ${forecastTempClass}">${forecastTemp}°C</span>
+                    </div>
+                `;
+            });
+        } else {
+            content += `
+                <div class="weather-forecast-item">
+                    <span class="forecast-placeholder">暂无预报数据</span>
+                </div>
+            `;
+        }
+
+        content += `</div></div>`;
+        return content;
+    }
+
+    function showTooltip() {
+        // 🔥 关键：如果时间浮层正在显示，先关闭它
+        const timeTooltip = document.getElementById("timeDetailTooltip");
+        if (timeTooltip && timeTooltip.classList.contains("show")) {
+            timeTooltip.classList.remove("show");
+        }
+
+        tooltip.innerHTML = updateTooltipContent();
+        const rect = weatherIcon.getBoundingClientRect();
+
+        // 动态计算位置，防止超出屏幕
+        const tooltipWidth = 280; // 预估宽度
+        let left = rect.left + rect.width / 2;
+
+        // 防止超出右边界
+        if (left + tooltipWidth / 2 > window.innerWidth - 10) {
+            left = window.innerWidth - tooltipWidth / 2 - 10;
+        }
+        // 防止超出左边界
+        if (left - tooltipWidth / 2 < 10) {
+            left = tooltipWidth / 2 + 10;
+        }
+
+        tooltip.style.left = left + "px";
+        tooltip.style.top = (rect.bottom + 10) + "px";
+        tooltip.style.transform = "translateX(-50%)";
+
+        requestAnimationFrame(() => {
+            tooltip.classList.add("show");
+        });
+        isTooltipVisible = true;
+    }
+
+    function hideTooltip() {
+        tooltip.classList.remove("show");
+        isTooltipVisible = false;
+    }
+
+    // PC端：鼠标悬停（只在非移动端启用）
+    weatherIcon.addEventListener("mouseenter", () => {
+        if (window.innerWidth > 768) showTooltip();
+    });
+
+    weatherIcon.addEventListener("mouseleave", () => {
+        if (window.innerWidth > 768) hideTooltip();
+    });
+
+    // 移动端/PWA：长按触发（500ms）
+    weatherIcon.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        longPressTimer = setTimeout(() => {
+            showTooltip();
+            // PWA震动反馈
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, 500);
+    }, { passive: false });
+
+    weatherIcon.addEventListener("touchend", () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        // 显示后2秒自动关闭
+        if (isTooltipVisible) {
+            setTimeout(hideTooltip, 2000);
+        }
+    });
+
+    weatherIcon.addEventListener("touchmove", () => {
+        // 手指移动时取消长按
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+
+    // 点击其他地方关闭浮层
+    document.addEventListener("click", (e) => {
+        if (isTooltipVisible && !weatherIcon.contains(e.target)) {
+            hideTooltip();
+        }
+    });
+
+    console.log("🌤️ 天气详情浮层已初始化");
+}
+
+/**
+ * 更新天气图标显示
+ */
+function updateWeatherIcon() {
+    const weatherIcon = document.getElementById("currentWeatherIcon");
+    if (!weatherIcon || !window.weatherSystem) return;
+
+    const weatherInfo = window.weatherSystem.getCurrentWeatherInfo();
+    weatherIcon.textContent = weatherInfo.icon;
+}
+
+/**
+ * 生成天气特效粒子
+ */
+function createWeatherEffects(weatherType, intensity = 0.5) {
+    const rainEffect = document.getElementById('rainEffect');
+    const snowEffect = document.getElementById('snowEffect');
+    const sakuraEffect = document.getElementById('sakuraEffect');
+
+    if (!rainEffect || !snowEffect || !sakuraEffect) return;
+
+    // 清除所有效果
+    rainEffect.classList.remove('active', 'stormy');
+    snowEffect.classList.remove('active');
+    sakuraEffect.classList.remove('active');
+    rainEffect.innerHTML = '';
+    snowEffect.innerHTML = '';
+    sakuraEffect.innerHTML = '';
+
+    // 根据天气类型生成效果
+    switch (weatherType) {
+        case 'rainy':
+            createRainDrops(rainEffect, Math.floor(50 * intensity));
+            rainEffect.classList.add('active');
+            break;
+
+        case 'stormy':
+            createRainDrops(rainEffect, Math.floor(100 * intensity));
+            rainEffect.classList.add('active', 'stormy');
+            break;
+
+        case 'snowy':
+            createSnowflakes(snowEffect, Math.floor(50 * intensity));
+            snowEffect.classList.add('active');
+            break;
+
+        // 樱花效果（季节活动触发）
+        case 'sakura':
+            createSakuraPetals(sakuraEffect, 30);
+            sakuraEffect.classList.add('active');
+            break;
+    }
+}
+
+/**
+ * 创建雨滴
+ */
+function createRainDrops(container, count) {
+    for (let i = 0; i < count; i++) {
+        const drop = document.createElement('div');
+        drop.className = 'rain-drop';
+        drop.style.left = Math.random() * 100 + '%';
+        drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+        drop.style.animationDelay = Math.random() * 2 + 's';
+        container.appendChild(drop);
+    }
+}
+
+/**
+ * 创建雪花
+ */
+function createSnowflakes(container, count) {
+    for (let i = 0; i < count; i++) {
+        const flake = document.createElement('div');
+        flake.className = 'snowflake';
+        flake.style.left = Math.random() * 100 + '%';
+        flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        flake.style.animationDelay = Math.random() * 5 + 's';
+        container.appendChild(flake);
+    }
+}
+
+/**
+ * 创建樱花花瓣
+ */
+function createSakuraPetals(container, count) {
+    for (let i = 0; i < count; i++) {
+        const petal = document.createElement('div');
+        petal.className = 'sakura-petal';
+        petal.style.left = Math.random() * 100 + '%';
+        petal.style.animationDuration = (Math.random() * 5 + 5) + 's';
+        petal.style.animationDelay = Math.random() * 10 + 's';
+        container.appendChild(petal);
+    }
+}
+
+/**
+ * 监听天气变化并更新UI和特效
+ */
+function setupWeatherListeners() {
+    if (!window.reactiveSystem) {
+        console.warn('❌ reactiveSystem未初始化，无法监听天气变化');
+        return;
+    }
+
+    // 监听天气变化
+    window.reactiveSystem.watch('environment.weather', (newWeather, oldWeather) => {
+        console.log(`🌦️ 天气变化: ${oldWeather} → ${newWeather}`);
+
+        // 更新图标
+        updateWeatherIcon();
+
+        // 更新天气特效
+        if (window.weatherSystem) {
+            const weatherType = window.weatherSystem.currentWeather;
+            createWeatherEffects(weatherType);
+        }
+
+        // E区显示通知
+        const weatherInfo = window.weatherSystem?.getCurrentWeatherInfo();
+        if (weatherInfo && window.showNotification) {
+            window.showNotification(`天气变化：${weatherInfo.icon} ${weatherInfo.weather}`);
+        }
+    });
+
+    // 监听季节变化
+    window.reactiveSystem.watch('environment.season', (newSeason, oldSeason) => {
+        console.log(`🍂 季节变化: ${oldSeason} → ${newSeason}`);
+        updateWeatherIcon();
+    });
+
+    console.log('🌤️ 天气UI监听器已设置');
+}
+
+// 导出到全局
+window.initWeatherDetailTooltip = initWeatherDetailTooltip;
+window.updateWeatherIcon = updateWeatherIcon;
+window.createWeatherEffects = createWeatherEffects;
+window.setupWeatherListeners = setupWeatherListeners;
+
+
+// ==================== 立绘呼吸动画控制系统 ====================
+
+/**
+ * 设置角色呼吸动画状态
+ * @param {string} state - 呼吸状态: 'normal'|'gentle'|'deep'|'excited'|'sleeping'|'resting'
+ */
+function setSpriteBreathing(state = 'normal') {
+    const sprite = document.getElementById('characterSprite');
+    if (!sprite) return;
+    
+    // 清除所有呼吸类
+    sprite.className = sprite.className.replace(/\b(breathing-\w+|resting|excited|sleeping)\b/g, '');
+    
+    // 添加新的呼吸状态
+    switch(state) {
+        case 'gentle':
+            sprite.classList.add('breathing-gentle');
+            break;
+        case 'deep':
+            sprite.classList.add('breathing-deep');
+            break;
+        case 'excited':
+            sprite.classList.add('excited');  // 使用CSS中定义的excited类
+            break;
+        case 'sleeping':
+            sprite.classList.add('sleeping');
+            break;
+        case 'resting':
+            sprite.classList.add('resting');
+            break;
+        case 'normal':
+        default:
+            sprite.classList.add('breathing-normal');
+            break;
+    }
+    
+    console.log(`🫁 立绘呼吸状态切换为: ${state}`);
+}
+
+/**
+ * 根据角色状态自动调整呼吸
+ */
+function updateBreathingByStatus() {
+    if (!window.gameState || !window.gameState.character) return;
+    
+    const energy = window.gameState.character.energy || 80;
+    const mood = window.gameState.character.mood || 50;
+    const health = window.gameState.character.health || 100;
+    
+    // 根据精力值判断呼吸状态
+    if (energy < 20) {
+        setSpriteBreathing('deep');  // 疲惫，深呼吸
+    } else if (energy < 40) {
+        setSpriteBreathing('normal');  // 一般状态
+    } else if (mood > 80) {
+        setSpriteBreathing('excited');  // 兴奋状态
+    } else if (energy > 90 && mood > 60) {
+        setSpriteBreathing('gentle');  // 精力充沛且心情好，轻柔呼吸
+    } else {
+        setSpriteBreathing('normal');  // 默认状态
+    }
+}
+
+// 导出到全局
+window.setSpriteBreathing = setSpriteBreathing;
+window.updateBreathingByStatus = updateBreathingByStatus;
+
+console.log('🫁 立绘呼吸动画系统已加载');
+console.log('使用方法: setSpriteBreathing("gentle") / setSpriteBreathing("deep") / setSpriteBreathing("excited")');
+
+// ==================== 音频UI初始化 ====================
+
+/**
+ * 初始化音频UI状态
+ */
+function initAudioUI() {
+    if (!window.audioSystem) return;
+
+    // 更新音效按钮
+    const soundBtn = document.querySelector('[data-action="sound"]');
+    if (soundBtn) {
+        soundBtn.textContent = `🔊 音效: ${window.audioSystem.enabled.sfx ? '开启' : '关闭'}`;
+    }
+
+    // 更新音乐按钮
+    const musicBtn = document.querySelector('[data-action="music"]');
+    if (musicBtn) {
+        musicBtn.textContent = `🎵 音乐: ${window.audioSystem.enabled.bgm ? '开启' : '关闭'}`;
+    }
+
+    console.log('🔊 音频UI已初始化');
+}
+
+// 页面加载完成后初始化音频UI
+setTimeout(() => {
+    initAudioUI();
+}, 100);
+
+// 导出函数
+window.initAudioUI = initAudioUI;
+
+// ==================== Wiki百科系统 ====================
+
+/**
+ * 打开Wiki百科
+ */
+function openWiki(categoryId = null, articleId = null) {
+    const modal = document.getElementById('wikiModal');
+    if (!modal) return;
+
+    // 显示浮层
+    modal.style.display = 'flex';
+
+    // 初始化分类
+    if (!window.wikiInitialized) {
+        initWikiCategories();
+        window.wikiInitialized = true;
+    }
+
+    // 如果指定了文章，直接显示
+    if (articleId) {
+        showWikiArticle(articleId);
+    } else if (categoryId) {
+        showWikiCategory(categoryId);
+    } else {
+        showWikiHome();
+    }
+
+    console.log('📚 Wiki百科已打开');
+}
+
+/**
+ * 关闭Wiki
+ */
+function closeWiki() {
+    const modal = document.getElementById('wikiModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * 初始化分类列表
+ */
+function initWikiCategories() {
+    const container = document.getElementById('wikiCategories');
+    if (!container || !window.GameWiki) return;
+
+    container.innerHTML = '';
+
+    window.GameWiki.categories.forEach(category => {
+        const categoryItem = document.createElement('div');
+        categoryItem.className = 'wiki-category-item';
+        categoryItem.onclick = () => showWikiCategory(category.id);
+
+        const articles = window.GameWiki.getArticlesByCategory(category.id);
+        const count = articles.length;
+
+        categoryItem.innerHTML = `
+            <span class="category-icon">${category.icon}</span>
+            <span class="category-name">${category.name}</span>
+            <span class="category-count">${count}</span>
+        `;
+
+        container.appendChild(categoryItem);
+    });
+}
+
+/**
+ * 显示分类下的文章列表
+ */
+function showWikiCategory(categoryId) {
+    const content = document.getElementById('wikiContent');
+    const breadcrumb = document.getElementById('wikiBreadcrumb');
+    if (!content || !window.GameWiki) return;
+
+    const category = window.GameWiki.categories.find(c => c.id === categoryId);
+    if (!category) return;
+
+    const articles = window.GameWiki.getArticlesByCategory(categoryId);
+
+    // 更新面包屑
+    breadcrumb.innerHTML = `
+        <span class="breadcrumb-home" onclick="showWikiHome()">首页</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">${category.name}</span>
+    `;
+
+    // 显示文章列表
+    let html = `
+        <h1>${category.icon} ${category.name}</h1>
+        <div class="wiki-article-list">
+    `;
+
+    articles.forEach(article => {
+        html += `
+            <div class="wiki-article-card" onclick="showWikiArticle('${article.id}')">
+                <div class="article-icon">${article.icon}</div>
+                <div class="article-info">
+                    <h3>${article.title}</h3>
+                </div>
+                <div class="article-arrow">›</div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+/**
+ * 显示文章内容
+ */
+function showWikiArticle(articleId) {
+    const content = document.getElementById('wikiContent');
+    const breadcrumb = document.getElementById('wikiBreadcrumb');
+    if (!content || !window.GameWiki) return;
+
+    const article = window.GameWiki.getArticle(articleId);
+    if (!article) return;
+
+    const category = window.GameWiki.categories.find(c => c.id === article.category);
+
+    // 更新面包屑
+    breadcrumb.innerHTML = `
+        <span class="breadcrumb-home" onclick="showWikiHome()">首页</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-link" onclick="showWikiCategory('${article.category}')">${category?.name || '分类'}</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">${article.title}</span>
+    `;
+
+    // 显示文章内容
+    content.innerHTML = `
+        <div class="wiki-article">
+            ${article.content}
+        </div>
+    `;
+
+    // 滚动到顶部
+    content.scrollTop = 0;
+}
+
+/**
+ * 显示首页
+ */
+function showWikiHome() {
+    const content = document.getElementById('wikiContent');
+    const breadcrumb = document.getElementById('wikiBreadcrumb');
+    if (!content) return;
+
+    breadcrumb.innerHTML = `<span class="breadcrumb-home">首页</span>`;
+
+    content.innerHTML = `
+        <div class="wiki-welcome">
+            <h1>📚 欢迎来到Reality游戏百科</h1>
+            <p>这里有你需要的一切游戏信息和攻略</p>
+
+            <div class="wiki-quick-links">
+                <div class="quick-link-card" onclick="showWikiArticle('climate_overview')">
+                    <div class="quick-link-icon">🌍</div>
+                    <h3>气候系统</h3>
+                    <p>了解天气、季节和动荡年</p>
+                </div>
+                <div class="quick-link-card" onclick="showWikiArticle('climate_seasonal_events')">
+                    <div class="quick-link-icon">🎉</div>
+                    <h3>季节活动</h3>
+                    <p>樱花周、夏日祭等精彩活动</p>
+                </div>
+                <div class="quick-link-card" onclick="showWikiArticle('climate_tips')">
+                    <div class="quick-link-icon">💡</div>
+                    <h3>攻略技巧</h3>
+                    <p>赚钱、种植、应对极端天气</p>
+                </div>
+                <div class="quick-link-card" onclick="showWikiArticle('tips_beginner')">
+                    <div class="quick-link-icon">📘</div>
+                    <h3>新手必读</h3>
+                    <p>开局建议和常见问题</p>
+                </div>
+            </div>
+
+            <div class="wiki-categories-grid">
+                ${window.GameWiki.categories.map(cat => `
+                    <div class="category-grid-item" onclick="showWikiCategory('${cat.id}')">
+                        <div class="category-grid-icon">${cat.icon}</div>
+                        <div class="category-grid-name">${cat.name}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * 搜索Wiki
+ */
+function searchWiki(keyword) {
+    if (!keyword || keyword.length < 2) {
+        return;
+    }
+
+    const content = document.getElementById('wikiContent');
+    const breadcrumb = document.getElementById('wikiBreadcrumb');
+    if (!content || !window.GameWiki) return;
+
+    const results = window.GameWiki.searchArticles(keyword);
+
+    breadcrumb.innerHTML = `
+        <span class="breadcrumb-home" onclick="showWikiHome()">首页</span>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">搜索: ${keyword}</span>
+    `;
+
+    let html = `<h1>🔍 搜索结果 "${keyword}"</h1>`;
+
+    if (results.length === 0) {
+        html += '<p class="no-results">未找到相关内容</p>';
+    } else {
+        html += '<div class="wiki-article-list">';
+        results.forEach(article => {
+            const category = window.GameWiki.categories.find(c => c.id === article.category);
+            html += `
+                <div class="wiki-article-card" onclick="showWikiArticle('${article.id}')">
+                    <div class="article-icon">${article.icon}</div>
+                    <div class="article-info">
+                        <h3>${article.title}</h3>
+                        <p class="article-category">${category?.name || ''}</p>
+                    </div>
+                    <div class="article-arrow">›</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    content.innerHTML = html;
+}
+
+// 导出函数
+window.openWiki = openWiki;
+window.closeWiki = closeWiki;
+window.showWikiCategory = showWikiCategory;
+window.showWikiArticle = showWikiArticle;
+window.showWikiHome = showWikiHome;
+window.searchWiki = searchWiki;
+
+console.log('📚 Wiki百科系统已加载');
+console.log('使用 openWiki() 打开百科');

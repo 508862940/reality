@@ -223,8 +223,12 @@ class TimeSystem {
 
         switch (format) {
             case 'short':
-                // 简短格式：周一 08:30（兼容旧版）
-                return `${weekdays[this.currentTime.weekday]} ${hourStr}:${minuteStr}`;
+                // 简短格式：3月8日 07:30（移动端友好）
+                return `${this.currentTime.month}月${this.currentTime.dayOfMonth}日 ${hourStr}:${minuteStr}`;
+
+            case 'mobile':
+                // 超简短格式：3/8 07:30（移动端超窄）
+                return `${this.currentTime.month}/${this.currentTime.dayOfMonth} ${hourStr}:${minuteStr}`;
 
             case 'date':
                 // 日期格式：3月8日 07:30
@@ -577,10 +581,563 @@ class TimeSystem {
             console.log('📅 当前时间:', this.formatTime('detail'));
         }
     }
+
+    // ==================== 时间消耗系统 ====================
+
+    /**
+     * 推进时间（核心方法）
+     * @param {number} minutes - 要推进的分钟数（必须是5的倍数）
+     * @param {string} reason - 时间消耗的原因（用于日志）
+     * @returns {Object} 时间变化的详情
+     */
+    advanceTime(minutes, reason = '') {
+        // 验证输入（必须是5的倍数）
+        if (minutes % 5 !== 0 && minutes !== 0) {
+            console.warn(`⚠️ 时间推进必须是5的倍数，自动调整 ${minutes} → ${Math.ceil(minutes/5)*5}`);
+            minutes = Math.ceil(minutes/5) * 5;
+        }
+
+        const oldTime = { ...this.currentTime };
+        const oldSeason = this.getSeason();
+        const oldTimeOfDay = this.getCurrentTimeOfDay();
+
+        // 推进总分钟数
+        this.totalMinutes += minutes;
+
+        // 重新计算当前时间
+        this.currentTime = this.calculateTimeFromMinutes(this.totalMinutes);
+
+        // 检查是否跨天和时段变化
+        const dayChanged = oldTime.dayOfYear !== this.currentTime.dayOfYear;
+        const seasonChanged = oldSeason !== this.getSeason();
+        const newTimeOfDay = this.getCurrentTimeOfDay();
+        const timeOfDayChanged = oldTimeOfDay !== newTimeOfDay;
+
+        // 记录时间流逝
+        const change = {
+            minutes: minutes,
+            reason: reason,
+            oldTime: oldTime,
+            newTime: { ...this.currentTime },
+            dayChanged: dayChanged,
+            seasonChanged: seasonChanged,
+            timeOfDayChanged: timeOfDayChanged,
+            newTimeOfDay: newTimeOfDay,
+            timestamp: Date.now()
+        };
+
+        // 更新音频系统的时间环境音
+        if (timeOfDayChanged && window.audioSystem) {
+            window.audioSystem.updateAmbient(null, newTimeOfDay, null);
+            console.log(`🎵 时段变化: ${oldTimeOfDay} → ${newTimeOfDay}`);
+        }
+
+        // 触发时间变化事件
+        this.onTimeAdvance(change);
+
+        // 通过响应式系统更新UI
+        if (window.reactiveSystem) {
+            // 触发响应式系统的时间监听器
+            window.reactiveSystem.notify('totalMinutes', this.totalMinutes, this.totalMinutes - minutes);
+            window.reactiveSystem.notify('gameTime', this.currentTime, oldTime);
+
+            // 🌸 如果季节变化，通知天气系统
+            if (seasonChanged) {
+                const seasonNames = {
+                    spring: '春季',
+                    summer: '夏季',
+                    autumn: '秋季',
+                    winter: '冬季'
+                };
+                window.reactiveSystem.notify('gameTime.season', seasonNames[this.getSeason()], seasonNames[oldSeason]);
+                console.log(`🍂 季节变化通知: ${seasonNames[oldSeason]} → ${seasonNames[this.getSeason()]}`);
+            }
+        }
+
+        // 同步到gameState
+        if (window.gameState && window.gameState.gameTime) {
+            Object.assign(window.gameState.gameTime, this.currentTime);
+        }
+
+        // 同步到worldState
+        if (window.worldState && window.worldState.state.time) {
+            window.worldState.state.time.totalMinutes = this.totalMinutes;
+            Object.assign(window.worldState.state.time, this.currentTime);
+        }
+
+        // 更新UI显示
+        if (window.updateLocationTime) {
+            window.updateLocationTime();
+        }
+
+        console.log(`⏰ 时间推进: +${minutes}分钟 ${reason ? `(${reason})` : ''}`);
+
+        return change;
+    }
+
+    /**
+     * 时间推进后的回调
+     * @param {Object} change - 时间变化详情
+     */
+    onTimeAdvance(change) {
+        // 触发小时更新（天气系统）
+        if (change.oldTime.hour !== change.newTime.hour) {
+            if (window.weatherSystem && typeof window.weatherSystem.hourlyUpdate === 'function') {
+                window.weatherSystem.hourlyUpdate(change.newTime.hour);
+            }
+        }
+
+        // 如果跨天，触发每日事件
+        if (change.dayChanged) {
+            console.log(`📅 新的一天: 第${change.newTime.dayOfYear}天`);
+
+            // 触发每日重置
+            if (window.dailyReset) {
+                window.dailyReset();
+            }
+
+            // 触发天气系统每日更新
+            if (window.weatherSystem && typeof window.weatherSystem.dailyUpdate === 'function') {
+                window.weatherSystem.dailyUpdate();
+            }
+
+            // 触发气候系统每日更新（已在weatherSystem.dailyUpdate中调用）
+            // 但为了确保独立性，也可以直接调用
+            if (window.climateManager && typeof window.climateManager.dailyUpdate === 'function') {
+                // climateManager.dailyUpdate 会在 weatherSystem.dailyUpdate 中被调用
+                // 这里注释掉避免重复调用
+                // window.climateManager.dailyUpdate();
+            }
+        }
+
+        // 🌤️ Stage 3: 每天早上5:00生成天气预报 + 自动存档
+        if (change.newTime.hour === 5 && change.newTime.minute === 0) {
+            console.log('🌅 早晨 5:00 例行事务');
+
+            // 生成天气预报（真随机）
+            if (window.weatherSystem && typeof window.weatherSystem.generateForecast === 'function') {
+                console.log('🌤️ 生成今日天气预报');
+                window.weatherSystem.generateForecast();
+            }
+
+            // 自动存档
+            if (window.saveSystem && window.saveSystem.autoSave) {
+                console.log('💾 早晨自动存档');
+                window.saveSystem.autoSave('daily_morning');
+            }
+        }
+
+        // 如果换季，更新天气
+        if (change.seasonChanged) {
+            console.log(`🍃 季节变换: ${change.newTime.season}`);
+            if (window.weatherSystem && window.weatherSystem.onSeasonChange) {
+                window.weatherSystem.onSeasonChange(change.newTime.season);
+            }
+        }
+
+        // 显示时间流逝提示
+        if (change.minutes >= 30) {
+            // 30分钟以上才显示提示
+            const hours = Math.floor(change.minutes / 60);
+            const mins = change.minutes % 60;
+            let timeStr = '';
+
+            if (hours > 0) {
+                timeStr = `${hours}小时`;
+                if (mins > 0) timeStr += `${mins}分钟`;
+            } else {
+                timeStr = `${mins}分钟`;
+            }
+
+            // 使用特殊的时间通知类型
+            if (window.showNotification) {
+                window.showNotification(`⏳ ${timeStr}过去了...`, 'time', 2500);
+            }
+
+            // 大于2小时时显示时间流逝特效
+            if (change.minutes >= 120) {
+                this.showTimePassageEffect();
+            }
+        } else if (change.minutes >= 15) {
+            // 15-30分钟显示简短提示
+            if (window.showNotification) {
+                window.showNotification(`⏱️ 片刻过去了...`, 'time', 1500);
+            }
+        }
+    }
+
+    /**
+     * 显示时间流逝特效
+     */
+    showTimePassageEffect() {
+        // 创建特效层
+        let effectLayer = document.querySelector('.time-passage-effect');
+        if (!effectLayer) {
+            effectLayer = document.createElement('div');
+            effectLayer.className = 'time-passage-effect';
+            document.body.appendChild(effectLayer);
+        }
+
+        // 重新触发动画
+        effectLayer.style.animation = 'none';
+        setTimeout(() => {
+            effectLayer.style.animation = 'timePassage 2s ease-out';
+        }, 10);
+
+        // 动画结束后移除元素
+        setTimeout(() => {
+            effectLayer.remove();
+        }, 2000);
+    }
+
+    /**
+     * 执行动作并消耗时间
+     * @param {string} actionType - 动作类型
+     * @param {string} actionName - 具体动作名称
+     * @returns {number} 消耗的分钟数
+     */
+    performAction(actionType, actionName = '') {
+        const timeConsumption = this.getActionTime(actionType, actionName);
+
+        if (timeConsumption > 0) {
+            this.advanceTime(timeConsumption, actionName || actionType);
+        }
+
+        return timeConsumption;
+    }
+
+    /**
+     * 时间等级定义（全局可用）
+     */
+    static TIME_LEVEL = {
+        INSTANT: 'instant',      // 瞬时 - 0分钟
+        QUICK: 'quick',          // 快速 - 5分钟
+        SHORT: 'short',          // 短暂 - 15分钟
+        MEDIUM: 'medium',        // 中等 - 30分钟
+        LONG: 'long',            // 较长 - 1小时
+        VERY_LONG: 'very_long',  // 很长 - 2小时
+        HALF_DAY: 'half_day',    // 半天 - 6小时（上午或下午）
+        FULL_DAY: 'full_day',    // 全天 - 12小时（工作日）
+        ENTIRE_DAY: 'entire_day' // 整天 - 24小时（睡眠等）
+    };
+
+    /**
+     * 时间等级对应的分钟数
+     */
+    static TIME_VALUES = {
+        instant: 0,
+        quick: 5,
+        short: 15,
+        medium: 30,
+        long: 60,
+        very_long: 120,
+        half_day: 360,   // 6小时
+        full_day: 720,   // 12小时
+        entire_day: 1440 // 24小时
+    };
+
+    /**
+     * 获取当前时段（用于环境音）
+     * @returns {string} 时段标识
+     */
+    getCurrentTimeOfDay() {
+        const hour = this.currentTime.hour;
+        if (hour >= 5 && hour < 7) return 'earlyMorning';    // 清晨
+        if (hour >= 7 && hour < 12) return 'morning';        // 上午
+        if (hour >= 12 && hour < 17) return 'afternoon';     // 下午
+        if (hour >= 17 && hour < 19) return 'evening';       // 傍晚
+        if (hour >= 19 && hour < 22) return 'night';         // 夜晚
+        return 'lateNight';                                  // 深夜
+    }
+
+    /**
+     * 根据时间等级获取分钟数
+     * @param {string} level - 时间等级
+     * @returns {number} 分钟数
+     */
+    getTimeByLevel(level) {
+        return TimeSystem.TIME_VALUES[level] || 0;
+    }
+
+    /**
+     * 获取动作消耗的时间（兼容旧版）
+     * @param {string} actionType - 动作类型
+     * @param {string} specificAction - 具体动作
+     * @returns {number} 分钟数
+     */
+    getActionTime(actionType, specificAction = '') {
+        // 如果actionType是时间等级，直接返回对应分钟数
+        if (TimeSystem.TIME_VALUES[actionType] !== undefined) {
+            return TimeSystem.TIME_VALUES[actionType];
+        }
+
+        // 动作时间消耗配置表（保留兼容性）
+        const TIME_COSTS = {
+            // 瞬间动作（0分钟）
+            instant: {
+                'open_menu': 0,
+                'open_inventory': 0,
+                'open_map': 0,
+                'pickup_item': 0,
+                'toggle_light': 0,
+                'open_door': 0
+            },
+
+            // 微小互动（5分钟）
+            minor: {
+                'wash_face': 5,
+                'brush_teeth': 5,
+                'observe': 5,
+                'change_clothes': 5,
+                'quick_chat': 5,
+                'drink_water': 5,
+                'eat_snack': 5,
+                'read_message': 5,
+                'check_phone': 5
+            },
+
+            // 标准行为（15分钟）
+            standard: {
+                'organize_inventory': 15,  // 整理背包！
+                'take_shower': 15,
+                'prepare_meal': 15,
+                'walk_nearby': 15,
+                'normal_conversation': 15,
+                'quick_shopping': 15,
+                'water_plants': 15
+            },
+
+            // 主要事件（30分钟+）
+            major: {
+                'cross_district': 30,      // 跨区移动
+                'work_1h': 60,
+                'work_2h': 120,
+                'work_4h': 240,
+                'date_coffee': 60,
+                'date_movie': 120,
+                'study': 60,
+                'exercise': 60,
+                'main_quest': 120,
+                'sleep_short': 360,        // 6小时
+                'sleep_normal': 480,       // 8小时
+                'sleep_long': 600          // 10小时
+            },
+
+            // 战斗（根据回合数）
+            combat: {
+                'per_round': 5             // 每回合5分钟
+            },
+
+            // 等待/休息
+            wait: {
+                'rest_5min': 5,
+                'rest_15min': 15,
+                'rest_30min': 30,
+                'rest_1h': 60
+            }
+        };
+
+        // 查找对应的时间消耗
+        if (TIME_COSTS[actionType]) {
+            if (specificAction && TIME_COSTS[actionType][specificAction] !== undefined) {
+                return TIME_COSTS[actionType][specificAction];
+            }
+            // 如果没有具体动作，返回该类别的默认值
+            const values = Object.values(TIME_COSTS[actionType]);
+            return values.length > 0 ? values[0] : 0;
+        }
+
+        console.warn(`⚠️ 未知的动作类型: ${actionType}`);
+        return 0;
+    }
+
+    /**
+     * 简化的时间消耗接口（推荐使用）
+     * @param {string} level - 时间等级 (如 'quick', 'short', 'medium'等)
+     * @param {string} description - 动作描述（可选）
+     * @returns {number} 消耗的分钟数
+     */
+    consumeTime(level, description = '') {
+        const minutes = this.getTimeByLevel(level);
+
+        if (minutes > 0) {
+            // 根据等级生成默认描述
+            if (!description) {
+                const levelDescriptions = {
+                    quick: '快速动作',
+                    short: '短暂活动',
+                    medium: '一般活动',
+                    long: '较长活动',
+                    very_long: '长时间活动',
+                    half_day: '半天活动',
+                    full_day: '全天活动',
+                    entire_day: '整天活动'
+                };
+                description = levelDescriptions[level] || '进行活动';
+            }
+
+            this.advanceTime(minutes, description);
+        }
+
+        return minutes;
+    }
+
+    /**
+     * 快速等待/休息
+     * @param {number} minutes - 等待的分钟数
+     */
+    wait(minutes) {
+        if (minutes <= 0) return;
+
+        // 确保是5的倍数
+        minutes = Math.ceil(minutes / 5) * 5;
+
+        this.advanceTime(minutes, `休息${minutes}分钟`);
+
+        // 恢复少量精力（通过响应式系统）
+        if (window.reactiveGameState) {
+            const energyRestore = Math.floor(minutes / 15) * 5; // 每15分钟恢复5点精力
+            window.reactiveGameState.energy = Math.min(100,
+                (window.reactiveGameState.energy || 80) + energyRestore
+            );
+        } else if (window.gameState && window.gameState.character) {
+            // 降级到直接修改
+            const energyRestore = Math.floor(minutes / 15) * 5;
+            window.gameState.character.energy = Math.min(100,
+                (window.gameState.character.energy || 80) + energyRestore
+            );
+            if (window.updateGameUI) {
+                window.updateGameUI();
+            }
+        }
+    }
+
+    /**
+     * 睡觉（大幅推进时间）
+     * @param {number} hours - 睡眠小时数（默认8小时）
+     * @returns {boolean} 是否成功入睡
+     */
+    sleep(hours = 8) {
+        const currentHour = this.currentTime.hour;
+
+        // 检查是否适合睡觉（晚上9点到早上6点）
+        const canSleep = (currentHour >= 21 || currentHour <= 6);
+
+        if (!canSleep && !confirm('现在不是睡觉时间，确定要睡觉吗？')) {
+            return false;
+        }
+
+        const minutes = hours * 60;
+        this.advanceTime(minutes, `睡眠${hours}小时`);
+
+        // 睡醒后恢复状态（通过响应式系统）
+        if (window.reactiveGameState) {
+            window.reactiveGameState.energy = 100;
+            window.reactiveGameState.health = Math.min(100,
+                (window.reactiveGameState.health || 100) + 20
+            );
+        } else if (window.gameState && window.gameState.character) {
+            // 降级到直接修改
+            window.gameState.character.energy = 100;
+            window.gameState.character.health = Math.min(100,
+                (window.gameState.character.health || 100) + 20
+            );
+            if (window.updateGameUI) {
+                window.updateGameUI();
+            }
+        }
+
+        if (window.showNotification) {
+            window.showNotification('☀️ 你醒来了，感觉精力充沛！', 'success');
+        }
+
+        return true;
+    }
 }
 
 // 创建全局时间系统实例
 window.timeSystem = new TimeSystem();
+
+// 测试时间消耗系统
+window.testTime = {
+    // 测试各种时间消耗
+    testActions: () => {
+        console.log('🧪 测试时间消耗系统...');
+        console.log('当前时间:', window.timeSystem.formatTime('detail'));
+
+        // 测试洗脸（5分钟）
+        console.log('\n1. 洗脸...');
+        window.timeSystem.performAction('minor', 'wash_face');
+
+        // 测试整理背包（15分钟）
+        setTimeout(() => {
+            console.log('\n2. 整理背包...');
+            window.timeSystem.performAction('standard', 'organize_inventory');
+        }, 2000);
+
+        // 测试跨区移动（30分钟）
+        setTimeout(() => {
+            console.log('\n3. 跨区移动...');
+            window.timeSystem.performAction('major', 'cross_district');
+        }, 4000);
+
+        // 测试工作2小时（120分钟）
+        setTimeout(() => {
+            console.log('\n4. 工作2小时...');
+            window.timeSystem.performAction('major', 'work_2h');
+        }, 6000);
+    },
+
+    // 快速推进时间
+    advance: (minutes) => {
+        window.timeSystem.advanceTime(minutes, '测试推进');
+    },
+
+    // 测试休息
+    rest: (minutes = 30) => {
+        window.timeSystem.wait(minutes);
+    },
+
+    // 测试睡觉
+    sleep: (hours = 8) => {
+        window.timeSystem.sleep(hours);
+    },
+
+    // 显示当前时间
+    now: () => {
+        console.log('📅 当前时间:', window.timeSystem.formatTime('detail'));
+        console.log('⏰ 总分钟数:', window.timeSystem.totalMinutes);
+        return window.timeSystem.currentTime;
+    }
+};
+
+// 导出时间等级常量到全局
+window.TIME_LEVEL = TimeSystem.TIME_LEVEL;
+window.TIME_VALUES = TimeSystem.TIME_VALUES;
+
+console.log('⏰ 时间消耗系统已加载！');
+console.log('');
+console.log('📋 时间等级系统（基于24小时制）：');
+console.log('  instant    - 瞬时 (0分钟)    - UI操作、查看信息');
+console.log('  quick      - 快速 (5分钟)    - 简单互动、捡东西');
+console.log('  short      - 短暂 (15分钟)   - 日常小事、整理背包');
+console.log('  medium     - 中等 (30分钟)   - 跨区移动、认真对话');
+console.log('  long       - 较长 (1小时)    - 上课、训练、约会');
+console.log('  very_long  - 很长 (2小时)    - 看电影、大型战斗');
+console.log('  half_day   - 半天 (6小时)    - 上午/下午工作');
+console.log('  full_day   - 全天 (12小时)   - 全天工作班');
+console.log('  entire_day - 整天 (24小时)   - 睡眠、昏迷');
+console.log('');
+console.log('🎮 测试命令：');
+console.log('  testTime.testActions() - 测试各种动作的时间消耗');
+console.log('  testTime.advance(60)   - 推进60分钟');
+console.log('  testTime.rest(30)      - 休息30分钟');
+console.log('  testTime.sleep(8)      - 睡8小时');
+console.log('  testTime.now()         - 显示当前时间');
+console.log('');
+console.log('✨ 场景中使用示例：');
+console.log('  choice: { text: "去操场", timeLevel: "medium" }');
+console.log('  choice: { text: "睡觉", timeLevel: "full_day" }');
 
 // 导出（如果需要模块化）
 if (typeof module !== 'undefined' && module.exports) {

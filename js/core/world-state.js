@@ -33,7 +33,18 @@ class WorldState {
             environment: {
                 weather: 'sunny',
                 season: 'spring',
-                temperature: 22
+                temperature: 22,
+                // 气候系统新增字段
+                climate: 'subtropical_monsoon',
+                yearType: 'peaceful',
+                turbulenceLevel: 0,
+                seasonalEvent: null,
+                extremeEvent: null,
+
+                // 天气预报系统（Stage 3新增）
+                forecast: [],  // 3天天气预报 [{day, weather, temp}, ...]
+                isEventWeather: false,  // 是否为特殊事件天气（预留）
+                eventWeatherEnd: null   // 事件天气结束时间（预留）
             },
 
             // 玩家（详细记录）
@@ -112,7 +123,61 @@ class WorldState {
                 // D区补充 - 设置
                 settings: {
                     autoSaveEnabled: true,
-                    volume: 80,
+
+                    // 完整三层音频设置
+                    audio: {
+                        // 音量设置（0-100转换为0-1）
+                        volumes: {
+                            master: 80,           // 主音量
+                            bgm: 60,             // 背景音乐音量
+                            ambient: 50,         // 环境音总音量
+                            ambientWeather: 50,  // 天气音效音量
+                            ambientTime: 40,     // 时间音效音量
+                            ambientLocation: 30, // 地点音效音量
+                            sfx: 80             // 音效音量
+                        },
+
+                        // 开关控制
+                        enabled: {
+                            bgm: true,           // BGM开关
+                            ambient: true,       // 环境音开关
+                            sfx: true           // 音效开关
+                        },
+
+                        // 当前播放状态（存档时保存）
+                        current: {
+                            bgm: {
+                                file: null,      // 当前BGM文件路径
+                                time: 0,         // 播放位置（秒）
+                                volume: 0.6      // 当前实际音量
+                            },
+                            ambient: {
+                                weather: null,   // 当前天气音效
+                                time: null,      // 当前时间音效
+                                location: null,  // 当前地点音效
+                                weatherIntensity: 0.5  // 天气强度（0-1）
+                            }
+                        },
+
+                        // 高级设置
+                        advanced: {
+                            crossfadeDuration: 2000,  // 淡入淡出时长（毫秒）
+                            dynamicMixing: true,      // 动态混音
+                            ambientLayers: 3,         // 环境音层数
+                            autoAdjustVolume: true    // 自动音量调整
+                        },
+
+                        // 智能音箱相关
+                        smartSpeaker: {
+                            owned: false,             // 是否拥有智能音箱
+                            currentPlaylist: null,    // 当前播放列表
+                            customSongs: [],          // 自定义歌曲列表
+                            favoriteGenre: null       // 最爱的音乐类型
+                        }
+                    },
+
+                    // 保留旧的volume字段用于兼容
+                    volume: 80,  // 废弃，但保留用于兼容旧存档
                     textSpeed: 'medium'
                 }
             },
@@ -390,6 +455,12 @@ class WorldState {
             console.log('🌤️ 保存天气系统状态');
         }
 
+        // 保存气候系统
+        if (window.climateManager && typeof window.climateManager.save === 'function') {
+            fullState.engineStates.climate = window.climateManager.save();
+            console.log('🌍 保存气候系统状态');
+        }
+
         // 保存经济系统
         if (window.economySystem && typeof window.economySystem.save === 'function') {
             fullState.engineStates.economy = window.economySystem.save();
@@ -406,6 +477,12 @@ class WorldState {
         if (window.timeSystem && typeof window.timeSystem.save === 'function') {
             fullState.engineStates.time = window.timeSystem.save();
             console.log('⏰ 保存时间系统状态');
+        }
+
+        // 保存音频系统
+        if (window.audioSystem && typeof window.audioSystem.saveState === 'function') {
+            fullState.engineStates.audio = window.audioSystem.saveState();
+            console.log('🔊 保存音频系统状态');
         }
 
         // 保存战斗系统（如果在战斗中）
@@ -449,6 +526,50 @@ class WorldState {
         // 调试：检查加载前后的外观数据
         console.log('🎨 加载前的appearance:', this.state.player.appearance);
         console.log('🎨 要加载的appearance:', savedState?.player?.appearance);
+
+        // 音频设置兼容性处理
+        if (savedState?.player?.settings) {
+            // 处理旧版本的单一volume字段
+            if (typeof savedState.player.settings.volume === 'number' &&
+                !savedState.player.settings.audio) {
+                const oldVolume = savedState.player.settings.volume;
+                console.log('🔊 检测到旧版音频设置，进行转换:', oldVolume);
+
+                // 转换为新的音频设置格式
+                savedState.player.settings.audio = {
+                    volumes: {
+                        master: oldVolume,
+                        bgm: Math.round(oldVolume * 0.75),
+                        ambient: Math.round(oldVolume * 0.625),
+                        ambientWeather: Math.round(oldVolume * 0.625),
+                        ambientTime: Math.round(oldVolume * 0.5),
+                        ambientLocation: Math.round(oldVolume * 0.375),
+                        sfx: oldVolume
+                    },
+                    enabled: {
+                        bgm: true,
+                        ambient: true,
+                        sfx: true
+                    },
+                    current: {
+                        bgm: { file: null, time: 0, volume: 0.6 },
+                        ambient: { weather: null, time: null, location: null, weatherIntensity: 0.5 }
+                    },
+                    advanced: {
+                        crossfadeDuration: 2000,
+                        dynamicMixing: true,
+                        ambientLayers: 3,
+                        autoAdjustVolume: true
+                    },
+                    smartSpeaker: {
+                        owned: false,
+                        currentPlaylist: null,
+                        customSongs: [],
+                        favoriteGenre: null
+                    }
+                };
+            }
+        }
 
         // 深度合并，保留未保存的默认值
         this.state = this.deepMerge(this.state, savedState);
@@ -549,6 +670,12 @@ class WorldState {
                 console.log('🌤️ 天气系统已恢复');
             }
 
+            // 恢复气候系统
+            if (savedState.engineStates.climate && window.climateManager) {
+                window.climateManager.load(savedState.engineStates.climate);
+                console.log('🌍 气候系统已恢复');
+            }
+
             // 恢复经济系统
             if (savedState.engineStates.economy && window.economySystem) {
                 window.economySystem.load(savedState.engineStates.economy);
@@ -559,6 +686,12 @@ class WorldState {
             if (savedState.engineStates.farming && window.farmingSystem) {
                 window.farmingSystem.load(savedState.engineStates.farming);
                 console.log('🌱 种植系统已恢复');
+            }
+
+            // 恢复音频系统
+            if (savedState.engineStates.audio && window.audioSystem) {
+                window.audioSystem.loadState(savedState.engineStates.audio);
+                console.log('🔊 音频系统已恢复');
             }
 
             // 恢复时间系统

@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气特效方案演示 - Reality游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin: 30px 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-rain { background: linear-gradient(135deg, #667eea 0%, #4a69bd 100%); color: white; }
+        .btn-snow { background: linear-gradient(135deg, #e0f7fa 0%, #b3e5fc 100%); color: #333; }
+        .btn-sakura { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #333; }
+        .btn-fog { background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%); color: white; }
+        .btn-thunder { background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%); color: white; }
+        .btn-clear { background: linear-gradient(135deg, #00b894 0%, #00cec9 100%); color: white; }
+
+        .demo-area {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        /* 背景装饰 */
+        .demo-area::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, #228B22 0%, #32CD32 50%, transparent 100%);
+            z-index: 1;
+        }
+
+        .demo-area::after {
+            content: '🏠';
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 80px;
+            z-index: 2;
+        }
+
+        /* ===== 方案1: CSS雨滴特效 ===== */
+        .rain-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(to bottom, transparent, rgba(174, 194, 224, 0.8));
+            animation: fall linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* ===== 方案2: 3D雪花特效 ===== */
+        .snow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .snowflake {
+            position: absolute;
+            color: white;
+            font-size: 20px;
+            user-select: none;
+            animation: snowfall linear infinite, sway ease-in-out infinite;
+            text-shadow: 0 0 5px rgba(255,255,255,0.8);
+        }
+
+        @keyframes snowfall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        @keyframes sway {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(30px); }
+        }
+
+        /* ===== 方案3: 樱花花瓣特效（优化版）===== */
+        .sakura-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .sakura-petal {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: sakura-fall ease-in-out infinite, sakura-sway ease-in-out infinite, sakura-rotate ease-in-out infinite;
+            opacity: 0.85;
+            filter: blur(0.3px);
+        }
+
+        /* 花瓣形状：由5个圆形组成的真实樱花瓣 */
+        .sakura-petal::before,
+        .sakura-petal::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* 主花瓣（粉色渐变）- 使用CSS变量 */
+        .sakura-petal::before {
+            background: radial-gradient(circle at 30% 30%,
+                var(--color1, #FFE5EC),
+                var(--color2, #FFB7C5) 40%,
+                var(--color3, #FF85A2) 100%);
+            box-shadow: 0 0 3px rgba(255, 183, 197, 0.5);
+        }
+
+        /* 副花瓣（营造层次感）- 使用CSS变量 */
+        .sakura-petal::after {
+            background: radial-gradient(circle at 70% 30%,
+                var(--color4, #FFF0F5),
+                var(--color5, #FFD1DC) 50%,
+                var(--color6, #FFB7C5) 100%);
+            transform: translate(6px, 3px) scale(0.8);
+            opacity: 0.7;
+        }
+
+        /* 花瓣中心阴影（增加立体感）*/
+        .sakura-petal {
+            background: radial-gradient(circle at 50% 50%,
+                rgba(255, 105, 180, 0.3) 0%,
+                transparent 40%);
+        }
+
+        /* 飘落动画（自然下落，带重力加速）*/
+        @keyframes sakura-fall {
+            0% {
+                transform: translateY(-100px) translateZ(0);
+            }
+            100% {
+                transform: translateY(calc(100vh + 100px)) translateZ(0);
+            }
+        }
+
+        /* 左右摆动（模拟风吹效果）*/
+        @keyframes sakura-sway {
+            0%, 100% {
+                transform: translateX(0) rotateY(0deg);
+            }
+            25% {
+                transform: translateX(-20px) rotateY(-15deg);
+            }
+            75% {
+                transform: translateX(20px) rotateY(15deg);
+            }
+        }
+
+        /* 自然旋转（3D翻转效果）*/
+        @keyframes sakura-rotate {
+            0% {
+                transform: rotateZ(0deg) rotateX(0deg);
+            }
+            50% {
+                transform: rotateZ(180deg) rotateX(180deg);
+            }
+            100% {
+                transform: rotateZ(360deg) rotateX(360deg);
+            }
+        }
+
+        /* ===== 方案4: 雾气特效 ===== */
+        .fog-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .fog-layer {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(200,200,200,0.4) 0%, transparent 70%);
+            animation: fog-drift linear infinite;
+        }
+
+        .fog-layer:nth-child(1) { animation-duration: 20s; top: 0; }
+        .fog-layer:nth-child(2) { animation-duration: 30s; top: 20%; opacity: 0.6; }
+        .fog-layer:nth-child(3) { animation-duration: 25s; top: 40%; opacity: 0.5; }
+
+        @keyframes fog-drift {
+            from { transform: translateX(-50%); }
+            to { transform: translateX(0%); }
+        }
+
+        /* ===== 方案5: 雷电闪光特效 ===== */
+        .thunder-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .thunder-flash.active {
+            animation: flash 0.3s ease-out;
+        }
+
+        @keyframes flash {
+            0%, 20%, 40%, 60%, 80%, 100% { opacity: 0; }
+            10%, 30%, 50%, 70%, 90% { opacity: 0.8; }
+        }
+
+        .lightning-bolt {
+            position: absolute;
+            top: 0;
+            width: 4px;
+            height: 0;
+            background: linear-gradient(to bottom, #fff, #ff0, #fff);
+            box-shadow: 0 0 20px #fff, 0 0 40px #ff0;
+            opacity: 0;
+            z-index: 14;
+        }
+
+        .lightning-bolt.active {
+            animation: strike 0.3s ease-out;
+        }
+
+        @keyframes strike {
+            0% { height: 0; opacity: 1; }
+            50% { height: 100%; opacity: 1; }
+            100% { height: 100%; opacity: 0; }
+        }
+
+        /* ===== Canvas容器 ===== */
+        #weatherCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* 信息面板 */
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 20;
+            font-size: 14px;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .info-panel p {
+            margin: 5px 0;
+        }
+
+        .intensity-control {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .intensity-control label {
+            color: white;
+            font-size: 18px;
+            margin-right: 15px;
+        }
+
+        .intensity-control input[type="range"] {
+            width: 300px;
+            vertical-align: middle;
+        }
+
+        .intensity-value {
+            display: inline-block;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 18px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* 樱花自定义控制面板 */
+        .sakura-custom-panel {
+            display: none;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            color: white;
+        }
+
+        .sakura-custom-panel.active {
+            display: block;
+        }
+
+        .sakura-custom-panel h3 {
+            color: #FFB7C5;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 200px;
+        }
+
+        .control-item label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #ffd700;
+        }
+
+        .control-item input[type="color"] {
+            width: 80px;
+            height: 40px;
+            border: 2px solid #FFB7C5;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .control-item input[type="range"] {
+            width: 200px;
+        }
+
+        .control-value {
+            color: #FFB7C5;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #FFB7C5, #FF85A2);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 183, 197, 0.5);
+        }
+
+        .data-output {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #FFB7C5;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ Reality游戏 - 天气特效方案演示</h1>
+
+        <div class="controls">
+            <button class="btn btn-rain" onclick="showEffect('rain')">🌧️ 方案1: 雨滴特效</button>
+            <button class="btn btn-snow" onclick="showEffect('snow')">❄️ 方案2: 3D雪花</button>
+            <button class="btn btn-sakura" onclick="showEffect('sakura')">🌸 方案3: 樱花花瓣</button>
+            <button class="btn btn-fog" onclick="showEffect('fog')">🌫️ 方案4: 雾气效果</button>
+            <button class="btn btn-thunder" onclick="showEffect('thunder')">⚡ 方案5: 雷电闪光</button>
+            <button class="btn btn-clear" onclick="clearEffects()">🌞 清除特效</button>
+        </div>
+
+        <div class="intensity-control">
+            <label>特效强度:</label>
+            <input type="range" id="intensitySlider" min="0" max="100" value="70" oninput="updateIntensity(this.value)">
+            <span class="intensity-value" id="intensityValue">70%</span>
+        </div>
+
+        <!-- 樱花自定义面板 -->
+        <div class="sakura-custom-panel" id="sakuraPanel">
+            <h3>🌸 樱花特效自定义设置</h3>
+            <div class="control-group">
+                <div class="control-item">
+                    <label>主花瓣颜色1（中心）</label>
+                    <input type="color" id="color1" value="#FFE5EC" oninput="updateSakura()">
+                </div>
+                <div class="control-item">
+                    <label>主花瓣颜色2（中间）</label>
+                    <input type="color" id="color2" value="#FFB7C5" oninput="updateSakura()">
+                </div>
+                <div class="control-item">
+                    <label>主花瓣颜色3（边缘）</label>
+                    <input type="color" id="color3" value="#FF85A2" oninput="updateSakura()">
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="control-item">
+                    <label>副花瓣颜色1（中心）</label>
+                    <input type="color" id="color4" value="#FFF0F5" oninput="updateSakura()">
+                </div>
+                <div class="control-item">
+                    <label>副花瓣颜色2（中间）</label>
+                    <input type="color" id="color5" value="#FFD1DC" oninput="updateSakura()">
+                </div>
+                <div class="control-item">
+                    <label>副花瓣颜色3（边缘）</label>
+                    <input type="color" id="color6" value="#FFB7C5" oninput="updateSakura()">
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="control-item">
+                    <label>最小尺寸: <span class="control-value" id="minSizeValue">8px</span></label>
+                    <input type="range" id="minSize" min="4" max="20" value="8" oninput="updateSakura()">
+                </div>
+                <div class="control-item">
+                    <label>最大尺寸: <span class="control-value" id="maxSizeValue">14px</span></label>
+                    <input type="range" id="maxSize" min="10" max="30" value="14" oninput="updateSakura()">
+                </div>
+                <div class="control-item">
+                    <label>模糊程度: <span class="control-value" id="blurValue">0.3px</span></label>
+                    <input type="range" id="blur" min="0" max="20" value="3" step="1" oninput="updateSakura()">
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button class="export-btn" onclick="exportSakuraData()">📋 导出配置数据</button>
+                <button class="export-btn" onclick="copySakuraData()" style="background: linear-gradient(135deg, #00b894, #00cec9);">📄 复制到剪贴板</button>
+            </div>
+            <div class="data-output" id="dataOutput" style="display: none;"></div>
+        </div>
+
+        <div class="demo-area" id="demoArea">
+            <div class="info-panel">
+                <h3 id="effectName">欢迎！</h3>
+                <p id="effectDesc">点击上方按钮体验不同的天气特效</p>
+                <p id="effectTech"></p>
+            </div>
+            <canvas id="weatherCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let currentEffect = null;
+        let intensity = 0.7;
+        const canvas = document.getElementById('weatherCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId = null;
+
+        // 樱花配置
+        let sakuraConfig = {
+            color1: '#fd91b0',
+            color2: '#ffadbe',
+            color3: '#ffe5eb',
+            color4: '#fff0f5',
+            color5: '#ffd1dc',
+            color6: '#ffb7c5',
+            minSize: 6,
+            maxSize: 15,
+            blur: 0.8
+        };
+
+        // 白色花瓣配置
+        const whiteConfig = {
+            color1: '#ffffff',
+            color2: '#fff5f7',
+            color3: '#ffe9ed',
+            color4: '#ffffff',
+            color5: '#fffafc',
+            color6: '#fff0f5'
+        };
+
+        // 调整Canvas尺寸
+        function resizeCanvas() {
+            const demoArea = document.getElementById('demoArea');
+            canvas.width = demoArea.offsetWidth;
+            canvas.height = demoArea.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 更新强度
+        function updateIntensity(value) {
+            intensity = value / 100;
+            document.getElementById('intensityValue').textContent = value + '%';
+            if (currentEffect) {
+                showEffect(currentEffect);
+            }
+        }
+
+        // 清除所有特效
+        function clearEffects() {
+            const demoArea = document.getElementById('demoArea');
+            demoArea.querySelectorAll('.rain-container, .snow-container, .sakura-container, .fog-container, .thunder-flash, .lightning-bolt').forEach(el => el.remove());
+
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentEffect = null;
+
+            updateInfo('特效已清除', '点击按钮体验新特效', '');
+        }
+
+        // 更新信息面板
+        function updateInfo(name, desc, tech) {
+            document.getElementById('effectName').textContent = name;
+            document.getElementById('effectDesc').textContent = desc;
+            document.getElementById('effectTech').textContent = tech;
+        }
+
+        // 显示特效
+        function showEffect(type) {
+            clearEffects();
+            currentEffect = type;
+
+            // 显示/隐藏樱花自定义面板
+            const sakuraPanel = document.getElementById('sakuraPanel');
+            sakuraPanel.classList.toggle('active', type === 'sakura');
+
+            switch(type) {
+                case 'rain':
+                    createRainEffect();
+                    updateInfo('🌧️ 方案1: 纯CSS雨滴', '200个动态雨滴，GPU加速渲染', '技术: CSS3 Animation + Transform');
+                    break;
+                case 'snow':
+                    createSnowEffect();
+                    updateInfo('❄️ 方案2: 3D雪花飘落', '80片雪花，带横向摆动效果', '技术: CSS3 + 组合动画');
+                    break;
+                case 'sakura':
+                    createSakuraEffect();
+                    updateInfo('🌸 方案3: 樱花花瓣（多样化版）', '白色+粉色混合，大小/速度/透明度各不相同', '技术: CSS3伪元素 + 动态变量 + 物理模拟');
+                    break;
+                case 'fog':
+                    createFogEffect();
+                    updateInfo('🌫️ 方案4: 多层雾气', '3层独立雾带，无限循环漂移', '技术: CSS3 径向渐变 + 位移');
+                    break;
+                case 'thunder':
+                    createThunderEffect();
+                    updateInfo('⚡ 方案5: 雷电闪光', '随机闪电+屏幕闪光效果', '技术: CSS3 + JavaScript控制');
+                    break;
+            }
+        }
+
+        // ===== 雨滴特效 =====
+        function createRainEffect() {
+            const container = document.createElement('div');
+            container.className = 'rain-container';
+
+            const count = Math.floor(200 * intensity);
+            for (let i = 0; i < count; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                drop.style.opacity = Math.random() * 0.4 + 0.4;
+                container.appendChild(drop);
+            }
+
+            document.getElementById('demoArea').appendChild(container);
+        }
+
+        // ===== 雪花特效 =====
+        function createSnowEffect() {
+            const container = document.createElement('div');
+            container.className = 'snow-container';
+
+            const snowflakes = ['❄', '❅', '❆'];
+            const count = Math.floor(80 * intensity);
+
+            for (let i = 0; i < count; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+                flake.style.left = Math.random() * 100 + '%';
+                flake.style.fontSize = (Math.random() * 15 + 10) + 'px';
+                flake.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                flake.style.animationDelay = Math.random() * 5 + 's';
+
+                // 摆动动画
+                const swayDuration = Math.random() * 2 + 2;
+                flake.style.setProperty('--sway-duration', swayDuration + 's');
+
+                container.appendChild(flake);
+            }
+
+            document.getElementById('demoArea').appendChild(container);
+        }
+
+        // ===== 樱花特效（多样化版本）=====
+        function createSakuraEffect() {
+            const container = document.createElement('div');
+            container.className = 'sakura-container';
+
+            const count = Math.floor(60 * intensity);
+
+            for (let i = 0; i < count; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'sakura-petal';
+
+                // 随机起始位置
+                petal.style.left = Math.random() * 100 + '%';
+                petal.style.top = '0px';
+
+                // 随机选择颜色类型（30%白色，70%粉色）
+                const isWhite = Math.random() < 0.3;
+                const colors = isWhite ? whiteConfig : sakuraConfig;
+
+                // 随机大小（使用配置，每片都不同）
+                const sizeVariation = Math.random(); // 0-1的随机数
+                const size = sakuraConfig.minSize + sizeVariation * (sakuraConfig.maxSize - sakuraConfig.minSize);
+                petal.style.width = size + 'px';
+                petal.style.height = size + 'px';
+
+                // 应用颜色配置
+                petal.style.setProperty('--color1', colors.color1);
+                petal.style.setProperty('--color2', colors.color2);
+                petal.style.setProperty('--color3', colors.color3);
+                petal.style.setProperty('--color4', colors.color4);
+                petal.style.setProperty('--color5', colors.color5);
+                petal.style.setProperty('--color6', colors.color6);
+
+                // 应用模糊（每片略有不同）
+                const blurAmount = sakuraConfig.blur * (0.8 + Math.random() * 0.4); // ±20%变化
+                petal.style.filter = `blur(${blurAmount}px)`;
+
+                // 下落速度（根据大小调整：大的慢，小的快）
+                const sizeFactor = size / sakuraConfig.maxSize; // 0-1
+                const baseFallDuration = 6 + sizeFactor * 6; // 6-12秒，大的更慢
+                const fallDuration = baseFallDuration * (0.9 + Math.random() * 0.2); // ±10%变化
+
+                // 摇摆速度（小花瓣摇摆更快）
+                const swayDuration = (2 + Math.random() * 2) * (0.8 + sizeFactor * 0.4);
+
+                // 旋转速度（随机）
+                const rotateDuration = 3 + Math.random() * 4;
+
+                petal.style.animationDuration = `${fallDuration}s, ${swayDuration}s, ${rotateDuration}s`;
+                petal.style.animationDelay = Math.random() * 5 + 's';
+
+                // 提高透明度（0.7-0.95，白色花瓣更透明）
+                const baseOpacity = isWhite ? 0.7 : 0.8;
+                petal.style.opacity = baseOpacity + Math.random() * 0.15;
+
+                container.appendChild(petal);
+            }
+
+            document.getElementById('demoArea').appendChild(container);
+        }
+
+        // 更新樱花配置
+        function updateSakura() {
+            // 获取所有颜色值
+            sakuraConfig.color1 = document.getElementById('color1').value;
+            sakuraConfig.color2 = document.getElementById('color2').value;
+            sakuraConfig.color3 = document.getElementById('color3').value;
+            sakuraConfig.color4 = document.getElementById('color4').value;
+            sakuraConfig.color5 = document.getElementById('color5').value;
+            sakuraConfig.color6 = document.getElementById('color6').value;
+
+            // 获取大小值
+            sakuraConfig.minSize = parseInt(document.getElementById('minSize').value);
+            sakuraConfig.maxSize = parseInt(document.getElementById('maxSize').value);
+            sakuraConfig.blur = parseInt(document.getElementById('blur').value) / 10;
+
+            // 更新显示值
+            document.getElementById('minSizeValue').textContent = sakuraConfig.minSize + 'px';
+            document.getElementById('maxSizeValue').textContent = sakuraConfig.maxSize + 'px';
+            document.getElementById('blurValue').textContent = sakuraConfig.blur + 'px';
+
+            // 重新生成特效
+            if (currentEffect === 'sakura') {
+                showEffect('sakura');
+            }
+        }
+
+        // 导出配置数据
+        function exportSakuraData() {
+            const data = {
+                樱花配置: sakuraConfig,
+                使用说明: "复制这些数据发给开发者"
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const output = document.getElementById('dataOutput');
+            output.textContent = jsonStr;
+            output.style.display = 'block';
+        }
+
+        // 复制到剪贴板
+        async function copySakuraData() {
+            const data = JSON.stringify(sakuraConfig, null, 2);
+            try {
+                await navigator.clipboard.writeText(data);
+                alert('✅ 配置数据已复制到剪贴板！\n你可以直接粘贴发给我~');
+            } catch (err) {
+                // 降级方案
+                exportSakuraData();
+                alert('📋 数据已显示在下方，请手动复制');
+            }
+        }
+
+        // ===== 雾气特效 =====
+        function createFogEffect() {
+            const container = document.createElement('div');
+            container.className = 'fog-container';
+
+            for (let i = 0; i < 3; i++) {
+                const layer = document.createElement('div');
+                layer.className = 'fog-layer';
+                container.appendChild(layer);
+            }
+
+            document.getElementById('demoArea').appendChild(container);
+        }
+
+        // ===== 雷电特效 =====
+        function createThunderEffect() {
+            const demoArea = document.getElementById('demoArea');
+
+            function strike() {
+                // 闪光效果
+                const flash = document.createElement('div');
+                flash.className = 'thunder-flash active';
+                demoArea.appendChild(flash);
+
+                // 闪电
+                const bolt = document.createElement('div');
+                bolt.className = 'lightning-bolt active';
+                bolt.style.left = (Math.random() * 80 + 10) + '%';
+                demoArea.appendChild(bolt);
+
+                setTimeout(() => {
+                    flash.remove();
+                    bolt.remove();
+                }, 300);
+
+                // 随机间隔下次闪电
+                const nextStrike = Math.random() * 3000 + 1000;
+                setTimeout(strike, nextStrike / intensity);
+            }
+
+            strike();
+        }
+
+        // 初始提示
+        setTimeout(() => {
+            alert('💡 提示：\n1. 点击按钮切换不同天气特效\n2. 滑动强度条调整特效密度\n3. 所有特效都是纯代码实现，无需外部素材！');
+        }, 500);
+    </script>
+</body>
+</html>

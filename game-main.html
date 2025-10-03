@@ -59,8 +59,60 @@
                             <span id="currentLocation">学校·教室</span>
                         </div>
                         <div class="time-info">
-                            <span class="time-icon">🕐</span>
+                            <span class="weather-icon" id="currentWeatherIcon">☀️</span>
                             <span id="currentTime">星期一 08:30</span>
+                        </div>
+                    </div>
+
+                    <!-- 天气详情浮层 -->
+                    <div class="weather-detail-tooltip" id="weatherDetailTooltip">
+                        <div class="weather-tooltip-header">
+                            <span class="weather-tooltip-icon" id="weatherTooltipIcon">☀️</span>
+                            <span class="weather-tooltip-name" id="weatherTooltipName">晴天</span>
+                        </div>
+                        <div class="weather-tooltip-body">
+                            <div class="weather-tooltip-row">
+                                <span class="label">温度</span>
+                                <span class="value" id="weatherTooltipTemp">22°C</span>
+                            </div>
+                            <div class="weather-tooltip-row">
+                                <span class="label">湿度</span>
+                                <span class="value" id="weatherTooltipHumidity">65%</span>
+                            </div>
+                            <div class="weather-tooltip-row">
+                                <span class="label">季节</span>
+                                <span class="value" id="weatherTooltipSeason">🌸 春季</span>
+                            </div>
+                        </div>
+                        <div class="weather-tooltip-divider"></div>
+                        <div class="weather-tooltip-forecast">
+                            <div class="forecast-title">📅 三天预报</div>
+                            <div class="forecast-item">
+                                <span class="forecast-day">明天</span>
+                                <span class="forecast-weather" id="weatherForecast1">☁️ 多云 20°C</span>
+                            </div>
+                            <div class="forecast-item">
+                                <span class="forecast-day">后天</span>
+                                <span class="forecast-weather" id="weatherForecast2">🌧️ 雨天 18°C</span>
+                            </div>
+                            <div class="forecast-item">
+                                <span class="forecast-day">第3天</span>
+                                <span class="forecast-weather" id="weatherForecast3">☀️ 晴天 23°C</span>
+                            </div>
+                        </div>
+                        <div class="weather-tooltip-divider"></div>
+                        <div class="weather-tooltip-year">
+                            <div class="year-info-row">
+                                <span class="label">年份</span>
+                                <span class="value" id="weatherTooltipYear">第1年</span>
+                            </div>
+                            <div class="year-info-row">
+                                <span class="label">类型</span>
+                                <span class="value" id="weatherTooltipYearType">🕊️ 和平年</span>
+                            </div>
+                        </div>
+                        <div class="weather-tooltip-event" id="weatherTooltipEvent">
+                            <div class="event-badge">🌸 樱花周</div>
                         </div>
                     </div>
 
@@ -165,6 +217,7 @@
     <script src="js/data/npc-profiles.js"></script>
     <!-- 世界系统 -->
     <script src="js/core/weather-system.js"></script>
+    <script src="js/core/climate-manager.js"></script>
     <script src="js/core/economy-system.js"></script>
     <script src="js/core/farming-system.js"></script>
     <!-- 战斗系统 -->
@@ -173,6 +226,10 @@
     <script src="js/api/api-state.js"></script>
     <!-- 响应式系统（魔法系统） -->
     <script src="js/core/reactive-system.js"></script>
+    <!-- 条件判断引擎 -->
+    <script src="js/core/condition-engine.js"></script>
+    <!-- 概率决策引擎 -->
+    <script src="js/core/random-engine.js"></script>
     <!-- 统一世界状态管理 -->
     <script src="js/core/world-state.js"></script>
     <!-- 游戏启动引导 -->
@@ -181,6 +238,19 @@
     <script src="js/core/simple-save.js"></script>
     <!-- 时间系统 -->
     <script src="js/core/time-system.js"></script>
+    <!-- 音频系统 -->
+    <script src="js/core/audio-system.js"></script>
+    <!-- 音乐系统模块 -->
+    <script src="js/core/music-priority-manager.js"></script>
+    <script src="js/core/daily-bgm-system.js"></script>
+    <script src="js/core/npc-music-system.js"></script>
+    <script src="js/core/venue-music-system.js"></script>
+    <!-- BGM测试配置 -->
+    <script src="js/core/bgm-test-config.js"></script>
+    <!-- 实际BGM配置 -->
+    <script src="js/core/real-bgm-config.js"></script>
+    <!-- BGM系统初始化 -->
+    <script src="js/core/bgm-init.js"></script>
     <!-- 加载动画系统 -->
     <script src="js/utils/animations.js"></script>
     <!-- 加载场景管理系统 -->
@@ -192,6 +262,8 @@
     <!-- 加载插图系统 -->
     <script src="js/data/scene-illustrations.js"></script>
     <script src="js/core/illustration-manager.js"></script>
+    <!-- Wiki百科系统 -->
+    <script src="js/data/game-wiki.js"></script>
     <!-- 加载开场场景数据 -->
     <script src="js/data/scenes/opening.js"></script>
     <!-- 加载AI测试场景 -->
@@ -258,6 +330,49 @@
                 <button class="illustration-modal-action primary" onclick="window.illustrationManager?.closeModal()">
                     确定
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全屏天气特效层 -->
+    <div class="weather-effects-layer" id="weatherEffects">
+        <!-- 雨天特效 -->
+        <div class="rain-effect" id="rainEffect"></div>
+        <!-- 雪天特效 -->
+        <div class="snow-effect" id="snowEffect"></div>
+        <!-- 樱花特效 -->
+        <div class="sakura-effect" id="sakuraEffect"></div>
+    </div>
+
+    <!-- Wiki百科浮层 -->
+    <div class="wiki-modal-overlay" id="wikiModal">
+        <div class="wiki-modal-container">
+            <!-- 侧边栏 -->
+            <div class="wiki-sidebar">
+                <div class="wiki-header">
+                    <h2>📚 游戏百科</h2>
+                    <button class="wiki-close-btn" onclick="closeWiki()">✕</button>
+                </div>
+                <div class="wiki-search">
+                    <input type="text" id="wikiSearch" placeholder="搜索..." onkeyup="searchWiki(this.value)">
+                </div>
+                <div class="wiki-categories" id="wikiCategories">
+                    <!-- 分类列表动态生成 -->
+                </div>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="wiki-content-area">
+                <div class="wiki-breadcrumb" id="wikiBreadcrumb">
+                    <span class="breadcrumb-home" onclick="showWikiHome()">首页</span>
+                </div>
+                <div class="wiki-content" id="wikiContent">
+                    <!-- 文章内容动态显示 -->
+                    <div class="wiki-welcome">
+                        <h1>📚 欢迎来到Reality游戏百科</h1>
+                        <p>选择左侧分类查看详细内容</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

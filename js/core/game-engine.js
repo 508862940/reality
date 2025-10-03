@@ -854,38 +854,54 @@ function resetAISettings() {
 
 // 加载保存的AI设置
 function loadAISettings() {
+    // 检查必要的DOM元素是否存在
+    const providerSelect = document.getElementById('ai-provider-select');
+    if (!providerSelect) {
+        // 当前页面没有AI配置界面，跳过
+        return;
+    }
+
     const saved = localStorage.getItem('aiSettings');
     if (saved) {
         const settings = JSON.parse(saved);
-        
+
         // 加载基础设置
-        document.getElementById('ai-provider-select').value = settings.provider || 'openai_proxy';
-        document.getElementById('temperature-slider').value = settings.temperature || 0.8;
-        document.getElementById('max-tokens-input').value = settings.maxTokens || 200;
-        document.getElementById('temperature-value').textContent = settings.temperature || 0.8;
+        providerSelect.value = settings.provider || 'openai_proxy';
+        const tempSlider = document.getElementById('temperature-slider');
+        const maxTokensInput = document.getElementById('max-tokens-input');
+        const tempValue = document.getElementById('temperature-value');
+
+        if (tempSlider) tempSlider.value = settings.temperature || 0.8;
+        if (maxTokensInput) maxTokensInput.value = settings.maxTokens || 200;
+        if (tempValue) tempValue.textContent = settings.temperature || 0.8;
         
         // 加载代理配置
         if (settings.provider === 'openai_proxy') {
-            document.getElementById('proxy-url-input').value = settings.proxyUrl || '';
-            document.getElementById('proxy-key-input').value = settings.proxyKey || '';
-            
+            const proxyUrlInput = document.getElementById('proxy-url-input');
+            const proxyKeyInput = document.getElementById('proxy-key-input');
+
+            if (proxyUrlInput) proxyUrlInput.value = settings.proxyUrl || '';
+            if (proxyKeyInput) proxyKeyInput.value = settings.proxyKey || '';
+
             // 处理模型设置
             const model = settings.model || 'gpt-3.5-turbo';
             const select = document.getElementById('proxy-model-select');
             const customInput = document.getElementById('custom-model-input');
-            
-            // 检查是否是预设模型
-            const presetModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 
-                                 'claude-3-sonnet-20240229', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'];
-            
-            if (presetModels.includes(model)) {
-                select.value = model;
-                customInput.classList.remove('show');
-            } else {
-                // 自定义模型
-                select.value = 'custom';
-                customInput.value = model;
-                customInput.classList.add('show');
+
+            if (select && customInput) {
+                // 检查是否是预设模型
+                const presetModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini',
+                                     'claude-3-sonnet-20240229', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'];
+
+                if (presetModels.includes(model)) {
+                    select.value = model;
+                    customInput.classList.remove('show');
+                } else {
+                    // 自定义模型
+                    select.value = 'custom';
+                    customInput.value = model;
+                    customInput.classList.add('show');
+                }
             }
             
             // 更新AI服务配置
@@ -895,28 +911,43 @@ function loadAISettings() {
                 AIServices.openai_proxy.enabled = true;
             }
         } else if (settings.apiKey) {
-            document.getElementById('api-key-input').value = settings.apiKey;
-            AIServices[settings.provider].apiKey = settings.apiKey;
-            AIServices[settings.provider].enabled = true;
+            const apiKeyInput = document.getElementById('api-key-input');
+            if (apiKeyInput) apiKeyInput.value = settings.apiKey;
+
+            if (AIServices[settings.provider]) {
+                AIServices[settings.provider].apiKey = settings.apiKey;
+                AIServices[settings.provider].enabled = true;
+            }
         }
-        
+
         AIConfig.currentProvider = settings.provider || 'openai_proxy';
-        changeAIProvider();
-        
-        updateStatus('设置已加载', 'success');
+        if (typeof changeAIProvider === 'function') {
+            changeAIProvider();
+        }
+
+        if (typeof updateStatus === 'function') {
+            updateStatus('设置已加载', 'success');
+        }
     } else {
-        updateStatus('未配置', 'warning');
+        if (typeof updateStatus === 'function') {
+            updateStatus('未配置', 'warning');
+        }
     }
 }
 
 // 处理模型选择
 function handleModelSelect() {
-    console.log('handleModelSelect 被调用');
     const select = document.getElementById('proxy-model-select');
     const customInput = document.getElementById('custom-model-input');
-    
+
+    // 检查元素是否存在
+    if (!select || !customInput) {
+        return;
+    }
+
+    console.log('handleModelSelect 被调用');
     console.log('选择的值:', select.value);
-    
+
     if (select.value === 'custom') {
         console.log('显示自定义输入框');
         customInput.classList.add('show');

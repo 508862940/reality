@@ -246,13 +246,84 @@ class SceneManager {
                 html += '</div>'; // 关闭multi-choice-container
             } else {
                 // 单选场景
+                let renderedCount = 0;
+                let hiddenCount = 0;
+                console.log(`📝 开始渲染选项，总数: ${sceneData.choices.length}`);
+
                 sceneData.choices.forEach((choice, index) => {
+                    console.log(`  [${index}] 处理选项: "${choice.text}"`);
+                    // 🔍 Stage 4: 条件检查
+                    let isDisabled = false;
+                    let isHidden = false;
+                    let failReasons = [];
+                    let conditionDesc = '';
+
+                    // 检查显示条件（隐藏选项）
+                    if (choice.showConditions && window.ConditionEngine) {
+                        const context = this.buildConditionContext();
+                        console.log(`🔍 检查选项 #${index} "${choice.text}" 的showConditions:`, {
+                            showConditions: choice.showConditions,
+                            contextMoney: context.character?.money,
+                            contextTime: context.time,
+                            contextWeather: context.weather,
+                            fullContext: context
+                        });
+
+                        const canShow = window.ConditionEngine.check(choice.showConditions, context);
+                        isHidden = !canShow;
+
+                        console.log(`👁️ 检查结果: canShow=${canShow}, isHidden=${isHidden}`);
+
+                        // 如果隐藏，直接跳过不渲染
+                        if (isHidden) {
+                            console.log(`🙈 选项 "${choice.text}" 被隐藏（条件不满足）`);
+                            hiddenCount++;
+                            return; // forEach 的 return 相当于 continue
+                        } else {
+                            console.log(`✨ 选项 "${choice.text}" 显示（条件满足）`);
+                        }
+                    }
+
+                    // 如果选项被隐藏了，上面的return已经执行，下面的代码不会运行
+                    // 只有显示的选项才会继续执行下面的代码
+
+                    // 检查可用条件（灰化选项）
+                    if (choice.conditions && window.ConditionEngine) {
+                        const context = this.buildConditionContext();
+                        isDisabled = !window.ConditionEngine.check(choice.conditions, context);
+
+                        if (isDisabled) {
+                            // 获取失败原因
+                            failReasons = window.ConditionEngine.getFailReasons(choice.conditions, context);
+                        }
+
+                        // 获取条件描述（可选，用于debug）
+                        conditionDesc = window.ConditionEngine.describe(choice.conditions);
+                    }
+
+                    // 生成选项HTML
+                    const disabledClass = isDisabled ? 'disabled' : '';
+                    const disabledAttr = isDisabled ? 'data-disabled="true"' : '';
+                    const failReasonsAttr = failReasons.length > 0
+                        ? `data-fail-reasons="${failReasons.join('；')}"`
+                        : '';
+
                     html += `
-                        <div class="story-choice" data-index="${index}" data-target="${choice.target || ''}">
+                        <div class="story-choice ${disabledClass}"
+                             data-index="${index}"
+                             data-target="${choice.target || ''}"
+                             ${disabledAttr}
+                             ${failReasonsAttr}
+                             ${conditionDesc ? `title="${conditionDesc}"` : ''}>
                             ${choice.text}
+                            ${isDisabled ? '<span class="lock-icon">🔒</span>' : ''}
                         </div>
                     `;
+                    renderedCount++;
+                    console.log(`  ✅ 渲染了选项 #${renderedCount}: "${choice.text}"`);
                 });
+
+                console.log(`📊 渲染统计: 总计${sceneData.choices.length}个选项, 渲染了${renderedCount}个, 隐藏了${hiddenCount}个`);
             }
 
             html += '</div>';
@@ -260,6 +331,42 @@ class SceneManager {
 
         // 插入内容
         this.storyArea.innerHTML = html;
+
+        // 调试：检查实际渲染的选项数量
+        console.log(`🎯 storyArea元素:`, this.storyArea);
+        console.log(`📄 HTML长度: ${html.length} 字符`);
+
+        const renderedChoices = this.storyArea.querySelectorAll('.story-choice');
+        console.log(`🔍 实际DOM中的选项数量: ${renderedChoices.length}`);
+        renderedChoices.forEach((choice, index) => {
+            const text = choice.textContent.trim();
+            const styles = window.getComputedStyle(choice);
+            const isVisible = styles.display !== 'none' &&
+                            styles.visibility !== 'hidden' &&
+                            parseFloat(styles.opacity) > 0;
+            const rect = choice.getBoundingClientRect();
+
+            console.log(`  DOM[${index}]: ${text.substring(0, 30)}...`, {
+                display: styles.display,
+                visibility: styles.visibility,
+                opacity: styles.opacity,
+                isVisible: isVisible,
+                position: `top:${rect.top.toFixed(0)}px, height:${rect.height.toFixed(0)}px`,
+                inViewport: rect.top >= 0 && rect.bottom <= window.innerHeight
+            });
+        });
+
+        // 查看是否有隐藏选项的文本
+        if (html.includes('隐藏选项')) {
+            console.log('✅ HTML包含"隐藏选项"文本');
+        } else {
+            console.log('❌ HTML不包含"隐藏选项"文本');
+        }
+        if (html.includes('特殊选项')) {
+            console.log('✅ HTML包含"特殊选项"文本');
+        } else {
+            console.log('❌ HTML不包含"特殊选项"文本');
+        }
 
         // 绑定事件
         this.bindEvents();
@@ -273,6 +380,17 @@ class SceneManager {
         const choices = this.storyArea.querySelectorAll('.story-choice');
         choices.forEach(choice => {
             choice.addEventListener('click', (e) => {
+                // 🔒 Stage 4: 检查是否禁用
+                if (choice.classList.contains('disabled') || choice.dataset.disabled === 'true') {
+                    console.log('⚠️ 选项被禁用，不能选择');
+
+                    // 显示失败原因提示
+                    if (choice.dataset.failReasons) {
+                        this.showDisabledTooltip(choice, choice.dataset.failReasons);
+                    }
+                    return;
+                }
+
                 this.selectChoice(e.target);
             });
         });
@@ -1626,20 +1744,149 @@ class SceneManager {
     }
 
     /**
-     * 更新游戏时间
-     * @param {number} minutes - 消耗的分钟数
+     * 显示禁用选项的提示
+     * Stage 4: 显示为什么选项不可用
      */
-    updateGameTime(minutes) {
-        console.log(`时间流逝 ${minutes} 分钟`);
-        // 调用时间系统推进时间
-        if (window.timeSystem && window.timeSystem.advanceTime) {
-            window.timeSystem.advanceTime(minutes);
+    showDisabledTooltip(element, reasons) {
+        // 创建或获取提示框
+        let tooltip = document.getElementById('condition-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'condition-tooltip';
+            tooltip.className = 'condition-tooltip';
+            document.body.appendChild(tooltip);
+        }
 
-            // 更新界面显示
-            if (window.updateLocationTime) {
-                window.updateLocationTime();
+        // 设置内容
+        tooltip.innerHTML = `
+            <div class="tooltip-header">🔒 条件不满足</div>
+            <div class="tooltip-content">${reasons}</div>
+        `;
+
+        // 定位（在元素上方）
+        const rect = element.getBoundingClientRect();
+        tooltip.style.left = rect.left + 'px';
+        tooltip.style.top = (rect.top - 10) + 'px';
+        tooltip.style.transform = 'translateY(-100%)';
+
+        // 显示
+        tooltip.classList.add('show');
+
+        // 3秒后自动隐藏
+        setTimeout(() => {
+            tooltip.classList.remove('show');
+        }, 3000);
+
+        // 点击其他地方隐藏
+        const hideTooltip = () => {
+            tooltip.classList.remove('show');
+            document.removeEventListener('click', hideTooltip);
+        };
+        setTimeout(() => {
+            document.addEventListener('click', hideTooltip);
+        }, 100);
+    }
+
+    /**
+     * 构建条件检查的上下文
+     * Stage 4: 集合当前游戏状态供条件引擎使用
+     */
+    buildConditionContext() {
+        const context = {};
+
+        // 1. 游戏时间
+        if (window.timeSystem) {
+            context.gameTime = window.timeSystem.currentTime;
+            context.time = window.timeSystem.currentTime; // 兼容性：有些地方可能用context.time
+        } else if (window.worldState?.state?.time) {
+            context.gameTime = window.worldState.state.time;
+            context.time = window.worldState.state.time;
+        }
+
+        // 2. 角色状态和属性
+        const character = {};
+        if (window.worldState?.state?.player?.stats) {
+            // 复制所有stats作为character属性
+            Object.assign(character, window.worldState.state.player.stats);
+        }
+
+        // 添加其他属性
+        if (window.worldState?.state?.player?.attributes) {
+            Object.assign(character, window.worldState.state.player.attributes);
+        }
+
+        // 添加季节作为属性
+        if (window.worldState?.state?.environment?.season) {
+            character.season = window.worldState.state.environment.season;
+        }
+
+        // 添加关系作为属性
+        if (window.worldState?.state?.relationships?.zero) {
+            character.zero_affection = window.worldState.state.relationships.zero.affection || 0;
+        }
+
+        context.character = character;
+
+        // 3. 处理inventory - 转换为字符串数组或对象
+        const inventory = {};
+        if (window.worldState?.state?.player?.inventory?.items) {
+            const items = window.worldState.state.player.inventory.items;
+            if (Array.isArray(items)) {
+                // 转换 [{name: '钥匙', count: 1}] 为 {'钥匙': 1}
+                items.forEach(item => {
+                    if (typeof item === 'string') {
+                        inventory[item] = 1;
+                    } else if (item.name) {
+                        inventory[item.name] = item.count || 1;
+                    }
+                });
             }
         }
+        context.inventory = inventory;
+
+        // 4. 当前位置
+        if (window.worldState?.state?.player?.position) {
+            context.location = window.worldState.state.player.position.location;
+        } else if (window.gameState?.character?.location) {
+            context.location = window.gameState.character.location;
+        }
+
+        // 5. 天气
+        if (window.weatherSystem) {
+            context.weather = window.weatherSystem.currentWeather;
+        } else if (window.worldState?.state?.environment?.weather) {
+            context.weather = window.worldState.state.environment.weather;
+        }
+
+        // 6. 剧情标记（预留）
+        if (window.worldState?.state?.story?.flags) {
+            context.flags = window.worldState.state.story.flags;
+        } else if (window.storyFlags) {
+            context.flags = window.storyFlags;
+        }
+
+        console.log('📋 构建条件上下文:', {
+            time: context.gameTime,
+            weather: context.weather,
+            character: context.character,
+            inventory: context.inventory,
+            location: context.location
+        });
+        return context;
+    }
+
+    /**
+     * 更新游戏时间
+     * @param {number} minutes - 消耗的分钟数
+     * @param {string} reason - 时间消耗的原因
+     */
+    updateGameTime(minutes, reason = '') {
+        console.log(`⏰ 时间流逝 ${minutes} 分钟${reason ? ` (${reason})` : ''}`);
+        // 调用时间系统推进时间
+        if (window.timeSystem && window.timeSystem.advanceTime) {
+            window.timeSystem.advanceTime(minutes, reason);
+        }
+        // UI更新已由advanceTime内部处理，通过响应式系统
     }
 
     /**
@@ -1673,6 +1920,7 @@ class SceneManager {
      */
     calculateAndApplyTimeCost(choice, scene) {
         let totalTimeCost = 0;
+        let timeReason = '';
 
         if (Array.isArray(choice)) {
             // 多选场景的时间计算
@@ -1684,12 +1932,22 @@ class SceneManager {
                 console.log(`📝 小纸条：基础动作时间 +${scene.actionTimeCost}分钟`);
             }
 
+            // 根据场景ID判断具体动作
+            if (scene.id && scene.id.includes('organize_bag')) {
+                timeReason = '整理背包';
+            } else if (scene.id && scene.id.includes('shopping')) {
+                timeReason = '购物';
+            } else {
+                timeReason = scene.title || '整理物品';
+            }
+
             if (choice.length === 0) {
-                // 0选择的额外时间消耗
+                // 0选择的额外时间消耗（什么都不选也要花时间）
                 if (scene.zeroChoiceEffect && scene.zeroChoiceEffect.timeCost) {
                     totalTimeCost += scene.zeroChoiceEffect.timeCost;
                     console.log(`📝 小纸条：0选择思考时间 +${scene.zeroChoiceEffect.timeCost}分钟`);
                 }
+                timeReason += '（犹豫不决）';
             } else {
                 // 每个物品的额外时间
                 if (scene.itemTimeCost) {
@@ -1697,18 +1955,33 @@ class SceneManager {
                     totalTimeCost += itemTime;
                     console.log(`📝 小纸条：${choice.length}个物品时间 +${itemTime}分钟`);
                 }
+                timeReason += `（选择了${choice.length}件物品）`;
             }
         } else {
             // 单选场景的时间消耗
-            if (choice.timeCost) {
-                totalTimeCost = choice.timeCost;
-                console.log(`📝 小纸条：单选时间消耗 +${totalTimeCost}分钟`);
+            if (choice) {
+                // 优先使用新的timeLevel系统
+                if (choice.timeLevel) {
+                    totalTimeCost = window.timeSystem.getTimeByLevel(choice.timeLevel);
+                    timeReason = choice.text || '做出选择';
+                    console.log(`📝 小纸条：使用时间等级 ${choice.timeLevel} = ${totalTimeCost}分钟`);
+                }
+                // 兼容旧的timeCost属性
+                else if (choice.timeCost) {
+                    totalTimeCost = choice.timeCost;
+                    timeReason = choice.text || '做出选择';
+                    console.log(`📝 小纸条：单选时间消耗 +${totalTimeCost}分钟`);
+                }
             }
         }
 
         // 应用时间消耗
         if (totalTimeCost > 0) {
-            this.updateGameTime(totalTimeCost);
+            // 确保时间是5的倍数
+            if (totalTimeCost % 5 !== 0) {
+                totalTimeCost = Math.ceil(totalTimeCost / 5) * 5;
+            }
+            this.updateGameTime(totalTimeCost, timeReason);
             console.log(`📝 小纸条：总时间消耗 ${totalTimeCost}分钟`);
         }
     }

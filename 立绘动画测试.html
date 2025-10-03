@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reality立绘动画测试系统</title>
+    <style>
+        :root {
+            --primary-color: #8b5cf6;
+            --bg-dark: #1a1a2e;
+            --bg-light: #2d2d44;
+            --text-light: #e4e4e7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+
+        /* 动画展示卡片 */
+        .animation-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            color: var(--primary-color);
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            background: rgba(139, 92, 246, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #a1a1aa;
+        }
+
+        .status-badge.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 立绘显示区 */
+        .portrait-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portrait-container {
+            position: relative;
+        }
+
+        /* 大立绘样式 */
+        .portrait-large {
+            max-width: 300px;
+            height: auto;
+        }
+
+        .portrait-large img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(139, 92, 246, 0.3));
+        }
+
+        /* Q版立绘样式 */
+        .portrait-chibi {
+            width: 128px;
+            height: 256px;
+        }
+
+        .portrait-chibi img {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            filter: drop-shadow(0 5px 15px rgba(139, 92, 246, 0.5));
+        }
+
+        /* 控制按钮组 */
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #f093fb, #8b5cf6);
+            box-shadow: 0 0 20px rgba(240, 147, 251, 0.5);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 帧预览区 */
+        .frames-preview {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .frames-title {
+            font-size: 14px;
+            color: #a1a1aa;
+            margin-bottom: 10px;
+        }
+
+        .frames-container {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .frame-item {
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .frame-item.active {
+            border-color: var(--primary-color);
+            background: rgba(139, 92, 246, 0.1);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .frame-item img {
+            width: 64px;
+            height: 128px;
+            image-rendering: pixelated;
+            margin-bottom: 5px;
+        }
+
+        .frame-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 速度控制 */
+        .speed-control {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .slider-group {
+            margin-bottom: 10px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* 信息提示 */
+        .info-box {
+            margin-top: 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            color: var(--primary-color);
+        }
+
+        /* 上传区域 */
+        .upload-area {
+            margin-top: 20px;
+            padding: 30px;
+            border: 2px dashed rgba(139, 92, 246, 0.3);
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* 动画效果 */
+        @keyframes breathe {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.02); }
+        }
+
+        .breathing {
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes walk {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(10px); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 Reality立绘动画测试系统</h1>
+        <p class="subtitle">眨眼动画（4帧） + 行走动画（3帧）演示</p>
+    </div>
+
+    <div class="main-container">
+        <!-- 眨眼动画卡片 -->
+        <div class="animation-card">
+            <div class="card-header">
+                <h2 class="card-title">👁️ 眨眼动画</h2>
+                <span class="status-badge" id="blinkStatus">停止</span>
+            </div>
+
+            <div class="portrait-display">
+                <div class="portrait-container portrait-large">
+                    <img id="blinkSprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="眨眼立绘">
+                </div>
+            </div>
+
+            <div class="controls">
+                <button onclick="blinkAnim.toggle()" id="blinkToggleBtn">▶️ 播放</button>
+                <button onclick="blinkAnim.playOnce()">眨眼一次</button>
+                <button onclick="blinkAnim.reset()">重置</button>
+            </div>
+
+            <div class="frames-preview">
+                <div class="frames-title">帧序列：标准小人2 → 眨眼1 → 眨眼2 → 眨眼3</div>
+                <div class="frames-container" id="blinkFrames">
+                    <!-- 帧预览将在这里生成 -->
+                </div>
+            </div>
+
+            <div class="speed-control">
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>播放速度</span>
+                        <span id="blinkSpeedValue">200ms/帧</span>
+                    </div>
+                    <input type="range" min="50" max="500" value="200" step="50"
+                           oninput="blinkAnim.setSpeed(this.value)">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>循环间隔</span>
+                        <span id="blinkIntervalValue">3秒</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="3"
+                           oninput="blinkAnim.setInterval(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <!-- 行走动画卡片 -->
+        <div class="animation-card">
+            <div class="card-header">
+                <h2 class="card-title">🚶 行走动画</h2>
+                <span class="status-badge" id="walkStatus">停止</span>
+            </div>
+
+            <div class="portrait-display">
+                <div class="portrait-container portrait-chibi">
+                    <img id="walkSprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="行走立绘">
+                </div>
+            </div>
+
+            <div class="controls">
+                <button onclick="walkAnim.toggle()" id="walkToggleBtn">▶️ 播放</button>
+                <button onclick="walkAnim.playOnce()">走一步</button>
+                <button onclick="walkAnim.reset()">重置</button>
+            </div>
+
+            <div class="frames-preview">
+                <div class="frames-title">帧序列：行走1 → 标准小人1 → 行走2</div>
+                <div class="frames-container" id="walkFrames">
+                    <!-- 帧预览将在这里生成 -->
+                </div>
+            </div>
+
+            <div class="speed-control">
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>播放速度</span>
+                        <span id="walkSpeedValue">300ms/帧</span>
+                    </div>
+                    <input type="range" min="100" max="600" value="300" step="50"
+                           oninput="walkAnim.setSpeed(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片上传区域 -->
+        <div class="animation-card">
+            <div class="card-header">
+                <h2 class="card-title">📤 上传你的图片</h2>
+            </div>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">
+                    点击或拖拽图片到这里<br>
+                    <small>支持 PNG/JPG 格式</small>
+                </div>
+                <input type="file" id="fileInput" multiple accept="image/*">
+            </div>
+
+            <div class="info-box">
+                <strong>💡 使用说明：</strong><br>
+                1. 准备你的立绘图片序列<br>
+                2. 眨眼动画需要4张图：标准小人2 + 眨眼1/2/3<br>
+                3. 行走动画需要3张图：行走1 + 标准小人1 + 行走2<br>
+                4. 上传后自动播放动画效果<br><br>
+                <strong>快捷键：</strong><br>
+                • <strong>空格键</strong> - 播放/暂停眨眼<br>
+                • <strong>W键</strong> - 播放/暂停行走<br>
+                • <strong>R键</strong> - 重置所有动画
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 动画基类 ====================
+        class SpriteAnimation {
+            constructor(name, frameCount) {
+                this.name = name;
+                this.frameCount = frameCount;
+                this.frames = [];
+                this.currentFrame = 0;
+                this.isPlaying = false;
+                this.speed = 200;
+                this.interval = 3000;
+                this.timer = null;
+                this.loopTimer = null;
+
+                // 初始化占位图
+                this.initPlaceholder();
+            }
+
+            initPlaceholder() {
+                // 使用你提供的图片创建占位符
+                // 这里应该替换为实际的图片数据
+                const placeholder = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+                for (let i = 0; i < this.frameCount; i++) {
+                    this.frames.push(placeholder);
+                }
+            }
+
+            toggle() {
+                if (this.isPlaying) {
+                    this.stop();
+                } else {
+                    this.start();
+                }
+            }
+
+            start() {
+                if (this.isPlaying) return;
+
+                this.isPlaying = true;
+                this.updateStatus('播放中');
+                this.updateButton('⏸ 暂停');
+
+                // 立即播放一次
+                this.playOnce();
+
+                // 设置循环
+                if (this.name === 'blink') {
+                    this.loopTimer = setInterval(() => {
+                        this.playOnce();
+                    }, this.interval);
+                } else {
+                    // 行走动画连续播放
+                    this.animate();
+                }
+            }
+
+            stop() {
+                this.isPlaying = false;
+                this.updateStatus('停止');
+                this.updateButton('▶️ 播放');
+
+                if (this.timer) {
+                    clearTimeout(this.timer);
+                    this.timer = null;
+                }
+
+                if (this.loopTimer) {
+                    clearInterval(this.loopTimer);
+                    this.loopTimer = null;
+                }
+            }
+
+            playOnce() {
+                let frameIndex = 0;
+
+                const playNextFrame = () => {
+                    if (frameIndex >= this.frames.length) {
+                        if (this.name === 'walk' && this.isPlaying) {
+                            // 行走动画循环
+                            frameIndex = 0;
+                            this.timer = setTimeout(playNextFrame, this.speed);
+                        } else {
+                            // 眨眼动画结束，回到第一帧
+                            this.currentFrame = 0;
+                            this.updateFrame();
+                        }
+                        return;
+                    }
+
+                    this.currentFrame = frameIndex;
+                    this.updateFrame();
+                    frameIndex++;
+
+                    // 眨眼动画的特殊处理：闭眼帧更快
+                    let delay = this.speed;
+                    if (this.name === 'blink' && (frameIndex === 2 || frameIndex === 3)) {
+                        delay = this.speed / 2;
+                    }
+
+                    this.timer = setTimeout(playNextFrame, delay);
+                };
+
+                playNextFrame();
+            }
+
+            animate() {
+                // 用于行走动画的连续播放
+                const step = () => {
+                    if (!this.isPlaying) return;
+
+                    this.currentFrame = (this.currentFrame + 1) % this.frames.length;
+                    this.updateFrame();
+
+                    this.timer = setTimeout(step, this.speed);
+                };
+
+                step();
+            }
+
+            updateFrame() {
+                const spriteId = this.name === 'blink' ? 'blinkSprite' : 'walkSprite';
+                const sprite = document.getElementById(spriteId);
+
+                if (sprite && this.frames[this.currentFrame]) {
+                    sprite.src = this.frames[this.currentFrame];
+                }
+
+                // 更新帧预览高亮
+                this.updateFramePreview();
+            }
+
+            updateFramePreview() {
+                const containerId = this.name === 'blink' ? 'blinkFrames' : 'walkFrames';
+                const frames = document.querySelectorAll(`#${containerId} .frame-item`);
+
+                frames.forEach((frame, index) => {
+                    if (index === this.currentFrame) {
+                        frame.classList.add('active');
+                    } else {
+                        frame.classList.remove('active');
+                    }
+                });
+            }
+
+            updateStatus(status) {
+                const statusId = this.name === 'blink' ? 'blinkStatus' : 'walkStatus';
+                const statusEl = document.getElementById(statusId);
+
+                if (statusEl) {
+                    statusEl.textContent = status;
+                    statusEl.classList.toggle('active', status === '播放中');
+                }
+            }
+
+            updateButton(text) {
+                const btnId = this.name === 'blink' ? 'blinkToggleBtn' : 'walkToggleBtn';
+                const btn = document.getElementById(btnId);
+
+                if (btn) {
+                    btn.textContent = text;
+                }
+            }
+
+            reset() {
+                this.stop();
+                this.currentFrame = 0;
+                this.updateFrame();
+            }
+
+            setSpeed(value) {
+                this.speed = parseInt(value);
+                const valueId = this.name === 'blink' ? 'blinkSpeedValue' : 'walkSpeedValue';
+                document.getElementById(valueId).textContent = `${value}ms/帧`;
+            }
+
+            setInterval(value) {
+                this.interval = parseInt(value) * 1000;
+                document.getElementById('blinkIntervalValue').textContent = `${value}秒`;
+
+                if (this.isPlaying && this.name === 'blink') {
+                    this.stop();
+                    this.start();
+                }
+            }
+
+            setFrames(frameData) {
+                this.frames = frameData;
+                this.generateFramePreview();
+                this.reset();
+            }
+
+            generateFramePreview() {
+                const containerId = this.name === 'blink' ? 'blinkFrames' : 'walkFrames';
+                const container = document.getElementById(containerId);
+
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                const labels = this.name === 'blink'
+                    ? ['标准小人2', '眨眼1', '眨眼2', '眨眼3']
+                    : ['行走1', '标准小人1', '行走2'];
+
+                this.frames.forEach((frame, index) => {
+                    const frameDiv = document.createElement('div');
+                    frameDiv.className = 'frame-item';
+                    if (index === 0) frameDiv.classList.add('active');
+
+                    const img = document.createElement('img');
+                    img.src = frame;
+                    img.alt = labels[index] || `Frame ${index + 1}`;
+
+                    const label = document.createElement('div');
+                    label.className = 'frame-label';
+                    label.textContent = labels[index] || `帧 ${index + 1}`;
+
+                    frameDiv.appendChild(img);
+                    frameDiv.appendChild(label);
+                    container.appendChild(frameDiv);
+                });
+            }
+        }
+
+        // ==================== 创建动画实例 ====================
+        const blinkAnim = new SpriteAnimation('blink', 4);
+        const walkAnim = new SpriteAnimation('walk', 3);
+
+        // ==================== 文件上传处理 ====================
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            const imageFiles = Array.from(files).filter(file =>
+                file.type.startsWith('image/'));
+
+            if (imageFiles.length === 0) {
+                alert('请上传图片文件！');
+                return;
+            }
+
+            // 读取图片并转换为base64
+            const promises = imageFiles.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(promises).then(results => {
+                // 根据文件数量分配给不同动画
+                if (results.length === 4) {
+                    // 4张图 - 眨眼动画
+                    blinkAnim.setFrames(results);
+                    alert('已加载眨眼动画（4帧）');
+                } else if (results.length === 3) {
+                    // 3张图 - 行走动画
+                    walkAnim.setFrames(results);
+                    alert('已加载行走动画（3帧）');
+                } else if (results.length === 7) {
+                    // 7张图 - 同时设置两个动画
+                    blinkAnim.setFrames(results.slice(0, 4));
+                    walkAnim.setFrames(results.slice(4, 7));
+                    alert('已加载所有动画');
+                } else {
+                    alert(`已上传${results.length}张图片，请上传正确数量的图片`);
+                }
+            });
+        }
+
+        // ==================== 键盘控制 ====================
+        document.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    blinkAnim.toggle();
+                    break;
+                case 'w':
+                    walkAnim.toggle();
+                    break;
+                case 'r':
+                    blinkAnim.reset();
+                    walkAnim.reset();
+                    break;
+            }
+        });
+
+        // ==================== 初始化 ====================
+        window.addEventListener('load', () => {
+            // 生成初始帧预览
+            blinkAnim.generateFramePreview();
+            walkAnim.generateFramePreview();
+
+            console.log('✨ 立绘动画测试系统已加载');
+            console.log('📌 请上传你的图片序列来查看动画效果');
+            console.log('📌 眨眼：4张图（标准小人2 + 眨眼1/2/3）');
+            console.log('📌 行走：3张图（行走1 + 标准小人1 + 行走2）');
+        });
+
+        // 这里放入你的实际图片数据
+        // 请将你的图片转换为base64或使用URL
+        const yourBlinkFrames = [
+            // 标准小人2 - 睁眼状态
+            'your_image_1',
+            // 眨眼1 - 开始闭眼
+            'your_image_2',
+            // 眨眼2 - 半闭眼
+            'your_image_3',
+            // 眨眼3 - 完全闭眼
+            'your_image_4'
+        ];
+
+        const yourWalkFrames = [
+            // 行走1 - 左脚向前
+            'your_image_5',
+            // 标准小人1 - 中间状态
+            'your_image_6',
+            // 行走2 - 右脚向前
+            'your_image_7'
+        ];
+
+        // 如果有实际图片数据，取消下面的注释
+        // blinkAnim.setFrames(yourBlinkFrames);
+        // walkAnim.setFrames(yourWalkFrames);
+    </script>
+</body>
+</html>

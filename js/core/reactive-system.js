@@ -209,6 +209,24 @@ class ReactiveSystem {
             this.updateScenePreview(newVal);
         });
 
+        // 🕐 时间变化监听（新增）
+        this.watch('totalMinutes', (newVal, oldVal) => {
+            console.log('⏰ 时间流逝监听触发');
+            // 更新时间显示
+            if (window.updateLocationTime) {
+                window.updateLocationTime();
+            }
+        });
+
+        this.watch('gameTime', (newVal, oldVal) => {
+            // 检查是否需要特殊提醒
+            if (newVal.hour === 21 && newVal.minute === 0) {
+                this.showNotice('🌙 夜深了，该休息了');
+            } else if (newVal.hour === 7 && newVal.minute === 0) {
+                this.showNotice('☀️ 早安！新的一天开始了');
+            }
+        });
+
         console.log('🎯 角色属性绑定完成！');
     }
 

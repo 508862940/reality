@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气UI系统演示 - Reality游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .demo-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .demo-header p {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        .demo-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-section h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .weather-demo-area {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+        }
+
+        .weather-info {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 15px;
+        }
+
+        .weather-icon {
+            font-size: 2em;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .weather-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .test-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(100, 150, 255, 0.8);
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: rgba(100, 150, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn.danger {
+            background: rgba(255, 100, 100, 0.8);
+        }
+
+        .btn.danger:hover {
+            background: rgba(255, 100, 100, 1);
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+
+        .weather-effects-demo {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        /* 引入天气特效CSS */
+        .rain-effect, .snow-effect, .sakura-effect {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .rain-effect.active, .snow-effect.active, .sakura-effect.active {
+            display: block;
+        }
+
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(174, 194, 224, 0) 0%, rgba(174, 194, 224, 0.8) 100%);
+            animation: rainFall linear infinite;
+        }
+
+        .rain-effect.stormy .rain-drop {
+            height: 30px;
+            width: 3px;
+        }
+
+        @keyframes rainFall {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0.3;
+            }
+        }
+
+        .snowflake {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: snowFall linear infinite;
+            opacity: 0.8;
+        }
+
+        @keyframes snowFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0.3;
+            }
+        }
+
+        .sakura-petal {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #ffb7d5 0%, #ff69b4 100%);
+            border-radius: 50% 0 50% 0;
+            animation: sakuraFall linear infinite;
+            opacity: 0.8;
+        }
+
+        @keyframes sakuraFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg) translateX(0);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(50vh) rotate(180deg) translateX(100px);
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg) translateX(0);
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🌤️ 天气UI系统演示</h1>
+            <p>Reality游戏 - 天气可视化与特效系统</p>
+        </div>
+
+        <div class="demo-section">
+            <h2>💡 系统功能</h2>
+            <ul class="feature-list">
+                <li>✅ <strong>B区天气图标</strong> - 简洁的天气emoji显示</li>
+                <li>✅ <strong>悬停浮层</strong> - 详细天气信息（温度、季节、能见度、预报）</li>
+                <li>✅ <strong>气候集成</strong> - 显示年份周期（平和/动荡）和活动事件</li>
+                <li>✅ <strong>响应式设计</strong> - 支持PC鼠标悬停、移动端长按</li>
+                <li>✅ <strong>全屏特效</strong> - 雨滴、雪花、樱花粒子动画</li>
+                <li>✅ <strong>自动通知</strong> - 天气变化时E区显示提醒</li>
+                <li>✅ <strong>响应式监听</strong> - 使用reactiveSystem自动更新</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎮 交互演示</h2>
+            <div class="weather-demo-area">
+                <p><strong>鼠标悬停到天气图标上查看详情：</strong></p>
+                <div class="weather-info">
+                    <span class="weather-icon" id="demoWeatherIcon">☀️</span>
+                </div>
+                <p style="margin-top: 20px; opacity: 0.7;">
+                    💡 提示：在实际游戏中，天气图标位于B区（位置时间栏），<br>
+                    悬停时会显示完整的天气详情浮层。
+                </p>
+            </div>
+
+            <div class="test-controls">
+                <button class="btn" onclick="testWeather('sunny')">☀️ 晴天</button>
+                <button class="btn" onclick="testWeather('rainy')">🌧️ 雨天</button>
+                <button class="btn" onclick="testWeather('stormy')">⛈️ 暴雨</button>
+                <button class="btn" onclick="testWeather('snowy')">❄️ 雪天</button>
+                <button class="btn" onclick="testWeather('cloudy')">☁️ 多云</button>
+                <button class="btn" onclick="testWeather('foggy')">🌫️ 雾天</button>
+                <button class="btn danger" onclick="stopEffects()">⏹️ 停止特效</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📁 相关文件</h2>
+            <ul class="feature-list">
+                <li><code>/game-main.html</code> - 添加天气图标、浮层HTML、特效容器</li>
+                <li><code>/css/game-main.css</code> - 天气UI样式（第3799-4158行）</li>
+                <li><code>/js/pages/game-main.js</code> - 天气UI逻辑（第2559-2875行）</li>
+                <li><code>/js/core/weather-system.js</code> - 天气系统核心</li>
+                <li><code>/js/core/climate-manager.js</code> - 气候管理器</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 快速使用</h2>
+            <div class="code-block">
+// 手动更新天气图标<br>
+window.updateWeatherIcon();<br>
+<br>
+// 强制改变天气并显示特效<br>
+window.weatherSystem.forceWeather('rainy', 4);<br>
+window.createWeatherEffects('rainy', 0.7);<br>
+<br>
+// 测试樱花特效（季节活动）<br>
+window.createWeatherEffects('sakura', 1.0);<br>
+<br>
+// 停止所有天气特效<br>
+window.createWeatherEffects('sunny', 0);<br>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📊 技术特点</h2>
+            <ul class="feature-list">
+                <li>🎯 <strong>模块化设计</strong> - 与时间浮层系统保持一致的架构</li>
+                <li>🔄 <strong>响应式集成</strong> - 使用reactiveSystem自动监听环境变化</li>
+                <li>⚡ <strong>高性能动画</strong> - CSS3动画，GPU加速，零JS计算</li>
+                <li>🎨 <strong>美观UI</strong> - 毛玻璃效果、渐变色、流畅过渡</li>
+                <li>📱 <strong>移动优化</strong> - 触摸手势支持、响应式布局</li>
+                <li>🧩 <strong>可扩展性</strong> - 轻松添加新天气类型和特效</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 全屏天气特效容器 -->
+    <div class="weather-effects-demo">
+        <div class="rain-effect" id="demoRain"></div>
+        <div class="snow-effect" id="demoSnow"></div>
+        <div class="sakura-effect" id="demoSakura"></div>
+    </div>
+
+    <script>
+        // 天气类型emoji映射
+        const weatherIcons = {
+            sunny: '☀️',
+            cloudy: '☁️',
+            rainy: '🌧️',
+            stormy: '⛈️',
+            snowy: '❄️',
+            foggy: '🌫️'
+        };
+
+        // 测试天气切换
+        function testWeather(type) {
+            const icon = document.getElementById('demoWeatherIcon');
+            icon.textContent = weatherIcons[type] || '☀️';
+
+            // 显示特效
+            stopEffects();
+
+            if (type === 'rainy') {
+                createRain(50);
+            } else if (type === 'stormy') {
+                createRain(100, true);
+            } else if (type === 'snowy') {
+                createSnow(50);
+            }
+        }
+
+        // 创建雨滴
+        function createRain(count, isStormy = false) {
+            const container = document.getElementById('demoRain');
+            container.innerHTML = '';
+            container.classList.add('active');
+            if (isStormy) container.classList.add('stormy');
+
+            for (let i = 0; i < count; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(drop);
+            }
+        }
+
+        // 创建雪花
+        function createSnow(count) {
+            const container = document.getElementById('demoSnow');
+            container.innerHTML = '';
+            container.classList.add('active');
+
+            for (let i = 0; i < count; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.style.left = Math.random() * 100 + '%';
+                flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                flake.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(flake);
+            }
+        }
+
+        // 停止所有特效
+        function stopEffects() {
+            document.getElementById('demoRain').classList.remove('active', 'stormy');
+            document.getElementById('demoSnow').classList.remove('active');
+            document.getElementById('demoSakura').classList.remove('active');
+            document.getElementById('demoRain').innerHTML = '';
+            document.getElementById('demoSnow').innerHTML = '';
+            document.getElementById('demoSakura').innerHTML = '';
+        }
+
+        // 天气图标交互提示
+        const icon = document.getElementById('demoWeatherIcon');
+        icon.addEventListener('mouseenter', () => {
+            icon.style.background = 'rgba(255, 255, 255, 0.2)';
+        });
+        icon.addEventListener('mouseleave', () => {
+            icon.style.background = 'rgba(255, 255, 255, 0.1)';
+        });
+
+        console.log('🌤️ 天气UI系统演示已加载');
+        console.log('💡 点击顶部按钮测试不同天气特效');
+    </script>
+</body>
+</html>

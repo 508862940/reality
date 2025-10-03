@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reality立绘动画演示系统</title>
+    <style>
+        :root {
+            --primary-color: #8b5cf6;
+            --bg-dark: #1a1a2e;
+            --bg-light: #2d2d44;
+            --text-light: #e4e4e7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 40px;
+            max-width: 1400px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* A区立绘展示区域 */
+        .portrait-display {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            min-height: 600px;
+            flex: 1;
+            min-width: 400px;
+        }
+
+        .portrait-display h2 {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        /* 切换按钮 */
+        .mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .mode-toggle:hover {
+            background: rgba(139, 92, 246, 0.4);
+            transform: scale(1.1);
+        }
+
+        /* 立绘容器 */
+        .portrait-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 500px;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        /* 大立绘模式 */
+        .portrait-large {
+            transition: opacity 0.3s ease;
+        }
+
+        .portrait-large img {
+            max-height: 100%;
+            width: auto;
+            filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.3));
+        }
+
+        /* Q版立绘模式 */
+        .portrait-chibi {
+            transition: opacity 0.3s ease;
+            position: absolute;
+        }
+
+        .portrait-chibi img {
+            width: 128px;
+            height: 256px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            min-width: 350px;
+        }
+
+        .control-panel h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #a1a1aa;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #f093fb, #8b5cf6);
+            box-shadow: 0 0 20px rgba(240, 147, 251, 0.5);
+        }
+
+        /* 滑块控制 */
+        .slider-control {
+            margin-top: 10px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* 状态显示 */
+        .status-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+
+        .status-value {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 精灵图预览 */
+        .sprite-preview {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .sprite-frames {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sprite-frame {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .sprite-frame.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        }
+
+        .sprite-frame img {
+            width: 48px;
+            height: 96px;
+            image-rendering: pixelated;
+        }
+
+        .frame-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 提示信息 */
+        .info-box {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: var(--primary-color);
+        }
+
+        /* 动画效果 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.02); }
+        }
+
+        .breathing {
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        /* 加载指示器 */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Reality立绘动画演示系统</h1>
+
+    <div class="main-container">
+        <!-- A区立绘显示 -->
+        <div class="portrait-display">
+            <h2>A区 - 角色立绘</h2>
+            <button class="mode-toggle" onclick="portraitManager.toggleMode()" title="切换大小立绘">
+                <span id="modeIcon">🎮</span>
+            </button>
+
+            <div class="portrait-container">
+                <!-- 大立绘 -->
+                <div class="portrait-large" id="portraitLarge">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                         id="largeSprite" alt="大立绘">
+                </div>
+
+                <!-- Q版立绘 -->
+                <div class="portrait-chibi hidden" id="portraitChibi">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                         id="chibiSprite" alt="Q版立绘">
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <h2>🎮 动画控制台</h2>
+
+            <!-- 眨眼动画控制 -->
+            <div class="control-group">
+                <h3>👁️ 眨眼动画</h3>
+                <div class="control-buttons">
+                    <button onclick="blinkAnimation.start()" id="blinkStartBtn">开始眨眼</button>
+                    <button onclick="blinkAnimation.stop()">停止</button>
+                    <button onclick="blinkAnimation.playOnce()">眨眼一次</button>
+                </div>
+
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>眨眼间隔</span>
+                        <span id="blinkIntervalValue">3秒</span>
+                    </div>
+                    <input type="range" id="blinkInterval" min="1" max="10" value="3"
+                           oninput="blinkAnimation.setInterval(this.value)">
+                </div>
+
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>眨眼速度</span>
+                        <span id="blinkSpeedValue">300ms</span>
+                    </div>
+                    <input type="range" id="blinkSpeed" min="100" max="1000" value="300" step="50"
+                           oninput="blinkAnimation.setSpeed(this.value)">
+                </div>
+            </div>
+
+            <!-- 呼吸动画 -->
+            <div class="control-group">
+                <h3>💨 呼吸动画</h3>
+                <div class="control-buttons">
+                    <button onclick="toggleBreathing()" id="breathingBtn">开启呼吸</button>
+                </div>
+            </div>
+
+            <!-- 表情切换 -->
+            <div class="control-group">
+                <h3>😊 表情切换</h3>
+                <div class="control-buttons">
+                    <button onclick="setExpression('normal')" class="active">普通</button>
+                    <button onclick="setExpression('happy')">开心</button>
+                    <button onclick="setExpression('sad')">悲伤</button>
+                    <button onclick="setExpression('shy')">害羞</button>
+                </div>
+            </div>
+
+            <!-- 缩放控制 -->
+            <div class="control-group">
+                <h3>🔍 显示缩放</h3>
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>缩放大小</span>
+                        <span id="scaleValue">1.0x</span>
+                    </div>
+                    <input type="range" id="scaleSlider" min="0.5" max="2" value="1" step="0.1"
+                           oninput="setScale(this.value)">
+                </div>
+            </div>
+
+            <!-- 状态显示 -->
+            <div class="status-display">
+                <div class="status-item">
+                    <span>当前模式：</span>
+                    <span class="status-value" id="currentMode">大立绘</span>
+                </div>
+                <div class="status-item">
+                    <span>动画状态：</span>
+                    <span class="status-value" id="animStatus">待机</span>
+                </div>
+                <div class="status-item">
+                    <span>当前帧：</span>
+                    <span class="status-value" id="currentFrame">1/6</span>
+                </div>
+            </div>
+
+            <!-- 提示信息 -->
+            <div class="info-box">
+                <strong>💡 操作提示：</strong><br>
+                • 点击右上角按钮切换大小立绘<br>
+                • 按 <strong>Tab键</strong> 快速切换<br>
+                • 按 <strong>空格键</strong> 手动眨眼<br>
+                • 按 <strong>B键</strong> 切换呼吸动画
+            </div>
+        </div>
+    </div>
+
+    <!-- 精灵帧预览 -->
+    <div class="sprite-preview">
+        <h3>📱 眨眼序列帧预览</h3>
+        <div class="sprite-frames" id="spriteFrames">
+            <!-- 帧预览将在这里生成 -->
+        </div>
+    </div>
+
+    <script>
+        // ==================== 立绘管理器 ====================
+        class PortraitManager {
+            constructor() {
+                this.currentMode = 'large';
+                this.init();
+            }
+
+            init() {
+                // 监听键盘事件
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        this.toggleMode();
+                    }
+                });
+            }
+
+            toggleMode() {
+                this.currentMode = this.currentMode === 'large' ? 'chibi' : 'large';
+
+                const largeEl = document.getElementById('portraitLarge');
+                const chibiEl = document.getElementById('portraitChibi');
+                const icon = document.getElementById('modeIcon');
+                const modeText = document.getElementById('currentMode');
+
+                if (this.currentMode === 'large') {
+                    largeEl.classList.remove('hidden');
+                    chibiEl.classList.add('hidden');
+                    icon.textContent = '🎮';
+                    modeText.textContent = '大立绘';
+                } else {
+                    largeEl.classList.add('hidden');
+                    chibiEl.classList.remove('hidden');
+                    icon.textContent = '🎨';
+                    modeText.textContent = 'Q版立绘';
+                }
+
+                // 播放切换音效（如果有）
+                this.playSound('switch');
+            }
+
+            playSound(type) {
+                // 音效播放占位
+                console.log(`播放音效: ${type}`);
+            }
+        }
+
+        // ==================== 眨眼动画控制器 ====================
+        class BlinkAnimation {
+            constructor() {
+                // 使用你提供的眨眼图片序列
+                this.frames = [
+                    // 这里应该是你的6张眨眼图片的base64或URL
+                    'frame1.png', // 睁眼
+                    'frame2.png', // 开始闭眼
+                    'frame3.png', // 半闭
+                    'frame4.png', // 闭眼
+                    'frame5.png', // 闭眼
+                    'frame6.png', // 重新睁眼
+                ];
+
+                this.currentFrame = 0;
+                this.isPlaying = false;
+                this.interval = 3000; // 默认3秒
+                this.speed = 300; // 每帧300ms
+                this.timer = null;
+                this.blinkTimer = null;
+
+                this.init();
+            }
+
+            init() {
+                // 监听空格键手动眨眼
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.playOnce();
+                    }
+                });
+
+                // 生成帧预览
+                this.generateFramePreview();
+            }
+
+            generateFramePreview() {
+                const container = document.getElementById('spriteFrames');
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                this.frames.forEach((frame, index) => {
+                    const frameDiv = document.createElement('div');
+                    frameDiv.className = 'sprite-frame';
+                    if (index === 0) frameDiv.classList.add('active');
+
+                    const img = document.createElement('img');
+                    img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    img.alt = `Frame ${index + 1}`;
+
+                    const label = document.createElement('div');
+                    label.className = 'frame-label';
+                    label.textContent = `${index + 1}`;
+
+                    frameDiv.appendChild(img);
+                    frameDiv.appendChild(label);
+                    container.appendChild(frameDiv);
+                });
+            }
+
+            start() {
+                if (this.isPlaying) return;
+
+                this.isPlaying = true;
+                document.getElementById('blinkStartBtn').textContent = '停止眨眼';
+                document.getElementById('animStatus').textContent = '眨眼中';
+
+                // 立即播放一次
+                this.playOnce();
+
+                // 设置循环
+                this.blinkTimer = setInterval(() => {
+                    this.playOnce();
+                }, this.interval);
+            }
+
+            stop() {
+                this.isPlaying = false;
+                document.getElementById('blinkStartBtn').textContent = '开始眨眼';
+                document.getElementById('animStatus').textContent = '待机';
+
+                if (this.blinkTimer) {
+                    clearInterval(this.blinkTimer);
+                    this.blinkTimer = null;
+                }
+
+                if (this.timer) {
+                    clearTimeout(this.timer);
+                    this.timer = null;
+                }
+
+                // 重置到第一帧
+                this.currentFrame = 0;
+                this.updateFrame();
+            }
+
+            playOnce() {
+                // 播放一次完整的眨眼动画
+                let frameIndex = 0;
+
+                const playNextFrame = () => {
+                    if (frameIndex >= this.frames.length) {
+                        this.currentFrame = 0;
+                        this.updateFrame();
+                        return;
+                    }
+
+                    this.currentFrame = frameIndex;
+                    this.updateFrame();
+                    frameIndex++;
+
+                    // 根据帧位置调整延迟
+                    let delay = this.speed / 3;
+                    if (frameIndex === 4 || frameIndex === 5) {
+                        delay = this.speed / 6; // 闭眼帧更快
+                    }
+
+                    this.timer = setTimeout(playNextFrame, delay);
+                };
+
+                playNextFrame();
+            }
+
+            updateFrame() {
+                // 更新当前显示的帧
+                document.getElementById('currentFrame').textContent = `${this.currentFrame + 1}/6`;
+
+                // 更新精灵图
+                const largeSprite = document.getElementById('largeSprite');
+                const chibiSprite = document.getElementById('chibiSprite');
+
+                // 这里应该更新为实际的图片
+                // largeSprite.src = this.frames[this.currentFrame];
+                // chibiSprite.src = this.frames[this.currentFrame];
+
+                // 更新帧预览高亮
+                const frames = document.querySelectorAll('.sprite-frame');
+                frames.forEach((frame, index) => {
+                    if (index === this.currentFrame) {
+                        frame.classList.add('active');
+                    } else {
+                        frame.classList.remove('active');
+                    }
+                });
+            }
+
+            setInterval(seconds) {
+                this.interval = seconds * 1000;
+                document.getElementById('blinkIntervalValue').textContent = `${seconds}秒`;
+
+                if (this.isPlaying) {
+                    this.stop();
+                    this.start();
+                }
+            }
+
+            setSpeed(ms) {
+                this.speed = parseInt(ms);
+                document.getElementById('blinkSpeedValue').textContent = `${ms}ms`;
+            }
+        }
+
+        // ==================== 其他动画函数 ====================
+
+        function toggleBreathing() {
+            const container = document.querySelector('.portrait-container');
+            const btn = document.getElementById('breathingBtn');
+
+            if (container.classList.contains('breathing')) {
+                container.classList.remove('breathing');
+                btn.textContent = '开启呼吸';
+            } else {
+                container.classList.add('breathing');
+                btn.textContent = '关闭呼吸';
+            }
+        }
+
+        function setExpression(type) {
+            // 切换表情
+            const buttons = document.querySelectorAll('.control-group button');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes(getExpressionName(type))) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            console.log(`切换表情: ${type}`);
+        }
+
+        function getExpressionName(type) {
+            const names = {
+                normal: '普通',
+                happy: '开心',
+                sad: '悲伤',
+                shy: '害羞'
+            };
+            return names[type] || '普通';
+        }
+
+        function setScale(value) {
+            document.getElementById('scaleValue').textContent = `${value}x`;
+
+            const largeSprite = document.getElementById('largeSprite');
+            const chibiSprite = document.getElementById('chibiSprite');
+
+            largeSprite.style.transform = `scale(${value})`;
+            chibiSprite.style.transform = `scale(${value})`;
+        }
+
+        // ==================== 初始化 ====================
+
+        // 创建实例
+        const portraitManager = new PortraitManager();
+        const blinkAnimation = new BlinkAnimation();
+
+        // 监听B键切换呼吸
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'b' || e.key === 'B') {
+                toggleBreathing();
+            }
+        });
+
+        // 页面加载完成提示
+        window.addEventListener('load', () => {
+            console.log('✨ Reality立绘动画系统已加载');
+            console.log('📌 请将你的眨眼图片序列替换到frames数组中');
+            console.log('📌 支持的快捷键：Tab(切换模式), Space(眨眼), B(呼吸)');
+        });
+
+        // 模拟加载你的图片
+        // 这里你需要将实际的图片base64或URL放入
+        const blinkFramesData = [
+            // frame1 - 睁眼状态
+            'your_image_base64_or_url_here',
+            // frame2 - 开始闭眼
+            'your_image_base64_or_url_here',
+            // frame3 - 半闭眼
+            'your_image_base64_or_url_here',
+            // frame4 - 完全闭眼
+            'your_image_base64_or_url_here',
+            // frame5 - 完全闭眼（保持）
+            'your_image_base64_or_url_here',
+            // frame6 - 重新睁眼
+            'your_image_base64_or_url_here'
+        ];
+    </script>
+</body>
+</html>

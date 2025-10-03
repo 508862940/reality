@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 樱花测试版</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #333;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 简单的花瓣样式 */
+        .petal {
+            position: absolute;
+            width: 15px;
+            height: 18px;
+            background: #ffaac8;
+            border-radius: 50% 0;
+            transform: rotate(-45deg);
+        }
+
+        /* 测试信息 */
+        .info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>简化测试版</h3>
+        <p>花瓣数: <span id="count">0</span></p>
+        <button onclick="addPetal()">添加花瓣</button>
+        <button onclick="clearPetals()">清空</button>
+    </div>
+
+    <script>
+        let count = 0;
+
+        function addPetal() {
+            const petal = document.createElement('div');
+            petal.className = 'petal';
+            petal.style.left = Math.random() * window.innerWidth + 'px';
+            petal.style.top = '0px';
+
+            document.body.appendChild(petal);
+            count++;
+            document.getElementById('count').textContent = count;
+
+            // 简单的下落动画
+            let y = 0;
+            const fall = setInterval(() => {
+                y += 1;
+                petal.style.top = y + 'px';
+
+                if (y > window.innerHeight) {
+                    clearInterval(fall);
+                    petal.remove();
+                    count--;
+                    document.getElementById('count').textContent = count;
+                }
+            }, 20);
+        }
+
+        function clearPetals() {
+            document.querySelectorAll('.petal').forEach(p => p.remove());
+            count = 0;
+            document.getElementById('count').textContent = count;
+        }
+
+        // 自动添加一些花瓣
+        for(let i = 0; i < 10; i++) {
+            setTimeout(() => addPetal(), i * 200);
+        }
+    </script>
+</body>
+</html>

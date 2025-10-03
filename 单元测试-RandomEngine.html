@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RandomEngine单元测试 - Stage 5</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .test-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .run-all-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .run-all-btn:hover {
+            box-shadow: 0 15px 40px rgba(245, 87, 108, 0.4);
+        }
+
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .log-success {
+            color: #4ec9b0;
+        }
+
+        .log-error {
+            color: #f48771;
+        }
+
+        .log-warning {
+            color: #dcdcaa;
+        }
+
+        .log-info {
+            color: #4fc1ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题区 -->
+        <div class="header">
+            <h1>🧪 RandomEngine单元测试 - Stage 5</h1>
+            <p>验证RandomEngine在边缘情况、异常输入、极端权重等场景下的正确性和性能表现。</p>
+        </div>
+
+        <!-- 快速运行 -->
+        <button class="run-all-btn" onclick="runAllTests()">🚀 运行完整单元测试套件</button>
+
+        <!-- 分项测试 -->
+        <div class="test-section">
+            <h2>📋 分项测试</h2>
+            <div class="test-grid">
+                <button onclick="runTest('testNullHandling')">1️⃣ 空值处理</button>
+                <button onclick="runTest('testZeroWeights')">2️⃣ 零权重</button>
+                <button onclick="runTest('testExtremeWeights')">3️⃣ 极端权重</button>
+                <button onclick="runTest('testSingleOption')">4️⃣ 单选项</button>
+                <button onclick="runTest('testNonNormalizedWeights')">5️⃣ 非归一化</button>
+                <button onclick="runTest('testWeatherEdgeCases')">6️⃣ 天气边缘</button>
+                <button onclick="runTest('testRandomIntBoundaries')">7️⃣ 整数边界</button>
+                <button onclick="runTest('testPerformance')">8️⃣ 性能测试</button>
+            </div>
+        </div>
+
+        <!-- 测试输出 -->
+        <div class="test-section">
+            <h2>📝 测试结果</h2>
+            <div class="console-output" id="output">
+                等待测试运行...
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入核心系统 -->
+    <script src="js/core/world-state.js"></script>
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/time-system.js"></script>
+    <script src="js/core/random-engine.js"></script>
+    <script src="js/core/climate-manager.js"></script>
+    <script src="js/core/weather-system.js"></script>
+    <script src="js/test/test-random-engine-unit.js"></script>
+
+    <script>
+        // 初始化系统
+        function initSystems() {
+            window.worldState = new WorldState();
+            window.reactiveSystem = new ReactiveSystem();
+            window.timeSystem = new TimeSystem();
+            window.timeSystem.init();
+            window.climateManager = new ClimateManager();
+            window.climateManager.init();
+            window.weatherSystem = new WeatherSystem();
+            window.weatherSystem.init();
+
+            console.log('✅ 系统初始化完成');
+        }
+
+        // 捕获console输出
+        function captureConsole(callback) {
+            const output = document.getElementById('output');
+            const originalLog = console.log;
+            const logs = [];
+
+            console.log = function(...args) {
+                const message = args.join(' ');
+                logs.push(message);
+                originalLog.apply(console, args);
+            };
+
+            try {
+                callback();
+            } catch (error) {
+                console.log(`❌ 测试执行出错: ${error.message}`);
+                console.log(error.stack);
+            }
+
+            console.log = originalLog;
+
+            // 格式化输出
+            output.innerHTML = logs.map(log => {
+                let className = '';
+                if (log.includes('✅')) className = 'log-success';
+                else if (log.includes('❌')) className = 'log-error';
+                else if (log.includes('⚠️')) className = 'log-warning';
+                else if (log.includes('🧪') || log.includes('💡')) className = 'log-info';
+
+                return `<div class="${className}">${escapeHtml(log)}</div>`;
+            }).join('');
+
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 运行所有测试
+        function runAllTests() {
+            captureConsole(() => {
+                window.RandomEngineUnitTest.runAll();
+            });
+        }
+
+        // 运行单项测试
+        function runTest(testName) {
+            captureConsole(() => {
+                console.log(`🧪 运行测试: ${testName}`);
+                console.log('==========================================\n');
+                window.RandomEngineUnitTest[testName]();
+                console.log('\n✅ 测试完成！');
+            });
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            initSystems();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气响应式集成测试 - BGM + 特效</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .status-item h3 {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .status-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .weather-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: #4caf50;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-item {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .success {
+            color: #4caf50;
+        }
+
+        .warning {
+            color: #ff9800;
+        }
+
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌤️ 天气响应式集成测试</h1>
+            <p>测试天气变化时BGM和特效是否通过响应式系统自动触发</p>
+        </div>
+
+        <div class="test-panel">
+            <h2>📊 系统状态</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <h3>ReactiveSystem</h3>
+                    <div class="status-value" id="reactive-status">❌</div>
+                </div>
+                <div class="status-item">
+                    <h3>WeatherSystem</h3>
+                    <div class="status-value" id="weather-status">❌</div>
+                </div>
+                <div class="status-item">
+                    <h3>DailyBGM</h3>
+                    <div class="status-value" id="bgm-status">❌</div>
+                </div>
+                <div class="status-item">
+                    <h3>AudioSystem</h3>
+                    <div class="status-value" id="audio-status">❌</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-panel">
+            <h2>🌦️ 当前天气</h2>
+            <div class="status-value" id="current-weather" style="text-align: center; font-size: 3em; margin: 20px 0;">
+                ☀️ 晴天
+            </div>
+        </div>
+
+        <div class="test-panel">
+            <h2>🎮 切换天气（测试响应式）</h2>
+            <div class="weather-buttons">
+                <button onclick="setWeather('sunny')">☀️ 晴天</button>
+                <button onclick="setWeather('cloudy')">☁️ 多云</button>
+                <button onclick="setWeather('rainy')">🌧️ 雨天</button>
+                <button onclick="setWeather('stormy')">⛈️ 暴雨</button>
+                <button onclick="setWeather('snowy')">❄️ 雪天</button>
+                <button onclick="setWeather('foggy')">🌫️ 雾天</button>
+            </div>
+        </div>
+
+        <div class="test-panel">
+            <h2>📝 响应式监听日志</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <!-- 引入核心系统 -->
+    <script src="js/core/world-state.js"></script>
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/time-system.js"></script>
+    <script src="js/core/random-engine.js"></script>
+    <script src="js/core/climate-manager.js"></script>
+    <script src="js/core/weather-system.js"></script>
+    <script src="js/core/audio-system.js"></script>
+    <script src="js/core/daily-bgm-system.js"></script>
+
+    <script>
+        const logs = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.unshift({ time: timestamp, message, type });
+
+            if (logs.length > 20) logs.pop();
+
+            renderLogs();
+        }
+
+        function renderLogs() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = logs.map(log =>
+                `<div class="log-item ${log.type}">
+                    [${log.time}] ${log.message}
+                </div>`
+            ).join('');
+        }
+
+        // 初始化系统
+        function initSystems() {
+            addLog('🔧 开始初始化系统...');
+
+            // WorldState
+            window.worldState = new WorldState();
+            addLog('✅ WorldState 初始化');
+
+            // ReactiveSystem
+            window.reactiveSystem = new ReactiveSystem();
+            addLog('✅ ReactiveSystem 初始化');
+
+            // TimeSystem
+            window.timeSystem = new TimeSystem();
+            window.timeSystem.init();
+            addLog('✅ TimeSystem 初始化');
+
+            // ClimateManager
+            window.climateManager = new ClimateManager();
+            window.climateManager.init();
+            addLog('✅ ClimateManager 初始化');
+
+            // WeatherSystem
+            window.weatherSystem = new WeatherSystem();
+            window.weatherSystem.init();
+            addLog('✅ WeatherSystem 初始化');
+
+            // AudioSystem（没有init方法，直接构造即可）
+            window.audioSystem = new AudioSystem();
+            addLog('✅ AudioSystem 初始化');
+
+            // DailyBGM
+            window.dailyBGM = new DailyBGMSystem();
+            window.dailyBGM.init();
+            addLog('✅ DailyBGM 初始化');
+
+            updateStatus();
+            setupWatchers();
+        }
+
+        // 更新状态显示
+        function updateStatus() {
+            document.getElementById('reactive-status').textContent = window.reactiveSystem ? '✅' : '❌';
+            document.getElementById('weather-status').textContent = window.weatherSystem ? '✅' : '❌';
+            document.getElementById('bgm-status').textContent = window.dailyBGM ? '✅' : '❌';
+            document.getElementById('audio-status').textContent = window.audioSystem ? '✅' : '❌';
+        }
+
+        // 设置监听器来观察响应式触发
+        function setupWatchers() {
+            // 监听天气变化（测试用）
+            window.reactiveSystem.watch('environment.weather', (newWeather, oldWeather) => {
+                addLog(`🔔 响应式通知: 天气 ${oldWeather} → ${newWeather}`, 'success');
+
+                // 更新显示
+                const weatherInfo = window.weatherSystem.weatherTypes[newWeather];
+                if (weatherInfo) {
+                    document.getElementById('current-weather').textContent =
+                        `${weatherInfo.icon} ${weatherInfo.name}`;
+                }
+            });
+
+            addLog('👁️ 测试监听器已设置', 'success');
+        }
+
+        // 切换天气
+        function setWeather(weatherType) {
+            addLog(`🎮 用户操作: 切换天气为 ${weatherType}`, 'warning');
+
+            // 使用WeatherSystem的方法切换天气
+            if (window.weatherSystem) {
+                window.weatherSystem.setWeather(weatherType);
+
+                // 高亮当前按钮
+                document.querySelectorAll('.weather-buttons button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            }
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            initSystems();
+            addLog('🎬 系统初始化完成，可以开始测试', 'success');
+            addLog('💡 点击上方天气按钮，观察响应式日志', 'success');
+        });
+
+        // 劫持console.log来捕获BGM系统的日志
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+
+            const message = args.join(' ');
+
+            // 捕获BGM相关日志
+            if (message.includes('BGM') || message.includes('🎵') || message.includes('🌦️')) {
+                addLog(message, message.includes('✅') || message.includes('🎵') ? 'success' : 'info');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q版立绘动画 - 简化测试版</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 30px;
+        }
+
+        /* 上传区域 - 明显的大按钮 */
+        .upload-area {
+            background: #2d2d44;
+            border: 3px dashed #8b5cf6;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 0 auto 30px;
+            max-width: 800px;
+        }
+
+        .big-upload-btn {
+            background: linear-gradient(135deg, #8b5cf6, #f093fb);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .big-upload-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5);
+        }
+
+        /* 图片预览网格 */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin: 30px auto;
+        }
+
+        .preview-box {
+            background: #2d2d44;
+            border: 2px solid #8b5cf6;
+            border-radius: 10px;
+            padding: 10px;
+            min-height: 150px;
+        }
+
+        .preview-box img {
+            max-width: 80px;
+            max-height: 120px;
+            image-rendering: pixelated;
+        }
+
+        .preview-box .label {
+            color: #f093fb;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* 动画展示区 */
+        .animation-stage {
+            background: #2d2d44;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px auto;
+            max-width: 600px;
+        }
+
+        .sprite-display {
+            width: 128px;
+            height: 256px;
+            margin: 0 auto;
+            image-rendering: pixelated;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            margin-top: 30px;
+        }
+
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #f093fb;
+        }
+
+        button.active {
+            background: #10b981;
+        }
+
+        /* 隐藏的文件输入 */
+        #fileInput {
+            display: none;
+        }
+
+        .status {
+            color: #10b981;
+            margin: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Q版立绘动画测试</h1>
+
+    <!-- 上传区域 - 超明显的大按钮 -->
+    <div class="upload-area">
+        <h2>📁 第一步：上传你的7张图片</h2>
+        <p>选择你的7张图片文件（按顺序：4张眨眼 + 3张行走）</p>
+
+        <!-- 这是真正的上传按钮！ -->
+        <button class="big-upload-btn" onclick="document.getElementById('fileInput').click()">
+            🖼️ 点击这里选择图片文件
+        </button>
+
+        <!-- 隐藏的文件输入，支持多选 -->
+        <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFiles(this.files)">
+
+        <div class="status" id="uploadStatus"></div>
+    </div>
+
+    <!-- 预览区 -->
+    <div class="preview-grid" id="previewGrid" style="display:none;">
+        <div class="preview-box">
+            <div id="preview0"></div>
+            <div class="label">眨眼帧1 - 标准</div>
+        </div>
+        <div class="preview-box">
+            <div id="preview1"></div>
+            <div class="label">眨眼帧2</div>
+        </div>
+        <div class="preview-box">
+            <div id="preview2"></div>
+            <div class="label">眨眼帧3</div>
+        </div>
+        <div class="preview-box">
+            <div id="preview3"></div>
+            <div class="label">眨眼帧4</div>
+        </div>
+        <div class="preview-box">
+            <div id="preview4"></div>
+            <div class="label">行走帧1</div>
+        </div>
+        <div class="preview-box">
+            <div id="preview5"></div>
+            <div class="label">行走帧2 - 标准</div>
+        </div>
+        <div class="preview-box">
+            <div id="preview6"></div>
+            <div class="label">行走帧3</div>
+        </div>
+    </div>
+
+    <!-- 动画展示区 -->
+    <div class="animation-stage" id="animationStage" style="display:none;">
+        <h2>✨ 动画预览</h2>
+        <img class="sprite-display" id="spriteDisplay" src="">
+
+        <div class="controls">
+            <button onclick="startBlink()" id="blinkBtn">👁️ 开始眨眼</button>
+            <button onclick="startWalk()" id="walkBtn">🚶 开始行走</button>
+            <button onclick="stopAll()">⏹️ 停止全部</button>
+            <br><br>
+            <button onclick="changeSize('small')">小 64px</button>
+            <button onclick="changeSize('medium')" class="active">中 128px</button>
+            <button onclick="changeSize('large')">大 192px</button>
+        </div>
+    </div>
+
+    <script>
+        // 存储图片数据
+        const imageFrames = {
+            blink: [],
+            walk: []
+        };
+
+        let blinkTimer = null;
+        let walkTimer = null;
+        let isBlinking = false;
+        let isWalking = false;
+
+        // 处理文件上传
+        function handleFiles(files) {
+            if (files.length === 0) {
+                document.getElementById('uploadStatus').textContent = '❌ 没有选择文件';
+                return;
+            }
+
+            document.getElementById('uploadStatus').textContent = `✅ 正在加载 ${files.length} 个文件...`;
+
+            // 清空之前的数据
+            imageFrames.blink = [];
+            imageFrames.walk = [];
+
+            // 加载所有图片
+            let loadedCount = 0;
+            Array.from(files).slice(0, 7).forEach((file, index) => {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const imgData = e.target.result;
+
+                    // 前4张作为眨眼动画
+                    if (index < 4) {
+                        imageFrames.blink[index] = imgData;
+                    } else {
+                        // 后3张作为行走动画
+                        imageFrames.walk[index - 4] = imgData;
+                    }
+
+                    // 显示预览
+                    if (document.getElementById(`preview${index}`)) {
+                        document.getElementById(`preview${index}`).innerHTML =
+                            `<img src="${imgData}" alt="Frame ${index + 1}">`;
+                    }
+
+                    loadedCount++;
+
+                    // 全部加载完成
+                    if (loadedCount === Math.min(files.length, 7)) {
+                        document.getElementById('uploadStatus').textContent =
+                            `✅ 成功加载 ${loadedCount} 张图片！`;
+
+                        // 显示预览和动画区
+                        document.getElementById('previewGrid').style.display = 'grid';
+                        document.getElementById('animationStage').style.display = 'block';
+
+                        // 设置初始显示
+                        if (imageFrames.blink[0]) {
+                            document.getElementById('spriteDisplay').src = imageFrames.blink[0];
+                        } else if (imageFrames.walk[0]) {
+                            document.getElementById('spriteDisplay').src = imageFrames.walk[0];
+                        }
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 眨眼动画
+        function startBlink() {
+            if (isBlinking || imageFrames.blink.length === 0) return;
+
+            isBlinking = true;
+            document.getElementById('blinkBtn').className = 'active';
+
+            function doBlink() {
+                if (!isBlinking) return;
+
+                let frame = 0;
+                function nextFrame() {
+                    if (frame >= imageFrames.blink.length) {
+                        // 回到第一帧
+                        if (!isWalking) {
+                            document.getElementById('spriteDisplay').src = imageFrames.blink[0];
+                        }
+                        // 等待后再次眨眼
+                        setTimeout(doBlink, 3000);
+                        return;
+                    }
+
+                    document.getElementById('spriteDisplay').src = imageFrames.blink[frame];
+                    frame++;
+
+                    // 眨眼速度：前半慢后半快
+                    setTimeout(nextFrame, frame < 2 ? 150 : 100);
+                }
+
+                nextFrame();
+            }
+
+            doBlink();
+        }
+
+        // 行走动画
+        function startWalk() {
+            if (isWalking || imageFrames.walk.length === 0) return;
+
+            isWalking = true;
+            document.getElementById('walkBtn').className = 'active';
+
+            let frame = 0;
+            function animate() {
+                if (!isWalking) return;
+
+                document.getElementById('spriteDisplay').src = imageFrames.walk[frame];
+                frame = (frame + 1) % imageFrames.walk.length;
+
+                walkTimer = setTimeout(animate, 300);
+            }
+
+            animate();
+        }
+
+        // 停止所有动画
+        function stopAll() {
+            isBlinking = false;
+            isWalking = false;
+
+            clearTimeout(blinkTimer);
+            clearTimeout(walkTimer);
+
+            document.getElementById('blinkBtn').className = '';
+            document.getElementById('walkBtn').className = '';
+
+            // 回到第一帧
+            if (imageFrames.blink[0]) {
+                document.getElementById('spriteDisplay').src = imageFrames.blink[0];
+            }
+        }
+
+        // 改变显示大小
+        function changeSize(size) {
+            const sprite = document.getElementById('spriteDisplay');
+            const sizes = {
+                small: { width: '64px', height: '128px' },
+                medium: { width: '128px', height: '256px' },
+                large: { width: '192px', height: '384px' }
+            };
+
+            sprite.style.width = sizes[size].width;
+            sprite.style.height = sizes[size].height;
+
+            // 更新按钮状态
+            document.querySelectorAll('.controls button').forEach(btn => {
+                if (btn.textContent.includes('px')) {
+                    btn.className = btn.textContent.includes(sizes[size].width.replace('px', '')) ? 'active' : '';
+                }
+            });
+        }
+
+        console.log('🎮 请点击上传按钮，选择你的7张图片！');
+    </script>
+</body>
+</html>

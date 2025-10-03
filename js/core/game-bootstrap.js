@@ -248,6 +248,49 @@ class GameBootstrap {
     }
 
     /**
+     * 初始化音频系统
+     */
+    initializeAudioSystem() {
+        try {
+            // 创建音频系统实例
+            if (!window.audioSystem) {
+                window.audioSystem = new AudioSystem();
+                console.log('🔊 音频系统已初始化');
+            }
+
+            // 从worldState恢复音频设置
+            if (window.worldState?.state?.player?.settings?.audio) {
+                const audioSettings = window.worldState.state.player.settings.audio;
+
+                // 恢复音量设置（转换0-100到0-1）
+                if (audioSettings.volumes) {
+                    window.audioSystem.volumes.master = (audioSettings.volumes.master || 80) / 100;
+                    window.audioSystem.volumes.bgm = (audioSettings.volumes.bgm || 60) / 100;
+                    window.audioSystem.volumes.ambient = (audioSettings.volumes.ambient || 50) / 100;
+                    window.audioSystem.volumes.ambientWeather = (audioSettings.volumes.ambientWeather || 50) / 100;
+                    window.audioSystem.volumes.ambientTime = (audioSettings.volumes.ambientTime || 40) / 100;
+                    window.audioSystem.volumes.ambientLocation = (audioSettings.volumes.ambientLocation || 30) / 100;
+                    window.audioSystem.volumes.sfx = (audioSettings.volumes.sfx || 80) / 100;
+                }
+
+                // 恢复开关设置
+                if (audioSettings.enabled) {
+                    window.audioSystem.enabled = { ...audioSettings.enabled };
+                }
+
+                // 恢复高级设置
+                if (audioSettings.advanced) {
+                    window.audioSystem.crossfadeDuration = audioSettings.advanced.crossfadeDuration || 2000;
+                }
+
+                console.log('🔊 音频设置已从worldState恢复');
+            }
+        } catch (error) {
+            console.error('❌ 音频系统初始化失败:', error);
+        }
+    }
+
+    /**
      * 启动游戏（主入口）
      */
     async start() {
@@ -258,6 +301,9 @@ class GameBootstrap {
             console.log('⚠️ 游戏已经加载过了，跳过重复加载');
             return true;
         }
+
+        // 初始化音频系统
+        this.initializeAudioSystem();
 
         // 初始化API设置
         await this.initializeAPISettings();
@@ -388,10 +434,24 @@ class GameBootstrap {
                     // 应用开局季节
                     if (settings.startSeason && window.weatherSystem) {
                         console.log('🌍 应用开局季节:', settings.startSeason);
-                        // weatherSystem没有setSeason方法，直接设置currentSeason属性
-                        window.weatherSystem.currentSeason = settings.startSeason;
-                        window.weatherSystem.generateWeather(); // 重新生成天气
-                        window.weatherSystem.updateWeatherDisplay(); // 更新显示
+                        // 安全设置季节
+                        try {
+                            if (typeof window.weatherSystem.setSeason === 'function') {
+                                window.weatherSystem.setSeason(settings.startSeason);
+                            } else {
+                                // 直接设置属性
+                                window.weatherSystem.currentSeason = settings.startSeason;
+                                // 如果有这些方法则调用
+                                if (typeof window.weatherSystem.generateWeather === 'function') {
+                                    window.weatherSystem.generateWeather();
+                                }
+                                if (typeof window.weatherSystem.updateWeatherDisplay === 'function') {
+                                    window.weatherSystem.updateWeatherDisplay();
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('设置季节失败，使用默认值:', e);
+                        }
                     }
                 }
             }
@@ -408,7 +468,8 @@ class GameBootstrap {
                         // 应用时间速度
                         if (preset.settings.timeSpeed && window.timeSystem) {
                             console.log('⏰ 应用时间流速:', preset.settings.timeSpeed);
-                            window.timeSystem.setTimeSpeed(preset.settings.timeSpeed);
+                            // TODO: 时间系统尚未实现 setTimeSpeed 方法
+                            // window.timeSystem.setTimeSpeed(preset.settings.timeSpeed);
                         }
 
                         // 应用其他设置...
