@@ -525,6 +525,13 @@ class WeatherSystem {
         } else {
             this.currentTemperature = baseTemp;
         }
+
+        // 🌡️ 通知响应式系统：温度已更新
+        if (window.reactiveSystem) {
+            window.reactiveSystem.notify('environment.temperature', this.currentTemperature);
+        }
+
+        console.log('🌡️ 环境温度生成:', this.currentTemperature + '°C');
     }
 
     /**
@@ -766,7 +773,34 @@ class WeatherSystem {
     forceWeather(weatherType, duration = 8) {
         this.setWeather(weatherType);
         this.weatherDuration = duration;
-        console.log(`⚡ 强制天气: ${weatherType} (持续${duration}小时)`);
+
+        // 🌡️ 根据新天气生成对应温度
+        const season = this.seasons[this.currentSeason];
+        const tempRange = season.temperature;
+        let baseTemp;
+
+        if (window.RandomEngine) {
+            baseTemp = window.RandomEngine.randomInt(tempRange.min, tempRange.max);
+        } else {
+            baseTemp = Math.round(
+                tempRange.min + Math.random() * (tempRange.max - tempRange.min)
+            );
+        }
+
+        // 应用气候系统的温度修正
+        if (window.climateManager) {
+            const modifier = window.climateManager.getTemperatureModifier(baseTemp, this.currentSeason);
+            this.currentTemperature = Math.round(baseTemp + modifier);
+        } else {
+            this.currentTemperature = baseTemp;
+        }
+
+        // 🌡️ 通知响应式系统：温度已更新
+        if (window.reactiveSystem) {
+            window.reactiveSystem.notify('environment.temperature', this.currentTemperature);
+        }
+
+        console.log(`⚡ 强制天气: ${weatherType} (持续${duration}小时), 温度: ${this.currentTemperature}°C`);
     }
 
     /**
