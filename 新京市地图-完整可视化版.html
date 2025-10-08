@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新京市完整地图 - 可视化版 v2.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei';
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            border-bottom: 2px solid #4ECDC4;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 1000;
+            gap: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .toolbar h1 {
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 24px;
+            margin-right: auto;
+            font-weight: 700;
+        }
+
+        .toolbar button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(78, 237, 196, 0.3);
+        }
+
+        .toolbar button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(78, 237, 196, 0.5);
+        }
+
+        .toolbar button.active {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 2px 10px rgba(255, 215, 0, 0.5);
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 350px;
+            bottom: 0;
+            background: #1a1a1a;
+        }
+
+        #map-canvas {
+            cursor: grab;
+            image-rendering: crisp-edges;
+        }
+
+        #map-canvas.dragging {
+            cursor: grabbing;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 70px;
+            right: 0;
+            bottom: 0;
+            width: 350px;
+            background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
+            border-left: 2px solid #4ECDC4;
+            padding: 25px;
+            overflow-y: auto;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+        }
+
+        .info-panel h3 {
+            color: #4ECDC4;
+            margin-bottom: 20px;
+            font-size: 18px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #333;
+        }
+
+        .info-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(78, 237, 196, 0.1);
+            border-left: 3px solid #4ECDC4;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .info-item:hover {
+            background: rgba(78, 237, 196, 0.15);
+            transform: translateX(5px);
+        }
+
+        .info-item label {
+            color: #4ECDC4;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-item div {
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .legend {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .tips {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.85);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #aaa;
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .sector-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>🗺️ 新京市完整地图 v2.0</h1>
+        <button onclick="zoom*=1.2;render()">🔍 放大</button>
+        <button onclick="zoom/=1.2;render()">🔍 缩小</button>
+        <button id="btnRings" class="active" onclick="toggleRings()">⭕ 环线</button>
+        <button id="btnSectors" class="active" onclick="toggleSectors()">🎨 区域</button>
+        <button id="btnSubway" class="active" onclick="toggleSubway()">🚇 地铁</button>
+        <button id="btnStreets" onclick="toggleStreets()">🛣️ 街道</button>
+        <button onclick="zoom=1;offset={x:0,y:0};render()">🔄 重置</button>
+        <button onclick="exportImage()">📸 导出图片</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="map-canvas"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📍 地图信息</h3>
+        <div class="info-item">
+            <label>城市结构</label>
+            <div>中心 + 四环 + 环海</div>
+        </div>
+        <div class="info-item">
+            <label>核心节点</label>
+            <div>25个地标建筑</div>
+        </div>
+        <div class="info-item">
+            <label>五大区域</label>
+            <div>天枢/天衡/启明/静安/开拓</div>
+        </div>
+        <div class="info-item">
+            <label>交通系统</label>
+            <div>地铁5条线 + 公交1条线</div>
+        </div>
+        <div class="info-item">
+            <label>街道网络</label>
+            <div>14条主干道 + 连接道路</div>
+        </div>
+
+        <div id="nodeInfo" style="display:none">
+            <h3>🎯 节点详情</h3>
+            <div class="info-item">
+                <label>名称</label>
+                <div id="infoName">-</div>
+            </div>
+            <div class="info-item">
+                <label>所属区域</label>
+                <div id="infoSector">-</div>
+            </div>
+            <div class="info-item">
+                <label>环层</label>
+                <div id="infoRing">-</div>
+            </div>
+            <div class="info-item">
+                <label>类型</label>
+                <div id="infoType">-</div>
+            </div>
+            <div class="info-item">
+                <label>地铁站</label>
+                <div id="infoSubway">-</div>
+            </div>
+            <div class="info-item">
+                <label>🛣️ 连接街道</label>
+                <div id="infoStreets">-</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>🎨 图例</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #DC143C"></div>
+                <span>政务区（警局、政府）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4ECDC4"></div>
+                <span>生活区（居住、娱乐）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFD700"></div>
+                <span>功能区（媒体、文化）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4169E1"></div>
+                <span>学院区（教育）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #DDA0DD"></div>
+                <span>商业区（购物）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #8B4513"></div>
+                <span>工业区（生产）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2F4F4F"></div>
+                <span>秘区（森林、郊外）</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tips">
+        💡 <strong>操作提示</strong>：滚轮缩放 | 拖拽移动 | 点击节点查看详情 | 切换图层查看不同信息
+    </div>
+
+    <script>
+        const c = document.getElementById('map-canvas');
+        const ctx = c.getContext('2d');
+        const cont = document.getElementById('canvas-container');
+
+        let offset = {x: 0, y: 0};
+        let hover = null;
+        let sel = null;
+        let showRings = true;
+        let showSectors = true;
+        let showSubway = true;
+        let showStreets = false;
+        let zoom = 1;
+        let drag = false;
+        let last = {x: 0, y: 0};
+
+        // 地图数据（已包含区域信息）
+        const data = {
+            nodes: [
+                {id:"TS_R0_CENTER", name:"中央广场", x:400, y:400, color:"#DC143C", size:30, type:"政务区", sector:"天枢区", ring:0, subway:"中央车站"},
+                {id:"TH_R1_N", name:"警局", x:400, y:280, color:"#DC143C", size:20, type:"政务区", sector:"天衡区", ring:1, subway:"中央广场北站"},
+                {id:"QM_R1_E", name:"医疗区", x:520, y:400, color:"#4ECDC4", size:20, type:"生活区", sector:"启明区", ring:1, subway:"医疗中心站"},
+                {id:"JA_R1_S", name:"学院区", x:400, y:520, color:"#4169E1", size:20, type:"学院区", sector:"静安区", ring:1, subway:"学院站"},
+                {id:"KT_R1_W", name:"天穹苑", x:280, y:400, color:"#4ECDC4", size:20, type:"生活区", sector:"开拓区", ring:1, subway:"天穹苑站"},
+                {id:"TH_R2_N", name:"二环警局", x:400, y:200, color:"#DC143C", size:18, type:"政务区", sector:"天衡区", ring:2, subway:"二环警局站"},
+                {id:"QM_R2_NE", name:"电视台", x:541.4, y:258.6, color:"#FFD700", size:18, type:"功能区", sector:"启明区", ring:2, subway:"电视台站"},
+                {id:"QM_R2_E", name:"博物馆", x:600, y:400, color:"#FFD700", size:18, type:"功能区", sector:"启明区", ring:2, subway:"博物馆站"},
+                {id:"JA_R2_SL", name:"晨曦里", x:300, y:573.2, color:"#4ECDC4", size:18, type:"生活区", sector:"静安区", ring:2, subway:"公园南门站"},
+                {id:"JA_R2_SM", name:"静谧之园", x:400, y:600, color:"#4ECDC4", size:18, type:"生活区", sector:"静安区", ring:2},
+                {id:"JA_R2_SR", name:"商业区", x:500, y:573.2, color:"#DDA0DD", size:18, type:"商业区", sector:"静安区", ring:2},
+                {id:"JA_R2_SW", name:"教堂", x:258.6, y:541.4, color:"#FFD700", size:18, type:"功能区", sector:"静安区", ring:2},
+                {id:"KT_R2_W1", name:"星语庭", x:212.1, y:468.4, color:"#4ECDC4", size:18, type:"生活区", sector:"开拓区", ring:2},
+                {id:"KT_R2_W2", name:"万象商业区", x:212.1, y:331.6, color:"#DDA0DD", size:18, type:"商业区", sector:"开拓区", ring:2, subway:"万象城站"},
+                {id:"TH_R3_N", name:"三环警局", x:400, y:120, color:"#DC143C", size:16, type:"政务区", sector:"天衡区", ring:3, subway:"工业区北站"},
+                {id:"QM_R3_NE1", name:"幻梦乐园", x:540, y:157.4, color:"#4ECDC4", size:16, type:"生活区", sector:"启明区", ring:3, subway:"幻梦乐园站"},
+                {id:"QM_R3_NE2", name:"白桦社区", x:642.6, y:260, color:"#4ECDC4", size:16, type:"生活区", sector:"启明区", ring:3, subway:"白桦站"},
+                {id:"QM_R3_SE", name:"图书馆", x:642.6, y:540, color:"#FFD700", size:16, type:"功能区", sector:"启明区", ring:3, subway:"图书馆站"},
+                {id:"JA_R3_S", name:"晨曦里", x:400, y:680, color:"#4ECDC4", size:16, type:"生活区", sector:"静安区", ring:3},
+                {id:"KT_R3_SW", name:"梧桐里", x:157.4, y:540, color:"#8B4513", size:16, type:"工业区", sector:"开拓区", ring:3, subway:"梧桐里站"},
+                {id:"KT_R3_W", name:"齿轮工业区", x:120, y:400, color:"#8B4513", size:16, type:"工业区", sector:"开拓区", ring:3, subway:"工业区站"},
+                {id:"KT_R4_NW2", name:"边界森林", x:220, y:88.4, color:"#2F4F4F", size:14, type:"秘区", sector:"开拓区", ring:4},
+                {id:"KT_R4_NW1", name:"精工业区", x:145.5, y:145.5, color:"#8B4513", size:14, type:"工业区", sector:"开拓区", ring:4},
+                {id:"KT_R4_SW", name:"远风镇", x:145.5, y:654.5, color:"#2F4F4F", size:14, type:"秘区", sector:"开拓区", ring:4},
+                {id:"JA_R4_S", name:"静海台", x:400, y:760, color:"#4ECDC4", size:14, type:"生活区", sector:"静安区", ring:4}
+            ]
+        };
+
+        // 五大区域定义
+        const sectors = {
+            "天枢区": {color: "rgba(255, 215, 0, 0.15)", nodes: ["TS_R0_CENTER"]},
+            "天衡区": {color: "rgba(220, 20, 60, 0.1)", angle: {start: -30, end: 30}},
+            "启明区": {color: "rgba(78, 237, 196, 0.1)", angle: {start: 30, end: 150}},
+            "静安区": {color: "rgba(65, 105, 225, 0.1)", angle: {start: 150, end: 210}},
+            "开拓区": {color: "rgba(139, 69, 19, 0.1)", angle: {start: 210, end: 330}}
+        };
+
+        // 地铁线路
+        const subwayLines = [
+            {
+                name: "北线（秩序轴）",
+                color: "#DC143C",
+                stations: ["TH_R1_N", "TH_R2_N", "TH_R3_N"]
+            },
+            {
+                name: "东线（启明线）",
+                color: "#4ECDC4",
+                stations: ["QM_R1_E", "QM_R2_NE", "QM_R2_E", "QM_R3_NE1", "QM_R3_NE2", "QM_R3_SE"]
+            },
+            {
+                name: "南线（静安线）",
+                color: "#4169E1",
+                stations: ["JA_R1_S", "JA_R2_SL"]
+            },
+            {
+                name: "西线（开拓线）",
+                color: "#FFD700",
+                stations: ["KT_R1_W", "KT_R2_W2", "KT_R3_W", "KT_R3_SW"]
+            },
+            {
+                name: "环线",
+                color: "#DDA0DD",
+                stations: ["QM_R1_E", "JA_R1_S", "KT_R1_W", "TH_R1_N"]
+            }
+        ];
+
+        // 街道网络（完整数据版 v2.0）
+        const streetNetwork = [
+            // 环形主干道
+            {
+                name: "天枢环路",
+                type: "ring",
+                color: "#FFE066",        // 更淡的金色（避免与地铁冲突）
+                width: 4,                // 6→4
+                nodes: ["TH_R1_N", "QM_R1_E", "JA_R1_S", "KT_R1_W", "TH_R1_N"],
+                length: 2500,            // 米
+                npcDensity: {day: 60, night: 30},
+                eventTypes: ["政务", "医疗", "学术", "居住"],
+                important: false
+            },
+            {
+                name: "二环环路",
+                type: "ring",
+                color: "#FFB266",        // 更淡的橙色
+                width: 4,                // 5→4
+                nodes: ["TH_R2_N", "QM_R2_NE", "QM_R2_E", "JA_R2_SR", "JA_R2_SM", "JA_R2_SL", "JA_R2_SW", "KT_R2_W1", "KT_R2_W2", "TH_R2_N"],
+                length: 5000,
+                npcDensity: {day: 80, night: 50},
+                eventTypes: ["媒体", "商业", "文化", "居住"],
+                important: false
+            },
+            {
+                name: "三环环路",
+                type: "ring",
+                color: "#FFA366",        // 更淡的深橙
+                width: 3,                // 4→3
+                nodes: ["TH_R3_N", "QM_R3_NE1", "QM_R3_NE2", "QM_R3_SE", "JA_R3_S", "KT_R3_SW", "KT_R3_W", "TH_R3_N"],
+                length: 7000,
+                npcDensity: {day: 100, night: 60},
+                eventTypes: ["娱乐", "文化", "工业", "居住"],
+                important: false
+            },
+
+            // 放射主干道
+            {
+                name: "宪章大道（北）",
+                type: "radial",
+                color: "#E85555",        // 更淡的红色（避免与北线地铁#DC143C冲突）
+                width: 5,                // 7→5
+                nodes: ["TS_R0_CENTER", "TH_R1_N", "TH_R2_N", "TH_R3_N"],
+                length: 2800,
+                npcDensity: {day: 50, night: 20},
+                eventTypes: ["执法", "抗议", "调查", "偶遇官员"],
+                sector: "天衡区",
+                important: false
+            },
+            {
+                name: "生命环路（东）",
+                type: "radial",
+                color: "#66D9CF",        // 更淡的青绿（避免与东线地铁#4ECDC4冲突）
+                width: 5,                // 7→5
+                nodes: ["TS_R0_CENTER", "QM_R1_E", "QM_R2_NE", "QM_R2_E", "QM_R3_NE1", "QM_R3_NE2", "QM_R3_SE"],
+                length: 4200,
+                npcDensity: {day: 80, night: 40},
+                eventTypes: ["医疗", "媒体", "文化", "居民互动"],
+                sector: "启明区",
+                important: true,
+                description: "延伸至白桦社区，NPC密集区"
+            },
+            {
+                name: "启蒙路（南）",
+                type: "radial",
+                color: "#6B8FED",        // 更淡的蓝色（避免与南线地铁#4169E1冲突）
+                width: 4,                // 6→4
+                nodes: ["TS_R0_CENTER", "JA_R1_S", "JA_R2_SM", "JA_R3_S", "JA_R4_S"],
+                length: 3500,
+                npcDensity: {day: 70, night: 35},
+                eventTypes: ["学术", "休闲", "文化", "约会"],
+                sector: "静安区",
+                important: false
+            },
+            {
+                name: "观景大道（西）",
+                type: "radial",
+                color: "#A0734D",        // 更淡的棕色
+                width: 5,                // 7→5
+                nodes: ["TS_R0_CENTER", "KT_R1_W", "KT_R2_W2", "KT_R3_W", "KT_R3_SW"],
+                length: 3800,
+                npcDensity: {day: 65, night: 30},
+                eventTypes: ["商业", "工业", "阶级对比"],
+                sector: "开拓区",
+                important: false
+            },
+
+            // 重要连接道路
+            {
+                name: "白桦大道",
+                type: "connector",
+                color: "#4DFF9A",        // 更淡的春绿（保持醒目但不冲突）
+                width: 4,                // 5→4
+                nodes: ["QM_R3_NE2", "QM_R3_SE"],
+                length: 1800,
+                npcDensity: {day: 120, night: 80},  // 最高密度！
+                eventTypes: ["邻里互动", "日常琐事", "随机社交", "偶遇熟人"],
+                sector: "启明区",
+                important: true,
+                description: "核心居住区，最高NPC密度"
+            },
+            {
+                name: "星辰大道",
+                type: "connector",
+                color: "#FFE066",        // 淡金色
+                width: 3,                // 4→3
+                nodes: ["QM_R2_NE", "QM_R2_E"],
+                length: 800,
+                npcDensity: {day: 60, night: 40},
+                eventTypes: ["媒体", "广告", "偶遇明星"],
+                important: false
+            },
+            {
+                name: "霓虹天街",
+                type: "connector",
+                color: "#FF66B2",        // 更淡的粉红
+                width: 4,                // 5→4
+                nodes: ["KT_R2_W2", "JA_R2_SR"],
+                length: 1200,
+                npcDensity: {day: 100, night: 90},
+                eventTypes: ["购物", "约会", "娱乐", "夜生活"],
+                important: false
+            },
+            {
+                name: "林荫路",
+                type: "connector",
+                color: "#66E066",        // 更淡的绿色
+                width: 3,                // 4→3
+                nodes: ["JA_R2_SM", "JA_R2_SL", "JA_R2_SW"],
+                length: 1500,
+                npcDensity: {day: 50, night: 30},
+                eventTypes: ["散步", "跑步", "浪漫事件", "约会"],
+                important: false
+            },
+            {
+                name: "劳动路",
+                type: "connector",
+                color: "#B3845C",        // 更淡的棕色
+                width: 4,                // 5→4
+                nodes: ["KT_R3_SW", "KT_R3_W"],
+                length: 1500,
+                npcDensity: {day: 80, night: 40},
+                eventTypes: ["工人互动", "招工", "帮派", "罢工"],
+                important: false
+            },
+            {
+                name: "边缘公路",
+                type: "ring",
+                color: "#888888",        // 更淡的灰色
+                width: 2,                // 3→2
+                nodes: ["KT_R4_NW1", "KT_R4_NW2", "KT_R4_SW", "JA_R4_S"],
+                length: 10000,
+                npcDensity: {day: 10, night: 5},
+                eventTypes: ["危险事件", "野生AI", "走私", "非法交易"],
+                important: false,
+                dash: [10, 5]
+            }
+        ];
+
+        function resize() {
+            c.width = cont.clientWidth;
+            c.height = cont.clientHeight;
+            offset.x = c.width / 2 - 400 * zoom;
+            offset.y = c.height / 2 - 400 * zoom;
+            render();
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function render() {
+            const cx = 400 * zoom + offset.x;
+            const cy = 400 * zoom + offset.y;
+
+            // 清空画布
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, c.width, c.height);
+
+            // 绘制海洋背景
+            const oceanGradient = ctx.createRadialGradient(cx, cy, 370*zoom, cx, cy, 450*zoom);
+            oceanGradient.addColorStop(0, 'transparent');
+            oceanGradient.addColorStop(1, 'rgba(0, 105, 148, 0.3)');
+            ctx.fillStyle = oceanGradient;
+            ctx.fillRect(0, 0, c.width, c.height);
+
+            // 绘制区域扇形
+            if (showSectors) {
+                Object.entries(sectors).forEach(([name, sector]) => {
+                    if (sector.angle) {
+                        ctx.fillStyle = sector.color;
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy);
+                        ctx.arc(cx, cy, 380*zoom,
+                            (sector.angle.start - 90) * Math.PI / 180,
+                            (sector.angle.end - 90) * Math.PI / 180);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        // 区域标签
+                        const midAngle = ((sector.angle.start + sector.angle.end) / 2 - 90) * Math.PI / 180;
+                        const labelRadius = 320 * zoom;
+                        const labelX = cx + Math.cos(midAngle) * labelRadius;
+                        const labelY = cy + Math.sin(midAngle) * labelRadius;
+
+                        ctx.fillStyle = sector.color.replace('0.1', '0.8');
+                        ctx.font = `bold ${14*zoom}px Microsoft YaHei`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(name, labelX, labelY);
+                    } else if (name === "天枢区") {
+                        // 中心区域
+                        ctx.fillStyle = sector.color;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, 80*zoom, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+            }
+
+            // 绘制环线
+            if (showRings) {
+                [120, 200, 280, 360].forEach((r, i) => {
+                    ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r * zoom, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // 环层标签
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.6)';
+                    ctx.font = `${10*zoom}px Microsoft YaHei`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`第${i+1}环`, cx, cy - r*zoom - 10);
+                });
+            }
+
+            // 绘制街道网络（先于地铁绘制，在底层）
+            if (showStreets) {
+                streetNetwork.forEach(street => {
+                    const nodes = street.nodes.map(id =>
+                        data.nodes.find(n => n.id === id)
+                    ).filter(n => n);
+
+                    if (nodes.length > 1) {
+                        ctx.strokeStyle = street.color;
+                        ctx.lineWidth = street.width * zoom;
+                        ctx.globalAlpha = street.important ? 0.4 : 0.25;  // 降低透明度：0.8→0.4, 0.5→0.25
+
+                        // 虚线样式（边缘公路）
+                        if (street.dash) {
+                            ctx.setLineDash(street.dash.map(d => d * zoom));
+                        } else {
+                            ctx.setLineDash([]);
+                        }
+
+                        ctx.beginPath();
+                        nodes.forEach((node, i) => {
+                            const x = node.x * zoom + offset.x;
+                            const y = node.y * zoom + offset.y;
+                            if (i === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        });
+                        ctx.stroke();
+
+                        // 重要街道标记（发光效果）
+                        if (street.important && zoom > 0.8) {
+                            ctx.globalAlpha = 0.15;  // 降低发光透明度：0.3→0.15
+                            ctx.strokeStyle = street.color;
+                            ctx.lineWidth = street.width * zoom * 2.5;
+                            ctx.beginPath();
+                            nodes.forEach((node, i) => {
+                                const x = node.x * zoom + offset.x;
+                                const y = node.y * zoom + offset.y;
+                                if (i === 0) {
+                                    ctx.moveTo(x, y);
+                                } else {
+                                    ctx.lineTo(x, y);
+                                }
+                            });
+                            ctx.stroke();
+
+                            // 街道名称标签
+                            if (nodes.length >= 2) {
+                                const midIndex = Math.floor(nodes.length / 2);
+                                const midNode = nodes[midIndex];
+                                const x = midNode.x * zoom + offset.x;
+                                const y = midNode.y * zoom + offset.y;
+
+                                ctx.globalAlpha = 1;
+                                ctx.fillStyle = street.color;
+                                ctx.font = `bold ${10*zoom}px Microsoft YaHei`;
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(street.name, x, y - 20*zoom);
+                            }
+                        }
+
+                        ctx.globalAlpha = 1; // 重置透明度
+                    }
+                });
+            }
+
+            // 绘制地铁线路
+            if (showSubway) {
+                subwayLines.forEach(line => {
+                    const stations = line.stations.map(id =>
+                        data.nodes.find(n => n.id === id)
+                    ).filter(n => n);
+
+                    if (stations.length > 1) {
+                        ctx.strokeStyle = line.color;
+                        ctx.lineWidth = 4 * zoom;
+                        ctx.setLineDash([]);
+
+                        ctx.beginPath();
+                        stations.forEach((station, i) => {
+                            const x = station.x * zoom + offset.x;
+                            const y = station.y * zoom + offset.y;
+                            if (i === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        });
+                        ctx.stroke();
+                    }
+                });
+            }
+
+            // 绘制节点
+            data.nodes.forEach(n => {
+                const x = n.x * zoom + offset.x;
+                const y = n.y * zoom + offset.y;
+                const s = n.size * zoom;
+
+                // 光晕
+                if (n === hover || n === sel) {
+                    const g = ctx.createRadialGradient(x, y, 0, x, y, s * 2.5);
+                    g.addColorStop(0, n.color + '60');
+                    g.addColorStop(1, 'transparent');
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(x, y, s * 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 节点圆形
+                ctx.fillStyle = n.color;
+                ctx.beginPath();
+                ctx.arc(x, y, s, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 边框
+                ctx.strokeStyle = n === sel ? '#fff' : 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = n === sel ? 4 : 2;
+                ctx.beginPath();
+                ctx.arc(x, y, s, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 地铁站标记
+                if (n.subway && showSubway) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `bold ${8*zoom}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🚇', x, y - s - 12*zoom);
+                }
+
+                // 文字
+                ctx.fillStyle = '#fff';
+                ctx.font = `${Math.max(10, 12*zoom)}px Microsoft YaHei`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(n.name, x, y);
+            });
+        }
+
+        function getNode(x, y) {
+            for (let i = data.nodes.length - 1; i >= 0; i--) {
+                const n = data.nodes[i];
+                const nx = n.x * zoom + offset.x;
+                const ny = n.y * zoom + offset.y;
+                if (Math.sqrt((x - nx) ** 2 + (y - ny) ** 2) <= n.size * zoom) {
+                    return n;
+                }
+            }
+            return null;
+        }
+
+        c.addEventListener('mousedown', e => {
+            const n = getNode(e.offsetX, e.offsetY);
+            if (!n) {
+                drag = true;
+                last = {x: e.offsetX, y: e.offsetY};
+            }
+        });
+
+        c.addEventListener('mousemove', e => {
+            if (drag) {
+                offset.x += e.offsetX - last.x;
+                offset.y += e.offsetY - last.y;
+                last = {x: e.offsetX, y: e.offsetY};
+                render();
+            } else {
+                const n = getNode(e.offsetX, e.offsetY);
+                if (n !== hover) {
+                    hover = n;
+                    c.style.cursor = n ? 'pointer' : 'grab';
+                    render();
+                }
+            }
+        });
+
+        c.addEventListener('mouseup', () => drag = false);
+
+        // 查找经过某个节点的所有街道
+        function getStreetsForNode(nodeId) {
+            return streetNetwork.filter(street =>
+                street.nodes.includes(nodeId)
+            ).map(street => street.name);
+        }
+
+        c.addEventListener('click', e => {
+            if (!drag) {
+                const n = getNode(e.offsetX, e.offsetY);
+                if (n) {
+                    sel = n;
+                    document.getElementById('nodeInfo').style.display = 'block';
+                    document.getElementById('infoName').textContent = n.name;
+                    document.getElementById('infoSector').textContent = n.sector;
+                    document.getElementById('infoRing').textContent = `第${n.ring}环`;
+                    document.getElementById('infoType').textContent = n.type;
+                    document.getElementById('infoSubway').textContent = n.subway || '无地铁站';
+
+                    // 显示连接的街道
+                    const streets = getStreetsForNode(n.id);
+                    if (streets.length > 0) {
+                        document.getElementById('infoStreets').textContent = streets.join('、');
+                    } else {
+                        document.getElementById('infoStreets').textContent = '无街道经过';
+                    }
+
+                    render();
+                } else {
+                    sel = null;
+                    document.getElementById('nodeInfo').style.display = 'none';
+                    render();
+                }
+            }
+        });
+
+        c.addEventListener('wheel', e => {
+            e.preventDefault();
+            const d = e.deltaY > 0 ? 0.9 : 1.1;
+            const oz = zoom;
+            zoom = Math.max(0.3, Math.min(3, zoom * d));
+            offset.x = e.offsetX - (e.offsetX - offset.x) * (zoom / oz);
+            offset.y = e.offsetY - (e.offsetY - offset.y) * (zoom / oz);
+            render();
+        });
+
+        function toggleRings() {
+            showRings = !showRings;
+            document.getElementById('btnRings').classList.toggle('active', showRings);
+            render();
+        }
+
+        function toggleSectors() {
+            showSectors = !showSectors;
+            document.getElementById('btnSectors').classList.toggle('active', showSectors);
+            render();
+        }
+
+        function toggleSubway() {
+            showSubway = !showSubway;
+            document.getElementById('btnSubway').classList.toggle('active', showSubway);
+            render();
+        }
+
+        function toggleStreets() {
+            showStreets = !showStreets;
+            document.getElementById('btnStreets').classList.toggle('active', showStreets);
+            render();
+        }
+
+        function exportImage() {
+            const link = document.createElement('a');
+            link.download = '新京市地图-完整版-' + new Date().getTime() + '.png';
+            link.href = c.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

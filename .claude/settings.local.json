@@ -23,7 +23,16 @@
       "Bash(curl:*)",
       "Bash(start \"\" \"e:\\yozi\\天气特效方案演示.html\")",
       "Bash(start \"\" \"e:\\yozi\\樱花特效演示.html\")",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(cp:*)",
+      "Bash(grep:*)",
+      "Bash(paste:*)",
+      "Read(//e/systemDir/Documents/WeChat Files/wxid_97tkm5eky3tu32/FileStorage/Temp/**)",
+      "Bash(sed:*)",
+      "Read(//e/**)",
+      "Bash(git log:*)",
+      "Bash(dir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

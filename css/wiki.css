@@ -1,0 +1,847 @@
+/* ===== Reality 游戏百科样式 v1.0 ===== */
+/* PWA优化：硬件加速、触摸优化、性能优化 */
+
+/* ===== 全局优化 ===== */
+* {
+    -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
+    -webkit-touch-callout: none; /* 禁用长按菜单 */
+}
+
+/* 滚动优化 */
+.wiki-content,
+.wiki-sidebar,
+.article-body {
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+    overscroll-behavior: contain; /* 防止滚动穿透 */
+}
+
+/* ===== 加载动画 ===== */
+.wiki-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    z-index: 9999;
+    color: white;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #8b92f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== 主容器 ===== */
+.wiki-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    box-sizing: border-box;
+    /* PWA优化 */
+    will-change: transform;
+    transform: translateZ(0); /* 硬件加速 */
+}
+
+/* ===== 顶部导航栏 ===== */
+.wiki-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    margin-bottom: 20px;
+    /* PWA优化 */
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(139, 146, 246, 0.8);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    /* 触摸优化 */
+    min-height: 44px; /* iOS推荐最小触摸目标 */
+    user-select: none;
+}
+
+.back-btn:active {
+    transform: scale(0.95);
+}
+
+.back-btn:hover {
+    background: rgba(139, 146, 246, 1);
+    transform: translateY(-2px);
+}
+
+.back-text {
+    display: inline;
+}
+
+@media (max-width: 480px) {
+    .back-text {
+        display: none; /* 小屏幕只显示图标 */
+    }
+}
+
+.wiki-title {
+    font-size: 28px;
+    color: white;
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .wiki-title {
+        font-size: 20px;
+    }
+}
+
+/* ===== 搜索框 ===== */
+.search-box {
+    flex: 1;
+    max-width: 400px;
+    position: relative;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 40px 10px 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #8b92f6;
+    outline: none;
+}
+
+.search-box input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.search-box input:not(:placeholder-shown) ~ .search-clear {
+    opacity: 1;
+}
+
+/* ===== 主体区域 ===== */
+.wiki-main {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0; /* Flexbox滚动修复 */
+}
+
+/* ===== 左侧分类导航 ===== */
+.wiki-sidebar {
+    width: 220px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-btn {
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    /* 触摸优化 */
+    min-height: 44px;
+    user-select: none;
+    /* 性能优化 */
+    will-change: transform, background;
+}
+
+.category-btn:active {
+    transform: scale(0.98);
+}
+
+.category-btn:hover {
+    background: rgba(139, 146, 246, 0.5);
+    transform: translateX(5px);
+}
+
+.category-btn.active {
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+}
+
+/* ===== 右侧内容区 ===== */
+.wiki-content {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    overflow-y: auto;
+    min-width: 0; /* Flexbox文本截断修复 */
+}
+
+/* ===== 文章列表视图 ===== */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.list-title {
+    font-size: 24px;
+    color: white;
+    margin: 0;
+}
+
+.article-count {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(139, 146, 246, 0.3);
+    padding: 5px 12px;
+    border-radius: 12px;
+}
+
+/* ===== 文章列表（网格布局） ===== */
+.article-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    /* 虚拟滚动优化（未来实现） */
+    contain: layout style paint; /* CSS Containment */
+}
+
+@media (max-width: 768px) {
+    .article-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+.article-card {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    /* 触摸优化 */
+    user-select: none;
+    /* 性能优化 */
+    will-change: transform, box-shadow;
+    contain: layout style paint;
+}
+
+.article-card:active {
+    transform: scale(0.98);
+}
+
+.article-card:hover {
+    background: rgba(139, 146, 246, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(139, 146, 246, 0.4);
+}
+
+.article-card-title {
+    font-size: 20px;
+    color: white;
+    margin: 0 0 10px 0;
+    /* 文本截断 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.article-card-preview {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+    margin-bottom: 15px;
+    /* 文本截断 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.article-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.article-card-category {
+    display: inline-block;
+    padding: 5px 10px;
+    background: rgba(139, 146, 246, 0.5);
+    border-radius: 5px;
+    font-size: 12px;
+    color: white;
+}
+
+/* ===== 文章详情视图 ===== */
+.article-detail-view {
+    animation: fadeInUp 0.4s ease;
+}
+
+.article-detail-view.hidden {
+    display: none;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.back-to-list-btn,
+.share-btn {
+    padding: 8px 15px;
+    background: rgba(139, 146, 246, 0.8);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    min-height: 36px;
+}
+
+.back-to-list-btn:active,
+.share-btn:active {
+    transform: scale(0.95);
+}
+
+.back-to-list-btn:hover,
+.share-btn:hover {
+    background: rgba(139, 146, 246, 1);
+}
+
+.article-title {
+    font-size: 32px;
+    color: white;
+    margin: 0 0 15px 0;
+    line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+    .article-title {
+        font-size: 24px;
+    }
+}
+
+.article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.article-category-badge {
+    padding: 5px 12px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    border-radius: 12px;
+    font-size: 13px;
+    color: white;
+    font-weight: 500;
+}
+
+.article-date,
+.article-read-time {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== 文章内容样式 ===== */
+.article-body {
+    color: white;
+    font-size: 16px;
+    line-height: 1.8;
+    /* 性能优化 */
+    contain: layout style;
+}
+
+.article-body h3 {
+    font-size: 24px;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: #8b92f6;
+}
+
+.article-body h4 {
+    font-size: 20px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #f093fb;
+}
+
+.article-body p {
+    margin: 15px 0;
+}
+
+.article-body ul,
+.article-body ol {
+    list-style: none;
+    padding-left: 0;
+    margin: 15px 0;
+}
+
+.article-body li {
+    padding: 8px 0;
+    padding-left: 25px;
+    position: relative;
+}
+
+.article-body ul li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: #f093fb;
+    font-size: 18px;
+}
+
+.article-body ol {
+    counter-reset: list-counter;
+}
+
+.article-body ol li {
+    counter-increment: list-counter;
+}
+
+.article-body ol li::before {
+    content: counter(list-counter) ".";
+    position: absolute;
+    left: 0;
+    color: #8b92f6;
+    font-weight: bold;
+}
+
+/* ===== 特殊内容盒子 ===== */
+.tip-box,
+.warning-box,
+.example-box,
+.info-box {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 4px solid;
+}
+
+.tip-box {
+    background: rgba(139, 146, 246, 0.2);
+    border-left-color: #8b92f6;
+}
+
+.warning-box {
+    background: rgba(255, 107, 107, 0.2);
+    border-left-color: #ff6b6b;
+}
+
+.example-box {
+    background: rgba(240, 147, 251, 0.2);
+    border-left-color: #f093fb;
+}
+
+.info-box {
+    background: rgba(94, 186, 125, 0.2);
+    border-left-color: #5eba7d;
+}
+
+/* ===== 文章底部 ===== */
+.article-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    justify-content: center;
+}
+
+.next-article-btn {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #8b92f6, #f093fb);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    min-height: 44px;
+}
+
+.next-article-btn:active {
+    transform: scale(0.95);
+}
+
+.next-article-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139, 146, 246, 0.4);
+}
+
+/* ===== 空状态 ===== */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.empty-state.hidden {
+    display: none;
+}
+
+.empty-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.empty-text {
+    font-size: 18px;
+}
+
+/* ===== 响应式设计 ===== */
+@media (max-width: 1024px) {
+    .wiki-sidebar {
+        width: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wiki-container {
+        padding: 10px;
+    }
+
+    .wiki-main {
+        flex-direction: column;
+    }
+
+    .wiki-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 120px;
+        padding: 15px;
+    }
+
+    .category-list {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+    }
+
+    .category-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+
+    .wiki-content {
+        padding: 15px;
+    }
+
+    .article-list {
+        gap: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .wiki-header {
+        padding: 12px 15px;
+        gap: 10px;
+    }
+
+    .back-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .search-box {
+        max-width: none;
+    }
+
+    .article-card {
+        padding: 15px;
+    }
+}
+
+/* ===== PWA性能优化类 ===== */
+.hardware-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+.smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ===== 辅助功能优化 ===== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== 角色图鉴样式 ===== */
+
+/* 副标题 */
+.subtitle {
+    color: #888;
+    font-style: italic;
+    font-size: 0.95em;
+    margin-bottom: 20px;
+    display: block;
+}
+
+/* 信息网格 */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.info-item {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-item .label {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+.info-item .value {
+    font-size: 1.1em;
+    color: white;
+    font-weight: bold;
+}
+
+/* 能力列表 */
+.ability-list {
+    list-style: none;
+    padding: 0;
+}
+
+.ability-list li {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #8b92f6;
+    border-radius: 4px;
+}
+
+.ability-list li strong {
+    color: #667eea;
+}
+
+/* 冲突/悲剧/剧透盒子 */
+.conflict-box,
+.tragedy-box,
+.spoiler-box,
+.combat-system {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e3e7ed 100%);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 15px 0;
+    border: 2px solid #d0d7de;
+}
+
+.conflict-box p,
+.tragedy-box p,
+.spoiler-box p,
+.combat-system p {
+    margin: 8px 0;
+}
+
+.spoiler-box {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border-color: #ffca2c;
+}
+
+/* 表格样式 */
+.character-table,
+.ending-table,
+.memory-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.character-table tr,
+.ending-table tr,
+.memory-table tr {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.character-table tr:last-child,
+.ending-table tr:last-child,
+.memory-table tr:last-child {
+    border-bottom: none;
+}
+
+.character-table td,
+.ending-table td,
+.memory-table td {
+    padding: 12px 15px;
+}
+
+.personality-label,
+.ending-type,
+.memory-type {
+    font-weight: bold;
+    color: #667eea;
+    width: 120px;
+    white-space: nowrap;
+}
+
+/* 警告框 */
+.warning {
+    background: #fff3cd;
+    border-left: 4px solid #ffca2c;
+    padding: 12px 15px;
+    border-radius: 4px;
+    color: #856404;
+    margin: 15px 0;
+}
+
+/* 哲学文本 */
+.philosophy {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    font-style: italic;
+    line-height: 1.8;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .personality-label,
+    .ending-type,
+    .memory-type {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    .character-table td,
+    .ending-table td,
+    .memory-table td {
+        display: block;
+        width: 100%;
+    }
+}
+
+/* ===== 打印优化 ===== */
+@media print {
+    .wiki-header,
+    .wiki-sidebar,
+    .detail-header,
+    .article-footer {
+        display: none;
+    }
+
+    .article-body {
+        color: black;
+    }
+
+    .info-item,
+    .philosophy {
+        background: #f0f0f0 !important;
+        color: black !important;
+    }
+}

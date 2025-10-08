@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气可见性测试（简化版）</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #16c79a;
+        }
+        .control {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #16c79a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #19e3b4;
+        }
+        .output {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #16c79a;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .info {
+            color: #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ 天气特效可见性测试</h1>
+
+        <div class="control">
+            <h3>测试控制</h3>
+            <button onclick="testMethod('updateVisibility')">测试 updateVisibility()</button>
+            <button onclick="testMethod('setupReactiveListeners')">测试 setupReactiveListeners()</button>
+            <button onclick="testMethod('getLocationMetadata')">测试 getLocationMetadata()</button>
+            <button onclick="testMethod('locationMatches')">测试 locationMatches()</button>
+            <button onclick="testMethod('setEffectVisibility')">测试 setEffectVisibility()</button>
+            <button onclick="checkAll()">检查所有方法</button>
+        </div>
+
+        <div class="output" id="output"></div>
+    </div>
+
+    <!-- 加载核心系统 -->
+    <script src="js/core/condition-engine.js"></script>
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/weather-system.js"></script>
+    <script src="js/core/weather-effect-controller.js"></script>
+
+    <script>
+        let output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<span class="${className}">[${time}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function testMethod(methodName) {
+            output.innerHTML = '';
+            log('========== 方法测试开始 ==========', 'info');
+            log(`测试方法: ${methodName}`, 'info');
+
+            // 检查 WeatherEffectController 是否存在
+            if (typeof WeatherEffectController === 'undefined') {
+                log('❌ WeatherEffectController 类未定义', 'error');
+                return;
+            }
+            log('✅ WeatherEffectController 类已加载', 'success');
+
+            // 创建实例
+            try {
+                const controller = new WeatherEffectController();
+                log('✅ WeatherEffectController 实例创建成功', 'success');
+
+                // 检查方法是否存在
+                if (typeof controller[methodName] !== 'function') {
+                    log(`❌ 方法 ${methodName}() 不存在`, 'error');
+                    log(`可用方法: ${Object.getOwnPropertyNames(Object.getPrototypeOf(controller)).join(', ')}`, 'info');
+                    return;
+                }
+                log(`✅ 方法 ${methodName}() 存在`, 'success');
+
+                // 测试调用
+                if (methodName === 'updateVisibility') {
+                    log('调用 updateVisibility()...', 'info');
+                    controller.updateVisibility();
+                    log('✅ updateVisibility() 调用成功（无错误）', 'success');
+                }
+
+                if (methodName === 'setupReactiveListeners') {
+                    // 确保 reactiveSystem 存在
+                    if (!window.reactiveSystem) {
+                        window.reactiveSystem = new ReactiveSystem();
+                    }
+                    log('调用 setupReactiveListeners()...', 'info');
+                    controller.setupReactiveListeners();
+                    log('✅ setupReactiveListeners() 调用成功', 'success');
+                }
+
+                if (methodName === 'getLocationMetadata') {
+                    log('测试 getLocationMetadata("park")...', 'info');
+                    const meta = controller.getLocationMetadata('park');
+                    log(`结果: ${JSON.stringify(meta)}`, 'success');
+                }
+
+                if (methodName === 'locationMatches') {
+                    log('测试 locationMatches("park", ["park", "school"])...', 'info');
+                    const matches = controller.locationMatches('park', ['park', 'school']);
+                    log(`结果: ${matches}`, 'success');
+                }
+
+                if (methodName === 'setEffectVisibility') {
+                    log('测试 setEffectVisibility(true, 1.5)...', 'info');
+                    controller.setEffectVisibility(true, 1.5);
+                    log('✅ setEffectVisibility() 调用成功', 'success');
+                }
+
+            } catch (error) {
+                log(`❌ 错误: ${error.message}`, 'error');
+                log(`堆栈: ${error.stack}`, 'error');
+            }
+
+            log('========== 测试完成 ==========', 'info');
+        }
+
+        function checkAll() {
+            output.innerHTML = '';
+            log('========== 完整检查开始 ==========', 'info');
+
+            // 1. 检查文件加载
+            log('\n【1/5】检查核心文件加载...', 'info');
+            const checks = [
+                { name: 'ConditionEngine', obj: window.ConditionEngine },
+                { name: 'ReactiveSystem', obj: window.ReactiveSystem },
+                { name: 'WeatherSystem', obj: window.WeatherSystem },
+                { name: 'WeatherEffectController', obj: window.WeatherEffectController }
+            ];
+
+            checks.forEach(check => {
+                if (check.obj) {
+                    log(`✅ ${check.name} 已加载`, 'success');
+                } else {
+                    log(`❌ ${check.name} 未加载`, 'error');
+                }
+            });
+
+            // 2. 创建实例
+            log('\n【2/5】创建 WeatherEffectController 实例...', 'info');
+            try {
+                const controller = new WeatherEffectController();
+                log('✅ 实例创建成功', 'success');
+                window.testController = controller;
+
+                // 3. 检查所有新方法
+                log('\n【3/5】检查新增方法...', 'info');
+                const methods = [
+                    'updateVisibility',
+                    'getLocationMetadata',
+                    'locationMatches',
+                    'setEffectVisibility',
+                    'setupReactiveListeners'
+                ];
+
+                methods.forEach(method => {
+                    if (typeof controller[method] === 'function') {
+                        log(`✅ ${method}() 存在`, 'success');
+                    } else {
+                        log(`❌ ${method}() 不存在`, 'error');
+                    }
+                });
+
+                // 4. 检查天气配置
+                log('\n【4/5】检查天气 visibilityConditions...', 'info');
+                if (!window.weatherSystem) {
+                    window.weatherSystem = new WeatherSystem();
+                }
+
+                const weathers = ['sakura', 'rainbow', 'meteor_shower', 'polluted', 'rainy', 'snowy'];
+                weathers.forEach(weather => {
+                    const config = window.weatherSystem.weatherTypes[weather];
+                    if (config && config.visibilityConditions) {
+                        log(`✅ ${weather}: 有 visibilityConditions`, 'success');
+                    } else if (config) {
+                        log(`⚠️ ${weather}: 无 visibilityConditions`, 'error');
+                    }
+                });
+
+                // 5. 测试实际调用
+                log('\n【5/5】测试实际调用...', 'info');
+                try {
+                    controller.updateVisibility();
+                    log('✅ updateVisibility() 调用成功', 'success');
+                } catch (err) {
+                    log(`❌ updateVisibility() 调用失败: ${err.message}`, 'error');
+                }
+
+                try {
+                    if (!window.reactiveSystem) {
+                        window.reactiveSystem = new ReactiveSystem();
+                    }
+                    controller.setupReactiveListeners();
+                    log('✅ setupReactiveListeners() 调用成功', 'success');
+                } catch (err) {
+                    log(`❌ setupReactiveListeners() 调用失败: ${err.message}`, 'error');
+                }
+
+            } catch (error) {
+                log(`❌ 实例创建失败: ${error.message}`, 'error');
+            }
+
+            log('\n========== 检查完成 ==========', 'success');
+        }
+
+        // 页面加载完成后自动检查
+        window.onload = () => {
+            setTimeout(checkAll, 500);
+        };
+    </script>
+</body>
+</html>

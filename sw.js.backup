@@ -1,18 +1,21 @@
 // Service Worker for PWA support
-const CACHE_NAME = 'reality-game-v1.1.0';
+const CACHE_NAME = 'reality-game-v1.2.0';
 const urlsToCache = [
   './',
   './index.html',
   './menu.html',
   './character-creation.html',
   './game-main.html',
+  './wiki.html',
   './css/app.css',
   './css/menu.css',
   './css/character-creation.css',
   './css/game-main.css',
+  './css/wiki.css',
   './js/pages/menu.js',
   './js/pages/character-creation.js',
   './js/pages/game-main.js',
+  './js/pages/wiki.js',
   './js/core/scene-manager.js',
   './js/core/f2-manager.js',
   './js/core/illustration-manager.js',
@@ -21,6 +24,8 @@ const urlsToCache = [
   './js/core/game-bootstrap.js',
   './js/core/database.js',
   './js/core/reactive-system.js',
+  './js/core/wiki-cache.js',
+  './js/data/game-wiki.js',
   './manifest.json'
 ];
 

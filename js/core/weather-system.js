@@ -37,6 +37,14 @@ class WeatherSystem {
                 icon: '🌧️',
                 description: '淅淅沥沥的雨声',
                 detailDescription: '细雨绵绵，雨滴敲打着窗户。空气湿润，地面湿滑，记得带伞出门。',
+                visibilityConditions: {  // 🆕 雨天特效可见性
+                    // 户外雨滴特效，室内看不到
+                    outdoor: true,
+                    locations: {
+                        visible: ['all_outdoor'],  // 所有户外
+                        hidden: ['indoor', 'underground', 'covered_area']  // 室内/有遮挡
+                    }
+                },
                 effects: {
                     mood: -5,
                     energy: -5,
@@ -61,6 +69,13 @@ class WeatherSystem {
                 icon: '❄️',
                 description: '雪花纷纷扬扬飘落',
                 detailDescription: '洁白的雪花从天而降，为世界披上银装。空气清冽，脚下的积雪发出咯吱咯吱的声音。',
+                visibilityConditions: {  // 🆕 雪天特效可见性
+                    outdoor: true,
+                    locations: {
+                        visible: ['all_outdoor'],
+                        hidden: ['indoor', 'underground', 'covered_area']
+                    }
+                },
                 effects: {
                     mood: 3,
                     energy: -5,
@@ -94,6 +109,17 @@ class WeatherSystem {
                     time: { season: 'spring' },
                     climate: { event: 'SAKURA_WEEK' }
                 },
+                visibilityConditions: {  // 🆕 特效可见性条件
+                    outdoor: true,  // 户外可见
+                    locations: {
+                        // 增强区域（花瓣密度更高）
+                        enhanced: ['park', 'school_yard', 'cherry_blossom_avenue'],
+                        // 可见区域（正常密度）
+                        visible: ['street', 'square', 'commercial_district'],
+                        // 室内完全不可见
+                        hidden: ['indoor', 'underground', 'building_interior']
+                    }
+                },
                 effects: {
                     mood: 5,      // 心情+5
                     spirit: 3,    // 精神+3
@@ -114,6 +140,18 @@ class WeatherSystem {
                 isSpecial: true,
                 conditions: {  // 雨天转晴时有概率出现
                     weather: { previous: ['rainy', 'stormy'] }
+                },
+                visibilityConditions: {  // 🆕 彩虹可见性
+                    outdoor: true,  // 必须户外才能看到
+                    sky_visible: true,  // 需要能看到天空
+                    locations: {
+                        // 视野开阔的地方看得最清楚
+                        enhanced: ['rooftop', 'hilltop', 'open_field', 'waterfront'],
+                        // 普通户外可见
+                        visible: ['street', 'park', 'square'],
+                        // 室内/遮挡区域不可见
+                        hidden: ['indoor', 'underground', 'tunnel', 'dense_forest']
+                    }
                 },
                 effects: {
                     mood: 15,     // 大幅提升心情
@@ -137,6 +175,20 @@ class WeatherSystem {
                 conditions: {  // 特定时间+天文事件
                     time: { hour: { min: 20, max: 4 } },  // 夜晚
                     climate: { event: 'METEOR_SHOWER_EVENT' }
+                },
+                visibilityConditions: {  // 🆕 流星雨可见性
+                    outdoor: true,  // 必须户外
+                    sky_visible: true,  // 必须能看到天空
+                    time: { hour: { min: 20, max: 4 } },  // 必须夜晚
+                    locations: {
+                        // 最佳观测点（流星密度高）
+                        enhanced: ['rooftop', 'hilltop', 'observatory', 'open_field', 'beach'],
+                        // 普通户外可见
+                        visible: ['park', 'street', 'square'],
+                        // 任何有遮挡的地方不可见
+                        hidden: ['indoor', 'underground', 'tunnel', 'dense_forest', 'building_interior']
+                    },
+                    weather_required: ['sunny', 'cloudy']  // 需要晴朗/少云天气
                 },
                 effects: {
                     mood: 10,
@@ -167,6 +219,19 @@ class WeatherSystem {
                         { location: { zone: 'pollution_area' } },
                         { climate: { event: 'POLLUTION_CRISIS' } }
                     ]
+                },
+                visibilityConditions: {  // 🆕 污染特效可见性
+                    // 污染是区域性的，在污染区域内外都能看到特效
+                    locations: {
+                        // 污染核心区（特效最强）
+                        enhanced: ['pollution_core', 'factory_district', 'waste_zone'],
+                        // 污染扩散区（正常强度）
+                        visible: ['pollution_area', 'industrial_zone', 'old_district'],
+                        // 室内有过滤系统的地方看不到
+                        hidden: ['clean_room', 'sealed_building', 'air_filtered_zone']
+                    },
+                    // 室内也能看到污染特效（因为空气污染会渗透）
+                    penetrates_indoor: true
                 },
                 effects: {
                     mood: -5,
@@ -537,7 +602,7 @@ class WeatherSystem {
     /**
      * 设置天气
      */
-    setWeather(weatherType) {
+    setWeather(weatherType, forceRefresh = false) {
         if (!this.weatherTypes[weatherType]) {
             console.error('未知的天气类型:', weatherType);
             return;
@@ -546,9 +611,10 @@ class WeatherSystem {
         const oldWeather = this.currentWeather;
         this.currentWeather = weatherType;
 
-        if (oldWeather !== weatherType) {
+        // 🔥 修复：forceRefresh=true 时即使天气相同也刷新特效
+        if (oldWeather !== weatherType || forceRefresh) {
             const weather = this.weatherTypes[weatherType];
-            console.log(`🌦️ 天气变化: ${weather.icon} ${weather.name}`);
+            console.log(`🌦️ 天气${forceRefresh ? '刷新' : '变化'}: ${weather.icon} ${weather.name}`);
 
             // 🔥 同步到世界快照
             this.syncToWorldState();
@@ -576,6 +642,15 @@ class WeatherSystem {
 
             // 应用天气效果
             this.applyWeatherEffects(weather);
+
+            // 🌈 显示天气特效（v2.0集成）
+            if (window.weatherEffectController) {
+                const effectType = this.getEffectType(weatherType);
+                if (effectType) {
+                    window.weatherEffectController.showEffect(effectType, 1.0);
+                    console.log(`✨ 天气特效已显示: ${effectType}`);
+                }
+            }
 
             // 更新UI显示
             this.updateWeatherDisplay();
@@ -741,6 +816,9 @@ class WeatherSystem {
             weatherDisplay.innerHTML = `${info.icon} ${info.weather} ${info.temperature}°C`;
         }
 
+        // 🔥 特效创建已移至setWeather()统一管理（避免重复调用）
+        // updateWeatherDisplay()只负责更新UI文字，不创建特效
+
         // 更新场景描述中的天气（暂时注释，方法不存在）
         // if (window.sceneManager && window.sceneManager.updateWeatherDescription) {
         //     window.sceneManager.updateWeatherDescription(this.currentWeather);
@@ -771,7 +849,8 @@ class WeatherSystem {
      * 强制设置天气（用于特殊事件）
      */
     forceWeather(weatherType, duration = 8) {
-        this.setWeather(weatherType);
+        // 🔥 强制刷新：即使天气相同也重新显示特效
+        this.setWeather(weatherType, true);
         this.weatherDuration = duration;
 
         // 🌡️ 根据新天气生成对应温度
@@ -801,6 +880,27 @@ class WeatherSystem {
         }
 
         console.log(`⚡ 强制天气: ${weatherType} (持续${duration}小时), 温度: ${this.currentTemperature}°C`);
+    }
+
+    /**
+     * 获取天气对应的特效类型
+     * @param {string} weatherType - 天气类型
+     * @returns {string|null} - 特效类型
+     */
+    getEffectType(weatherType) {
+        const effectMapping = {
+            'rainy': 'rain',
+            'stormy': 'storm',
+            'snowy': 'snow',
+            'sakura': 'sakura',
+            'rainbow': 'rainbow',
+            'meteor_shower': 'meteor',
+            'polluted': 'polluted',
+            'sunny': null,     // 晴天无特效
+            'cloudy': null,    // 多云无特效
+            'foggy': null      // 雾天暂无特效（可以后续添加）
+        };
+        return effectMapping[weatherType] || null;
     }
 
     /**

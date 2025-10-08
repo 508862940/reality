@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩虹v3.0测试 - 无缓存版</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌈 彩虹v3.0测试（深色背景优化版）</h1>
+
+    <div>
+        <button onclick="showRainbow()">显示彩虹</button>
+        <button onclick="hideRainbow()">清除彩虹</button>
+    </div>
+
+    <div id="status">等待测试...</div>
+
+    <script>
+        // 内联所有需要的代码，避免缓存问题
+
+        // 简化版WeatherEffectController
+        class SimpleRainbowController {
+            constructor() {
+                this.effectContainer = null;
+            }
+
+            showRainbow() {
+                this.removeEffect();
+
+                // 创建主容器
+                this.effectContainer = document.createElement('div');
+                this.effectContainer.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 999;
+                `;
+
+                // 创建彩虹容器
+                const container = document.createElement('div');
+                container.style.cssText = `
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    animation: fadeIn 3s ease-out forwards;
+                `;
+
+                // 主虹光漏数据
+                const primaryLeaks = [
+                    { top: -10, left: -10, width: 40, height: 50, color1: '255, 120, 120', color2: '255, 180, 60', blur: 35, opacity: 0.65 },
+                    { top: -5, right: -10, width: 45, height: 55, color1: '255, 235, 120', color2: '120, 255, 180', blur: 40, opacity: 0.6 },
+                    { bottom: -10, right: -5, width: 50, height: 60, color1: '120, 220, 255', color2: '100, 130, 255', blur: 50, opacity: 0.55 },
+                    { bottom: -15, left: -8, width: 42, height: 48, color1: '180, 130, 255', color2: '255, 180, 220', blur: 45, opacity: 0.5 }
+                ];
+
+                // 创建主虹
+                primaryLeaks.forEach((config, index) => {
+                    const leak = document.createElement('div');
+
+                    let posStyle = '';
+                    if (config.top !== undefined) posStyle += `top: ${config.top}%;`;
+                    if (config.bottom !== undefined) posStyle += `bottom: ${config.bottom}%;`;
+                    if (config.left !== undefined) posStyle += `left: ${config.left}%;`;
+                    if (config.right !== undefined) posStyle += `right: ${config.right}%;`;
+
+                    leak.style.cssText = `
+                        position: absolute;
+                        ${posStyle}
+                        width: ${config.width}%;
+                        height: ${config.height}%;
+                        background: radial-gradient(
+                            ellipse at ${30 + index * 10}% ${30 + index * 10}%,
+                            rgba(${config.color1}, ${config.opacity}) 0%,
+                            rgba(${config.color2}, ${config.opacity * 0.6}) 40%,
+                            transparent 70%
+                        );
+                        filter: blur(${config.blur}px);
+                        animation: drift${index} ${8 + index * 2}s ease-in-out infinite;
+                    `;
+
+                    container.appendChild(leak);
+                });
+
+                // 副虹光漏数据
+                const secondaryLeaks = [
+                    { top: -15, left: -15, width: 35, height: 40, color1: '180, 130, 255', color2: '120, 220, 255', blur: 50, opacity: 0.35 },
+                    { top: -8, right: -15, width: 38, height: 45, color1: '120, 255, 180', color2: '255, 235, 120', blur: 55, opacity: 0.3 },
+                    { top: 10, right: -10, width: 40, height: 50, color1: '255, 180, 60', color2: '255, 120, 120', blur: 60, opacity: 0.28 }
+                ];
+
+                // 创建副虹
+                secondaryLeaks.forEach((config, index) => {
+                    const leak = document.createElement('div');
+
+                    let posStyle = '';
+                    if (config.top !== undefined) posStyle += `top: ${config.top}%;`;
+                    if (config.left !== undefined) posStyle += `left: ${config.left}%;`;
+                    if (config.right !== undefined) posStyle += `right: ${config.right}%;`;
+
+                    leak.style.cssText = `
+                        position: absolute;
+                        ${posStyle}
+                        width: ${config.width}%;
+                        height: ${config.height}%;
+                        background: radial-gradient(
+                            ellipse at ${40 + index * 15}% ${25 + index * 10}%,
+                            rgba(${config.color1}, ${config.opacity}) 0%,
+                            rgba(${config.color2}, ${config.opacity * 0.5}) 35%,
+                            transparent 65%
+                        );
+                        filter: blur(${config.blur}px);
+                        animation: drift${index + 4} ${10 + index * 2}s ease-in-out infinite;
+                    `;
+
+                    container.appendChild(leak);
+                });
+
+                this.effectContainer.appendChild(container);
+                document.body.appendChild(this.effectContainer);
+
+                document.getElementById('status').innerHTML = `
+                    ✅ 彩虹v3.0已创建<br>
+                    - 主虹：4个光漏（红橙黄绿蓝靛紫）<br>
+                    - 副虹：3个光漏（颜色反向）<br>
+                    - 深色背景优化：提高不透明度和亮度
+                `;
+            }
+
+            removeEffect() {
+                if (this.effectContainer) {
+                    this.effectContainer.remove();
+                    this.effectContainer = null;
+                    document.getElementById('status').innerHTML = '彩虹已清除';
+                }
+            }
+        }
+
+        // 创建控制器实例
+        const rainbowController = new SimpleRainbowController();
+
+        function showRainbow() {
+            rainbowController.showRainbow();
+        }
+
+        function hideRainbow() {
+            rainbowController.removeEffect();
+        }
+
+        // 添加CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            @keyframes drift0 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(20px, 15px) scale(1.08); }
+            }
+
+            @keyframes drift1 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(-15px, 20px) scale(1.1); }
+            }
+
+            @keyframes drift2 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(-20px, -10px) scale(1.05); }
+            }
+
+            @keyframes drift3 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(15px, -15px) scale(1.07); }
+            }
+
+            @keyframes drift4 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(-10px, -8px) scale(1.03); }
+            }
+
+            @keyframes drift5 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(12px, 10px) scale(1.04); }
+            }
+
+            @keyframes drift6 {
+                0%, 100% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(-8px, 12px) scale(1.02); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

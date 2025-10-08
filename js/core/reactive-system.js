@@ -8,8 +8,17 @@ class ReactiveSystem {
         // 存储所有的监听器（谁在监听什么数据）
         this.watchers = {};
 
-        // 初始化提示
-        console.log('✨ 响应式系统启动！数据变化将自动更新UI');
+        // 🆕 依赖图（管理计算属性）
+        this.dependencyGraph = null;
+
+        // 延迟初始化依赖图（等DependencyGraph类加载）
+        if (typeof DependencyGraph !== 'undefined') {
+            this.dependencyGraph = new DependencyGraph();
+            console.log('✨ 响应式系统启动！(含计算图优化)');
+        } else {
+            console.log('✨ 响应式系统启动！数据变化将自动更新UI');
+            console.log('⚠️ DependencyGraph未加载，延迟计算功能不可用');
+        }
     }
 
     /**
@@ -60,10 +69,35 @@ class ReactiveSystem {
     }
 
     /**
-     * 通知所有监听器
+     * 🆕 注册计算属性（新增方法）
+     * @param {ComputedValue} computedValue - 计算属性节点
+     */
+    registerComputed(computedValue) {
+        if (!this.dependencyGraph) {
+            console.error('❌ DependencyGraph未初始化，无法注册计算属性');
+            return false;
+        }
+
+        return this.dependencyGraph.register(computedValue);
+    }
+
+    /**
+     * 🆕 注销计算属性（新增方法）
+     * @param {string} name - 计算属性名称
+     */
+    unregisterComputed(name) {
+        if (!this.dependencyGraph) {
+            return false;
+        }
+
+        return this.dependencyGraph.unregister(name);
+    }
+
+    /**
+     * 通知所有监听器（增强版）
      */
     notify(property, newValue, oldValue) {
-        // 如果有人在监听这个属性
+        // 1. 原有逻辑：通知普通监听器
         if (this.watchers[property]) {
             this.watchers[property].forEach(callback => {
                 callback(newValue, oldValue);
@@ -76,6 +110,23 @@ class ReactiveSystem {
                 callback(property, newValue, oldValue);
             });
         }
+
+        // 2. 🆕 新增逻辑：通知依赖图（触发计算属性重算）
+        if (this.dependencyGraph) {
+            this.dependencyGraph.notify(property);
+        }
+    }
+
+    /**
+     * 🆕 调试依赖图（新增方法）
+     */
+    debugDependencyGraph() {
+        if (!this.dependencyGraph) {
+            console.log('⚠️ 依赖图未初始化');
+            return;
+        }
+
+        this.dependencyGraph.debug();
     }
 
     /**

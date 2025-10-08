@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>加载检查</title>
+</head>
+<body>
+    <h1>脚本加载检查</h1>
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        function addLog(msg) {
+            log.innerHTML += msg + '<br>';
+        }
+
+        addLog('=== 开始加载检查 ===');
+    </script>
+
+    <!-- 加载weather-effect-controller.js -->
+    <script src="js/core/weather-effect-controller.js"
+            onload="addLog('✅ weather-effect-controller.js 加载成功')"
+            onerror="addLog('❌ weather-effect-controller.js 加载失败')"></script>
+
+    <script>
+        // 延迟检查
+        setTimeout(() => {
+            addLog('');
+            addLog('=== 组件检查 ===');
+            addLog('WeatherEffectController类: ' + (typeof window.WeatherEffectController));
+            addLog('weatherEffectController实例: ' + (typeof window.weatherEffectController));
+
+            if (window.WeatherEffectController) {
+                addLog('');
+                addLog('尝试创建实例...');
+                try {
+                    const controller = new WeatherEffectController();
+                    addLog('✅ 实例创建成功');
+
+                    addLog('尝试显示彩虹...');
+                    controller.showEffect('rainbow', 0.8);
+                    addLog('✅ showEffect调用成功');
+                } catch(e) {
+                    addLog('❌ 错误: ' + e.message);
+                    console.error(e);
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

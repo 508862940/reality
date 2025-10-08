@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试Weather Effect Controller加载</title>
+    <link rel="stylesheet" href="css/weather-effects.css">
+</head>
+<body>
+    <h1>Weather Effect Controller加载测试</h1>
+
+    <div id="status"></div>
+
+    <button onclick="testRainbow()">测试彩虹效果</button>
+
+    <script>
+        const status = document.getElementById('status');
+
+        // 记录加载前状态
+        status.innerHTML = '开始加载...<br>';
+
+        // 监听错误
+        window.addEventListener('error', (e) => {
+            status.innerHTML += `错误: ${e.message} (${e.filename}:${e.lineno})<br>`;
+        });
+    </script>
+
+    <!-- 加载weather-effect-controller.js -->
+    <script src="js/core/weather-effect-controller.js"></script>
+
+    <script>
+        // 检查是否加载成功
+        if (window.WeatherEffectController) {
+            status.innerHTML += '✅ WeatherEffectController类已加载<br>';
+        } else {
+            status.innerHTML += '❌ WeatherEffectController类未找到<br>';
+        }
+
+        if (window.weatherEffectController) {
+            status.innerHTML += '✅ weatherEffectController实例已创建<br>';
+        } else {
+            status.innerHTML += '❌ weatherEffectController实例未创建<br>';
+        }
+
+        function testRainbow() {
+            if (window.weatherEffectController) {
+                window.weatherEffectController.showEffect('rainbow', 0.8);
+                status.innerHTML += '彩虹效果已触发<br>';
+            } else {
+                status.innerHTML += '无法触发彩虹，控制器不存在<br>';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>测试</title>
+</head>
+<body>
+    <button id="test">测试按钮</button>
+    <script>
+        document.getElementById('test').addEventListener('click', () => {
+            const html = `<!DOCTYPE html>
+<html>
+<body>
+    <h1>Test</h1>
+    <script>alert('inner');<\/script>
+</body>
+</html>`;
+            console.log(html);
+            alert('外层script正常');
+        });
+    </script>
+</body>
+</html>

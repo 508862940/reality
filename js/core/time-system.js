@@ -637,6 +637,7 @@ class TimeSystem {
 
         // 通过响应式系统更新UI
         if (window.reactiveSystem) {
+            window.reactiveSystem.notify('gameTime.hour', this.currentTime.hour, oldTime.hour);
             // 触发响应式系统的时间监听器
             window.reactiveSystem.notify('totalMinutes', this.totalMinutes, this.totalMinutes - minutes);
             window.reactiveSystem.notify('gameTime', this.currentTime, oldTime);

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新京市表层世界地图 - 最终版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #1a1a1a; color: #fff; overflow: hidden; }
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2a2a2a; border-bottom: 1px solid #444; display: flex; align-items: center; padding: 0 20px; z-index: 1000; gap: 15px; }
+        .toolbar h1 { color: #4ECDC4; font-size: 20px; margin-right: auto; }
+        .toolbar button { padding: 8px 16px; background: #4a4a4a; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .toolbar button:hover { background: #5a5a5a; }
+        .toolbar button.active { background: #4ECDC4; color: #000; }
+        .toolbar .zoom-info { color: #aaa; font-size: 14px; margin-left: 10px; }
+        #canvas-container { position: fixed; top: 60px; left: 0; right: 320px; bottom: 0; overflow: hidden; background: #2a2a2a; }
+        #map-canvas { cursor: grab; }
+        #map-canvas.dragging { cursor: grabbing; }
+        .info-panel { position: fixed; top: 60px; right: 0; bottom: 0; width: 320px; background: #252525; border-left: 1px solid #444; padding: 20px; overflow-y: auto; }
+        .info-panel h3 { color: #4ECDC4; margin-bottom: 15px; font-size: 16px; }
+        .node-info { display: none; margin-bottom: 20px; }
+        .node-info.show { display: block; }
+        .info-item { margin: 10px 0; padding: 10px; background: #333; border-radius: 5px; }
+        .info-item label { color: #aaa; font-size: 12px; display: block; margin-bottom: 5px; }
+        .info-item .value { color: #fff; font-size: 14px; }
+        .legend { margin-top: 20px; }
+        .legend-item { display: flex; align-items: center; margin: 8px 0; font-size: 13px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid rgba(255,255,255,0.3); }
+        .tips { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 5px; font-size: 12px; color: #aaa; }
+        .category-badge { display: inline-block; background: rgba(78, 205, 196, 0.2); color: #4ECDC4; padding: 2px 8px; border-radius: 3px; font-size: 11px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>🗺️ 新京市表层世界地图</h1>
+        <button onclick="zoomIn()">🔍+ 放大</button>
+        <button onclick="zoomOut()">🔍- 缩小</button>
+        <span class="zoom-info" id="zoom-display">100%</span>
+        <button id="btn-rings" class="active" onclick="toggleRings()">⭕ 环形辅助线</button>
+        <button onclick="resetView()">🔄 重置视图</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="map-canvas"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>🌍 地图信息</h3>
+        <div class="info-item">
+            <label>城市名称</label>
+            <div class="value">新京市（环海城市）</div>
+        </div>
+        <div class="info-item">
+            <label>结构</label>
+            <div class="value">中心 + 4环 + 外海</div>
+        </div>
+        <div class="info-item">
+            <label>总节点数</label>
+            <div class="value">25个核心节点</div>
+        </div>
+
+        <div class="node-info" id="node-info">
+            <h3>📍 节点详情</h3>
+            <div class="info-item">
+                <label>设施名称</label>
+                <div class="value" id="info-name">-</div>
+            </div>
+            <div class="info-item">
+                <label>功能分类</label>
+                <div class="value" id="info-category">-</div>
+            </div>
+            <div class="info-item">
+                <label>所属类型</label>
+                <div class="value" id="info-type">-</div>
+            </div>
+            <div class="info-item">
+                <label>位置</label>
+                <div class="value" id="info-ring">-</div>
+            </div>
+            <div class="info-item">
+                <label>描述</label>
+                <div class="value" id="info-desc">-</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>🎨 图例</h3>
+            <div class="legend-item"><div class="legend-color" style="background: #DC143C;"></div><span>🔴 政务区（4个）</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #4ECDC4;"></div><span>🟢 生活区（11个）</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #FFD700;"></div><span>🟡 功能区（5个）</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #4169E1;"></div><span>🔵 学院区（1个）</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #DDA0DD;"></div><span>🟣 商业区（3个）</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #8B4513;"></div><span>🟤 工业区（4个）</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: #2F4F4F;"></div><span>⚫ 秘区/郊外（3个）</span></div>
+        </div>
+    </div>
+
+    <div class="tips">
+        💡 滚轮缩放 | 拖拽移动 | 点击节点查看详情 | 颜色=大类，名称=具体设施
+    </div>
+
+    <script>
+const mapData = {"nodes":[{"id":"R0-CENTER","name":"中心广场","ring":0,"sector":"中","x":400,"y":400,"color":"#DC143C","size":30,"type":"政务区","category":"政务核心","description":"城市绝对核心，权力中心"},{"id":"R1-N","name":"警局","ring":1,"sector":"北","x":400,"y":280,"color":"#DC143C","size":20,"type":"政务区","category":"执法机构","description":"警察总局，维护治安"},{"id":"R1-E","name":"医疗区","ring":1,"sector":"东","x":520,"y":400,"color":"#4ECDC4","size":20,"type":"生活区","category":"医疗卫生","description":"医疗中心，健康服务"},{"id":"R1-S","name":"学院区","ring":1,"sector":"南","x":400,"y":520,"color":"#4169E1","size":20,"type":"学院区","category":"教育机构","description":"真理学院，最高学府"},{"id":"R1-W","name":"居住区","ring":1,"sector":"西","x":280,"y":400,"color":"#4ECDC4","size":20,"type":"生活区","category":"居住生活","description":"高级社区，核心居住区"},{"id":"R2-N","name":"警局","ring":2,"sector":"北","x":400,"y":200,"color":"#DC143C","size":18,"type":"政务区","category":"执法机构","description":"行政分局，区域管理"},{"id":"R2-NE","name":"电视台","ring":2,"sector":"东北","x":541.4,"y":258.6,"color":"#FFD700","size":18,"type":"功能区","category":"媒体传播","description":"新京市电视台，信息中心"},{"id":"R2-E","name":"博物馆","ring":2,"sector":"东","x":600,"y":400,"color":"#FFD700","size":18,"type":"功能区","category":"文化展览","description":"历史博物馆，文化传承"},{"id":"R2-S-L","name":"居住区","ring":2,"sector":"南","x":300,"y":573.2,"color":"#4ECDC4","size":18,"type":"生活区","category":"居住生活","description":"居民社区"},{"id":"R2-S-M","name":"公园","ring":2,"sector":"南","x":400,"y":600,"color":"#4ECDC4","size":18,"type":"生活区","category":"休闲娱乐","description":"静谧之园，主要公园"},{"id":"R2-S-R","name":"商业区","ring":2,"sector":"南","x":500,"y":573.2,"color":"#DDA0DD","size":18,"type":"商业区","category":"购物消费","description":"购物中心，商业繁华"},{"id":"R2-SW","name":"教堂","ring":2,"sector":"西南","x":258.6,"y":541.4,"color":"#FFD700","size":18,"type":"功能区","category":"宗教文化","description":"圣光教堂，精神寄托"},{"id":"R2-W-1","name":"居住区","ring":2,"sector":"西","x":212.1,"y":468.4,"color":"#4ECDC4","size":18,"type":"生活区","category":"居住生活","description":"西部社区"},{"id":"R2-W-2","name":"商业区","ring":2,"sector":"西","x":212.1,"y":331.6,"color":"#DDA0DD","size":18,"type":"商业区","category":"购物消费","description":"繁华商业街"},{"id":"R3-N","name":"警局","ring":3,"sector":"北","x":400,"y":120,"color":"#DC143C","size":16,"type":"政务区","category":"执法机构","description":"派出所，基层管理"},{"id":"R3-NE-1","name":"娱乐区","ring":3,"sector":"东北","x":540,"y":157.4,"color":"#4ECDC4","size":16,"type":"生活区","category":"休闲娱乐","description":"幻梦乐园，娱乐设施"},{"id":"R3-NE-2","name":"居住区","ring":3,"sector":"东北","x":642.6,"y":260,"color":"#4ECDC4","size":16,"type":"生活区","category":"居住生活","description":"密集居住区，社区公园"},{"id":"R3-SE","name":"图书馆","ring":3,"sector":"东南","x":642.6,"y":540,"color":"#FFD700","size":16,"type":"功能区","category":"文化教育","description":"文汇图书馆，知识殿堂"},{"id":"R3-S","name":"居住区","ring":3,"sector":"南","x":400,"y":680,"color":"#4ECDC4","size":16,"type":"生活区","category":"居住生活","description":"晨曦里，白桦社区"},{"id":"R3-SW","name":"招工区","ring":3,"sector":"西南","x":157.4,"y":540,"color":"#8B4513","size":16,"type":"工业区","category":"劳务市场","description":"梧桐里，劳务招工中心"},{"id":"R3-W","name":"工业区","ring":3,"sector":"西","x":120,"y":400,"color":"#8B4513","size":16,"type":"工业区","category":"生产制造","description":"齿轮工业区，制造中心"},{"id":"R4-NW-2","name":"森林","ring":4,"sector":"西北","x":220,"y":88.4,"color":"#2F4F4F","size":14,"type":"秘区","category":"自然边界","description":"边界森林，未知危险"},{"id":"R4-NW-1","name":"轻工业","ring":4,"sector":"西北","x":145.5,"y":145.5,"color":"#8B4513","size":14,"type":"工业区","category":"生产制造","description":"轻工业区，边缘生产"},{"id":"R4-SW","name":"郊外","ring":4,"sector":"西南","x":145.5,"y":654.5,"color":"#2F4F4F","size":14,"type":"秘区","category":"边缘地带","description":"远风镇，废弃设施"},{"id":"R4-S","name":"别墅区","ring":4,"sector":"南","x":400,"y":760,"color":"#4ECDC4","size":14,"type":"生活区","category":"高档住宅","description":"静海台，顶级别墅区"}]};
+
+const canvas = document.getElementById('map-canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvas-container');
+let canvasOffset = { x: 0, y: 0 };
+let hoveredNode = null;
+let selectedNode = null;
+let showRings = true;
+let zoom = 1;
+let isDragging = false;
+let lastMousePos = { x: 0, y: 0 };
+
+function resizeCanvas() {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    canvasOffset.x = canvas.width / 2 - 400 * zoom;
+    canvasOffset.y = canvas.height / 2 - 400 * zoom;
+    render();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function render() {
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (showRings) drawRings();
+    mapData.nodes.forEach(node => drawNode(node));
+}
+
+function drawRings() {
+    const cx = 400 * zoom + canvasOffset.x, cy = 400 * zoom + canvasOffset.y;
+    [120, 200, 280, 360].forEach(r => {
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * zoom, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+}
+
+function drawNode(node) {
+    const x = node.x * zoom + canvasOffset.x;
+    const y = node.y * zoom + canvasOffset.y;
+    const size = node.size * zoom;
+
+    if (node === hoveredNode || node === selectedNode) {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+        g.addColorStop(0, node.color + '40');
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = node.color;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = node === selectedNode ? '#fff' : 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = node === selectedNode ? 3 : 2;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.max(10, 11 * zoom)}px Microsoft YaHei`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(node.name, x, y);
+}
+
+function getNodeAt(x, y) {
+    for (let i = mapData.nodes.length - 1; i >= 0; i--) {
+        const node = mapData.nodes[i];
+        const nx = node.x * zoom + canvasOffset.x;
+        const ny = node.y * zoom + canvasOffset.y;
+        if (Math.sqrt((x - nx) ** 2 + (y - ny) ** 2) <= node.size * zoom) return node;
+    }
+    return null;
+}
+
+function showNodeInfo(node) {
+    selectedNode = node;
+    document.getElementById('node-info').classList.add('show');
+    document.getElementById('info-name').textContent = node.name;
+    document.getElementById('info-category').innerHTML = node.category;
+    document.getElementById('info-type').textContent = node.type;
+    document.getElementById('info-ring').textContent = `第${node.ring}环 - ${node.sector}部`;
+    document.getElementById('info-desc').textContent = node.description;
+    render();
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    const node = getNodeAt(e.offsetX, e.offsetY);
+    if (!node) {
+        isDragging = true;
+        lastMousePos = { x: e.offsetX, y: e.offsetY };
+        canvas.classList.add('dragging');
+    }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+        const dx = e.offsetX - lastMousePos.x;
+        const dy = e.offsetY - lastMousePos.y;
+        canvasOffset.x += dx;
+        canvasOffset.y += dy;
+        lastMousePos = { x: e.offsetX, y: e.offsetY };
+        render();
+    } else {
+        const node = getNodeAt(e.offsetX, e.offsetY);
+        if (node !== hoveredNode) {
+            hoveredNode = node;
+            canvas.style.cursor = node ? 'pointer' : 'grab';
+            render();
+        }
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+    canvas.classList.remove('dragging');
+});
+
+canvas.addEventListener('click', (e) => {
+    if (!isDragging) {
+        const node = getNodeAt(e.offsetX, e.offsetY);
+        if (node) {
+            showNodeInfo(node);
+        } else {
+            selectedNode = null;
+            document.getElementById('node-info').classList.remove('show');
+            render();
+        }
+    }
+});
+
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const oldZoom = zoom;
+    zoom = Math.max(0.3, Math.min(3, zoom * delta));
+    const mouseX = e.offsetX;
+    const mouseY = e.offsetY;
+    canvasOffset.x = mouseX - (mouseX - canvasOffset.x) * (zoom / oldZoom);
+    canvasOffset.y = mouseY - (mouseY - canvasOffset.y) * (zoom / oldZoom);
+    updateZoomDisplay();
+    render();
+});
+
+function zoomIn() {
+    zoom = Math.min(3, zoom * 1.2);
+    updateZoomDisplay();
+    render();
+}
+
+function zoomOut() {
+    zoom = Math.max(0.3, zoom / 1.2);
+    updateZoomDisplay();
+    render();
+}
+
+function updateZoomDisplay() {
+    document.getElementById('zoom-display').textContent = Math.round(zoom * 100) + '%';
+}
+
+function toggleRings() {
+    showRings = !showRings;
+    document.getElementById('btn-rings').classList.toggle('active', showRings);
+    render();
+}
+
+function resetView() {
+    zoom = 1;
+    canvasOffset.x = canvas.width / 2 - 400;
+    canvasOffset.y = canvas.height / 2 - 400;
+    updateZoomDisplay();
+    render();
+}
+    </script>
+</body>
+</html>

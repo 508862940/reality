@@ -26,6 +26,8 @@
     <link rel="stylesheet" href="css/game-main.css">
     <!-- 立绘系统样式 -->
     <link rel="stylesheet" href="css/portrait-system.css">
+    <!-- 天气特效样式 -->
+    <link rel="stylesheet" href="css/weather-effects.css">
     <!-- 可折叠UI样式 -->
     <link rel="stylesheet" href="css/collapsible-ui.css">
     <!-- 时光倒流特效样式 -->
@@ -215,29 +217,38 @@
     <!-- NPC关系系统 -->
     <script src="js/core/relationship-system.js"></script>
     <script src="js/data/npc-profiles.js"></script>
-    <!-- 世界系统 -->
-    <script src="js/core/weather-system.js"></script>
-    <script src="js/core/climate-manager.js"></script>
-    <script src="js/core/economy-system.js"></script>
-    <script src="js/core/farming-system.js"></script>
-    <!-- 战斗系统 -->
-    <script src="js/core/combat-system.js"></script>
-    <script src="js/data/combat-skills.js"></script>
-    <script src="js/api/api-state.js"></script>
-    <!-- 响应式系统（魔法系统） -->
+    <!-- 响应式系统（魔法系统） + 计算图优化 -->
+    <script src="js/core/computed-value.js"></script>
+    <script src="js/core/dependency-graph.js"></script>
     <script src="js/core/reactive-system.js"></script>
     <!-- 条件判断引擎 -->
     <script src="js/core/condition-engine.js"></script>
     <!-- 概率决策引擎 -->
     <script src="js/core/random-engine.js"></script>
+    <!-- 时间系统 -->
+    <script src="js/core/time-system.js"></script>
+    <!-- 世界系统 -->
+    <script src="js/core/weather-system.js"></script>
+    <script src="js/core/weather-effect-controller.js"></script>
+    <script src="js/core/weather-effect-init.js"></script>
+    <script src="js/core/climate-manager.js"></script>
+    <script src="js/core/temperature-system-v2.js"></script>
+    <script src="js/core/economy-system.js"></script>
+    <script src="js/core/farming-system.js"></script>
+    <!-- 战斗系统 -->
+    <script src="js/core/combat-system.js"></script>
+    <script src="js/data/combat-skills.js"></script>
+    <!-- <script src="js/api/api-state.js"></script> 暂时注释，文件加载失败 -->
+    <!-- NPC AI系统 -->
+    <script src="js/core/npc-ai-system.js?v=4"></script>
+    <!-- NPC记忆系统集成 -->
+    <script src="js/core/memory-integration.js?v=1"></script>
     <!-- 统一世界状态管理 -->
     <script src="js/core/world-state.js"></script>
     <!-- 游戏启动引导 -->
     <script src="js/core/game-bootstrap.js"></script>
     <!-- 简单存档系统 -->
     <script src="js/core/simple-save.js"></script>
-    <!-- 时间系统 -->
-    <script src="js/core/time-system.js"></script>
     <!-- 音频系统 -->
     <script src="js/core/audio-system.js"></script>
     <!-- 音乐系统模块 -->
@@ -286,8 +297,16 @@
     <script src="js/test/clean-fix.js"></script>
     <!-- 手动存档测试 -->
     <script src="js/test/test-manual-save.js"></script>
+    <!-- 🧠 记忆系统调试工具 -->
+    <script src="js/test/debug-memory-system.js"></script>
     <!-- F2位置检查工具 -->
     <script src="js/test/check-f2-position.js"></script>
+    <!-- 天气特效快速测试工具 -->
+    <script src="js/test/test-weather-quick.js"></script>
+    <!-- 天气特效调试工具 -->
+    <script src="js/test/test-weather-debug.js"></script>
+    <!-- Proxy修复验证测试 -->
+    <script src="js/test/test-proxy-fix.js"></script>
     <!-- 其他测试工具暂时禁用 -->
     <!-- <script src="js/test/test-story-system.js"></script> -->
     <!-- <script src="js/test/test-save-quick.js"></script> -->

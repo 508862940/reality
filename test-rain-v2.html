@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雨天测试 v2</title>
+    <link rel="stylesheet" href="css/weather-effects.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(to bottom, #2c3e50, #34495e);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.3);
+            border-radius: 5px;
+        }
+
+        .log {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>🌧️ 雨天测试 v2.0</h2>
+
+        <div>
+            <h3>天气控制</h3>
+            <button onclick="startRain()">开始下雨（渐强）</button>
+            <button onclick="startStorm()">开始暴雨</button>
+            <button onclick="stopRain()">停止（渐弱）</button>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <h3>环境控制</h3>
+            <button onclick="goOutdoor()">🌳 去室外</button>
+            <button onclick="goIndoor()">🏠 进室内</button>
+            <button onclick="toggleUmbrella()">☂️ 切换雨伞</button>
+        </div>
+
+        <div class="status" id="status">
+            加载中...
+        </div>
+
+        <div class="log" id="log">
+            控制台日志...
+        </div>
+    </div>
+
+    <!-- 直接加载最新版本 -->
+    <script src="js/core/weather-effect-controller.js?v=2"></script>
+
+    <script>
+        let isIndoor = false;
+        let hasUmbrella = false;
+        let controller;
+
+        function addLog(msg) {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML = `[${time}] ${msg}<br>` + log.innerHTML;
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                位置: ${isIndoor ? '🏠 室内' : '🌳 室外'}<br>
+                雨伞: ${hasUmbrella ? '☂️ 已打开' : '未打开'}<br>
+                天气特效: ${controller?.currentEffect || '未激活'}<br>
+                控制器存在: ${!!controller ? '✅' : '❌'}<br>
+                方法存在: ${typeof controller?.setWeatherVisibility === 'function' ? '✅' : '❌'}
+            `;
+        }
+
+        function checkController() {
+            if (!window.WeatherEffectController) {
+                addLog('❌ WeatherEffectController类不存在');
+                return false;
+            }
+            addLog('✅ WeatherEffectController类已加载');
+            return true;
+        }
+
+        function startRain() {
+            if (!checkController()) return;
+
+            if (!controller) {
+                controller = new WeatherEffectController();
+                addLog('✅ 控制器实例已创建');
+            }
+
+            addLog('🌧️ 开始下雨（渐强2秒）');
+            controller.showEffect('rainy', 0.8);
+
+            if (typeof controller.setWeatherVisibility === 'function') {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+                addLog(`✅ 设置可见性: 室内=${isIndoor}, 打伞=${hasUmbrella}`);
+            } else {
+                addLog('❌ setWeatherVisibility方法不存在');
+            }
+
+            updateStatus();
+        }
+
+        function startStorm() {
+            if (!checkController()) return;
+
+            if (!controller) {
+                controller = new WeatherEffectController();
+            }
+
+            addLog('⛈️ 开始暴雨（渐强3秒+闪电）');
+            controller.showEffect('stormy', 1.0);
+
+            if (typeof controller.setWeatherVisibility === 'function') {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+
+            updateStatus();
+        }
+
+        function stopRain() {
+            if (controller) {
+                addLog('🌦️ 停止下雨（渐弱3.5秒）');
+                controller.removeEffect();
+            }
+            updateStatus();
+        }
+
+        function goOutdoor() {
+            isIndoor = false;
+            addLog('🌳 移动到室外');
+
+            if (controller && typeof controller.setWeatherVisibility === 'function') {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+            updateStatus();
+        }
+
+        function goIndoor() {
+            isIndoor = true;
+            addLog('🏠 进入室内');
+
+            if (controller && typeof controller.setWeatherVisibility === 'function') {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+            updateStatus();
+        }
+
+        function toggleUmbrella() {
+            hasUmbrella = !hasUmbrella;
+            addLog(`☂️ ${hasUmbrella ? '打开' : '收起'}雨伞`);
+
+            if (controller && typeof controller.setWeatherVisibility === 'function') {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+            updateStatus();
+        }
+
+        // 初始化
+        window.addEventListener('load', () => {
+            checkController();
+            updateStatus();
+            addLog('页面加载完成');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌈 奖励级彩虹v4.0 - game-main界面优化版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a; /* game-main的深色背景 */
+            color: #e0e0e0;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 模拟game-main的界面布局 */
+        .game-ui {
+            position: absolute;
+            z-index: 100;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-area {
+            height: 45vh;
+            display: flex;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .bottom-area {
+            height: 55vh;
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            text-align: center;
+            pointer-events: all;
+        }
+
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        /* 彩虹容器 */
+        .rainbow-reward-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50; /* 在UI后面，营造背景效果 */
+        }
+
+        /* 奖励动画 - 从无到有的惊喜感 */
+        @keyframes rainbow-reward-appear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 星光闪烁效果 */
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px white;
+            animation: sparkle 2s infinite;
+        }
+
+        /* 奖励提示文字 */
+        .reward-text {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: transparent;
+            background: linear-gradient(90deg,
+                #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: gradient-shift 3s linear infinite;
+            text-shadow: 0 0 30px rgba(255,255,255,0.5);
+            z-index: 201;
+            display: none;
+        }
+
+        @keyframes gradient-shift {
+            to { background-position: 200% center; }
+        }
+
+        /* 主虹光漏动画 - 更梦幻 */
+        @keyframes dream-float {
+            0%, 100% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+            }
+            33% {
+                transform: translate(30px, -20px) scale(1.1) rotate(5deg);
+            }
+            66% {
+                transform: translate(-20px, 30px) scale(0.95) rotate(-5deg);
+            }
+        }
+
+        /* 副虹光漏动画 - 更轻柔 */
+        @keyframes gentle-drift {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translate(-15px, 15px) scale(1.05);
+                opacity: 0.5;
+            }
+        }
+
+        /* 光晕脉动 */
+        @keyframes glow-pulse {
+            0%, 100% {
+                box-shadow: 0 0 30px currentColor;
+            }
+            50% {
+                box-shadow: 0 0 60px currentColor, 0 0 100px currentColor;
+            }
+        }
+
+        .info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 14px;
+            color: #888;
+            z-index: 201;
+        }
+    </style>
+</head>
+<body>
+    <!-- 模拟game-main界面 -->
+    <div class="game-ui">
+        <div class="top-area">
+            <div style="padding: 20px; color: #666;">
+                <div>📍 神秘花园 | 🕐 雨后清晨</div>
+                <div style="margin-top: 10px;">💰 1000 | ❤️ 100 | ⚡ 80</div>
+            </div>
+        </div>
+        <div class="bottom-area">
+            <div style="color: #999;">
+                <p>雨停了，空气中弥漫着清新的泥土气息...</p>
+                <p style="margin-top: 10px;">突然，一道绚丽的彩虹划过天际！</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 控制按钮 -->
+    <div class="controls">
+        <button onclick="showRewardRainbow()">✨ 触发奖励彩虹</button>
+        <button onclick="hideRainbow()">清除效果</button>
+    </div>
+
+    <!-- 奖励提示文字 -->
+    <div class="reward-text" id="rewardText">🌈 幸运降临！获得了彩虹的祝福 🌈</div>
+
+    <div class="info">
+        彩虹v4.0 奖励版特性：<br>
+        • 惊喜动画入场<br>
+        • 梦幻光晕效果<br>
+        • 星光点缀<br>
+        • 渐变提示文字<br>
+        • 深度层次感
+    </div>
+
+    <script>
+        let rainbowContainer = null;
+
+        function showRewardRainbow() {
+            hideRainbow();
+
+            // 创建主容器
+            rainbowContainer = document.createElement('div');
+            rainbowContainer.className = 'rainbow-reward-container';
+            rainbowContainer.style.animation = 'rainbow-reward-appear 3s ease-out forwards';
+
+            // 主虹光漏配置 - 更鲜艳的颜色，更高的不透明度
+            const primaryLeaks = [
+                // 左上：红色爆发
+                {
+                    top: -5, left: -5, width: 35, height: 45,
+                    color1: '255, 100, 100', color2: '255, 180, 80',
+                    blur: 25, opacity: 0.7, animation: 'dream-float 10s ease-in-out infinite'
+                },
+                // 上中：金黄色光芒
+                {
+                    top: -10, left: 30, width: 40, height: 40,
+                    color1: '255, 220, 100', color2: '255, 255, 150',
+                    blur: 30, opacity: 0.65, animation: 'dream-float 12s ease-in-out infinite 1s'
+                },
+                // 右上：翠绿生机
+                {
+                    top: -8, right: -5, width: 45, height: 50,
+                    color1: '100, 255, 150', color2: '150, 255, 200',
+                    blur: 35, opacity: 0.6, animation: 'dream-float 14s ease-in-out infinite 2s'
+                },
+                // 右侧：天蓝色梦境
+                {
+                    top: 20, right: -10, width: 40, height: 55,
+                    color1: '100, 200, 255', color2: '150, 220, 255',
+                    blur: 40, opacity: 0.65, animation: 'dream-float 11s ease-in-out infinite 1.5s'
+                },
+                // 右下：靛蓝深邃
+                {
+                    bottom: -10, right: 10, width: 38, height: 45,
+                    color1: '100, 100, 255', color2: '150, 150, 255',
+                    blur: 35, opacity: 0.55, animation: 'dream-float 13s ease-in-out infinite 3s'
+                },
+                // 左下：紫色梦幻
+                {
+                    bottom: -5, left: -8, width: 42, height: 48,
+                    color1: '200, 100, 255', color2: '255, 150, 255',
+                    blur: 30, opacity: 0.6, animation: 'dream-float 15s ease-in-out infinite 2.5s'
+                },
+                // 左侧：粉色浪漫
+                {
+                    top: 30, left: -10, width: 35, height: 40,
+                    color1: '255, 150, 200', color2: '255, 200, 220',
+                    blur: 28, opacity: 0.5, animation: 'dream-float 9s ease-in-out infinite 0.5s'
+                }
+            ];
+
+            // 创建主虹
+            primaryLeaks.forEach((config, index) => {
+                const leak = document.createElement('div');
+
+                let posStyle = '';
+                if (config.top !== undefined) posStyle += `top: ${config.top}%;`;
+                if (config.bottom !== undefined) posStyle += `bottom: ${config.bottom}%;`;
+                if (config.left !== undefined) posStyle += `left: ${config.left}%;`;
+                if (config.right !== undefined) posStyle += `right: ${config.right}%;`;
+
+                leak.style.cssText = `
+                    position: absolute;
+                    ${posStyle}
+                    width: ${config.width}%;
+                    height: ${config.height}%;
+                    background: radial-gradient(
+                        ellipse at 50% 50%,
+                        rgba(${config.color1}, ${config.opacity}) 0%,
+                        rgba(${config.color2}, ${config.opacity * 0.7}) 25%,
+                        rgba(${config.color1}, ${config.opacity * 0.4}) 50%,
+                        transparent 75%
+                    );
+                    filter: blur(${config.blur}px);
+                    animation: ${config.animation};
+                    mix-blend-mode: screen;
+                `;
+
+                rainbowContainer.appendChild(leak);
+            });
+
+            // 副虹 - 更柔和的外层光晕
+            const secondaryLeaks = [
+                { top: -20, left: -20, width: 60, height: 60, color: '255, 200, 200', opacity: 0.2, blur: 60 },
+                { top: -15, right: -20, width: 55, height: 55, color: '200, 255, 200', opacity: 0.18, blur: 65 },
+                { bottom: -20, right: -15, width: 50, height: 50, color: '200, 200, 255', opacity: 0.15, blur: 70 },
+                { bottom: -15, left: -15, width: 45, height: 45, color: '255, 200, 255', opacity: 0.12, blur: 75 }
+            ];
+
+            secondaryLeaks.forEach((config, index) => {
+                const leak = document.createElement('div');
+
+                let posStyle = '';
+                if (config.top !== undefined) posStyle += `top: ${config.top}%;`;
+                if (config.bottom !== undefined) posStyle += `bottom: ${config.bottom}%;`;
+                if (config.left !== undefined) posStyle += `left: ${config.left}%;`;
+                if (config.right !== undefined) posStyle += `right: ${config.right}%;`;
+
+                leak.style.cssText = `
+                    position: absolute;
+                    ${posStyle}
+                    width: ${config.width}%;
+                    height: ${config.height}%;
+                    background: radial-gradient(
+                        circle,
+                        rgba(${config.color}, ${config.opacity}) 0%,
+                        rgba(${config.color}, ${config.opacity * 0.5}) 40%,
+                        transparent 70%
+                    );
+                    filter: blur(${config.blur}px);
+                    animation: gentle-drift ${10 + index * 2}s ease-in-out infinite ${index * 0.5}s;
+                `;
+
+                rainbowContainer.appendChild(leak);
+            });
+
+            // 添加星光点缀
+            for (let i = 0; i < 20; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.top = `${Math.random() * 60}%`;
+                sparkle.style.animationDelay = `${Math.random() * 2}s`;
+                sparkle.style.animationDuration = `${2 + Math.random() * 2}s`;
+                rainbowContainer.appendChild(sparkle);
+            }
+
+            document.body.appendChild(rainbowContainer);
+
+            // 显示奖励文字
+            const rewardText = document.getElementById('rewardText');
+            rewardText.style.display = 'block';
+            setTimeout(() => {
+                rewardText.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideRainbow() {
+            if (rainbowContainer) {
+                rainbowContainer.style.animation = 'rainbow-reward-appear 1s ease-in reverse';
+                setTimeout(() => {
+                    rainbowContainer.remove();
+                    rainbowContainer = null;
+                }, 1000);
+            }
+            document.getElementById('rewardText').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎼 NPC AI系统 v2.0 - 矩阵×向量决策引擎</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'Consolas', monospace;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .subtitle {
+            text-align: center;
+            color: #a8d5ff;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .section h2 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-left: 4px solid #2a5298;
+            padding-left: 10px;
+        }
+
+        /* 矩阵可视化 */
+        .matrix-container {
+            overflow-x: auto;
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+        }
+        .matrix-table {
+            border-collapse: collapse;
+            min-width: 100%;
+        }
+        .matrix-table th, .matrix-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+            min-width: 60px;
+        }
+        .matrix-table th {
+            background: #2a5298;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        .matrix-table td:first-child {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+        .weight-positive { background: #e8f5e9; color: #2e7d32; }
+        .weight-negative { background: #ffebee; color: #c62828; }
+        .weight-zero { background: #f5f5f5; color: #999; }
+
+        /* 状态向量可视化 */
+        .vector-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .vector-item {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        .vector-item .label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .vector-item .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        /* 计算过程可视化 */
+        .calculation-step {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ff9800;
+        }
+        .calculation-step .formula {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        /* 决策结果 */
+        .decision-result {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #4caf50;
+        }
+        .decision-result h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+        }
+        .score-bars {
+            display: grid;
+            gap: 10px;
+        }
+        .score-bar {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        .score-bar.winner {
+            background: #4caf50;
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        .score-bar .action-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .score-bar .score-value {
+            font-family: 'Consolas', monospace;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* 控制面板 */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .control-group {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+        .control-group select {
+            width: 100%;
+            padding: 6px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        .control-value {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2a5298;
+            margin-top: 5px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button.primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            font-size: 16px;
+            padding: 15px 40px;
+        }
+        button.danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .log-entry {
+            margin-bottom: 3px;
+        }
+
+        .quick-test {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎼 NPC AI系统 v2.0</h1>
+        <p class="subtitle">交响乐团架构 - 矩阵×向量决策引擎</p>
+
+        <!-- 第1部分：决策矩阵可视化 -->
+        <div class="section">
+            <h2>🎺 决策矩阵（Zero的"个性大脑"）</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                这个矩阵定义了Zero的个性！每一行=一个行为，每一列=一个状态维度的权重。<br>
+                <strong>绿色=正权重</strong>（该维度越高，越想做这个行为），<strong>红色=负权重</strong>（该维度越高，越不想做）
+            </p>
+            <div class="matrix-container" id="matrix-container">
+                <!-- 由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 第2部分：状态向量构建 -->
+        <div class="section">
+            <h2>🎼 状态向量（当前世界状态）</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                调整这些参数，构建当前的"世界快照"（所有演奏家的声音）
+            </p>
+
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label>User血量</label>
+                    <input type="range" id="player-health" min="0" max="100" value="100" oninput="updateStateVector()">
+                    <div class="control-value" id="val-player-health">100</div>
+                </div>
+                <div class="control-group">
+                    <label>User创伤值</label>
+                    <input type="range" id="player-trauma" min="0" max="100" value="0" oninput="updateStateVector()">
+                    <div class="control-value" id="val-player-trauma">0</div>
+                </div>
+                <div class="control-group">
+                    <label>User心情</label>
+                    <input type="range" id="player-mood" min="0" max="100" value="100" oninput="updateStateVector()">
+                    <div class="control-value" id="val-player-mood">100</div>
+                </div>
+                <div class="control-group">
+                    <label>距离（0=很近，100=很远）</label>
+                    <input type="range" id="distance" min="0" max="100" value="50" oninput="updateStateVector()">
+                    <div class="control-value" id="val-distance">50</div>
+                </div>
+                <div class="control-group">
+                    <label>⭐ Zero血量</label>
+                    <input type="range" id="zero-health" min="0" max="100" value="100" oninput="updateStateVector()">
+                    <div class="control-value" id="val-zero-health">100</div>
+                </div>
+                <div class="control-group">
+                    <label>⭐ Zero心情</label>
+                    <input type="range" id="zero-mood" min="0" max="100" value="100" oninput="updateStateVector()">
+                    <div class="control-value" id="val-zero-mood">100</div>
+                </div>
+                <div class="control-group">
+                    <label>狼魂控制度</label>
+                    <input type="range" id="wolf-control" min="0" max="100" value="70" oninput="updateStateVector()">
+                    <div class="control-value" id="val-wolf-control">70</div>
+                </div>
+                <div class="control-group">
+                    <label>负罪感</label>
+                    <input type="range" id="guilt" min="0" max="100" value="50" oninput="updateStateVector()">
+                    <div class="control-value" id="val-guilt">50</div>
+                </div>
+                <div class="control-group">
+                    <label>好感度</label>
+                    <input type="range" id="affection" min="0" max="100" value="50" oninput="updateStateVector()">
+                    <div class="control-value" id="val-affection">50</div>
+                </div>
+                <div class="control-group">
+                    <label>信赖度</label>
+                    <input type="range" id="trust" min="0" max="100" value="40" oninput="updateStateVector()">
+                    <div class="control-value" id="val-trust">40</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <label style="font-weight: bold; margin-right: 10px;">附近有敌人/特工：</label>
+                <input type="checkbox" id="has-enemy" onchange="updateStateVector()" style="transform: scale(1.5);">
+                <label style="font-weight: bold; margin-left: 20px; margin-right: 10px;">今天已问候过：</label>
+                <input type="checkbox" id="today-greeted" onchange="updateStateVector()" style="transform: scale(1.5);">
+            </div>
+
+            <div class="vector-display" id="vector-display">
+                <!-- 由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 第3部分：点积计算过程 -->
+        <div class="section">
+            <h2>🧮 点积计算过程（矩阵×向量）</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                核心数学：每个行为的分数 = 状态向量 · 权重向量<br>
+                公式：<code>分数 = Σ(状态[i] × 权重[i])</code>
+            </p>
+
+            <div style="text-align: center;">
+                <button class="primary" onclick="calculateDecision()">🎯 执行AI决策</button>
+            </div>
+
+            <div class="calculation-step" id="calculation-detail" style="display: none;">
+                <h3>📝 详细计算过程（以"保护User"为例）</h3>
+                <div class="formula" id="formula-display"></div>
+            </div>
+
+            <div class="decision-result" id="decision-result" style="display: none;">
+                <h3>✅ 最终决策结果</h3>
+                <div class="score-bars" id="score-bars"></div>
+            </div>
+        </div>
+
+        <!-- 第4部分：快速场景测试 -->
+        <div class="section">
+            <h2>⚡ 快速场景测试</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                一键设置典型情境，观察Zero的不同反应
+            </p>
+            <div class="quick-test">
+                <button onclick="loadScenario('danger')">⚠️ 危险：User受伤+有敌人</button>
+                <button onclick="loadScenario('love')">❤️ 恋人：高好感+高迷恋</button>
+                <button onclick="loadScenario('guilt')">😔 愧疚：高负罪感+控制差</button>
+                <button onclick="loadScenario('betrayed')">💔 被欺骗：低信任+有记忆</button>
+                <button onclick="loadScenario('stranger')">🧊 陌生人：全部低</button>
+                <button onclick="loadScenario('wolf_outbreak')">🐺 狼魂失控：控制度0+有敌人</button>
+            </div>
+        </div>
+
+        <!-- 第5部分：系统日志 -->
+        <div class="section">
+            <h2>📋 系统日志</h2>
+            <div class="log-container" id="log-container">
+                <div class="log-entry">✅ NPC AI系统 v2.0（交响乐团架构）加载完成！</div>
+                <div class="log-entry">🎼 状态向量：22维（含Zero血量+Zero心情）</div>
+                <div class="log-entry">🎺 决策矩阵：5个行为 × 22个维度</div>
+            </div>
+            <button onclick="clearLog()" class="danger" style="margin-top: 10px;">清空日志</button>
+        </div>
+    </div>
+
+    <script src="js/core/npc-ai-system.js?v9"></script>
+    <script>
+        // 创建Zero的AI实例
+        const zero = {
+            id: 'Zero',
+            name: '凌',
+            emotionSystem: new EmotionSystem(),
+            utilityAI: null,
+            memory: new MemorySystem(),
+            wolfControl: 70,
+            medication: 80,
+            guilt: 50
+        };
+        zero.utilityAI = new UtilityAI(zero);
+
+        // 日志系统
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addLog(args.join(' '));
+        };
+
+        function addLog(message) {
+            const logContainer = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = message;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '';
+            addLog('📋 日志已清空');
+        }
+
+        // 渲染决策矩阵
+        function renderMatrix() {
+            const viz = zero.utilityAI.getMatrixVisualization();
+            const container = document.getElementById('matrix-container');
+
+            let html = '<table class="matrix-table"><thead><tr><th>行为 \\ 维度</th>';
+
+            // 表头（维度名）
+            viz.dimensions.forEach((dim, i) => {
+                html += `<th title="维度${i}">${dim}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // 每一行（每个行为）
+            viz.actions.forEach(action => {
+                html += `<tr><td>${action}</td>`;
+                const weights = viz.matrix[action];
+                weights.forEach(weight => {
+                    const className = weight > 0 ? 'weight-positive' : (weight < 0 ? 'weight-negative' : 'weight-zero');
+                    html += `<td class="${className}">${weight.toFixed(1)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // 更新状态向量显示
+        function updateStateVector() {
+            // 更新数值显示
+            document.getElementById('val-player-health').textContent = document.getElementById('player-health').value;
+            document.getElementById('val-player-trauma').textContent = document.getElementById('player-trauma').value;
+            document.getElementById('val-player-mood').textContent = document.getElementById('player-mood').value;
+            document.getElementById('val-distance').textContent = document.getElementById('distance').value;
+            document.getElementById('val-zero-health').textContent = document.getElementById('zero-health').value;
+            document.getElementById('val-zero-mood').textContent = document.getElementById('zero-mood').value;
+            document.getElementById('val-wolf-control').textContent = document.getElementById('wolf-control').value;
+            document.getElementById('val-guilt').textContent = document.getElementById('guilt').value;
+            document.getElementById('val-affection').textContent = document.getElementById('affection').value;
+            document.getElementById('val-trust').textContent = document.getElementById('trust').value;
+
+            // 更新NPC状态
+            zero.health = parseInt(document.getElementById('zero-health').value);
+            zero.mood = parseInt(document.getElementById('zero-mood').value);
+            zero.wolfControl = parseInt(document.getElementById('wolf-control').value);
+            zero.guilt = parseInt(document.getElementById('guilt').value);
+            zero.emotionSystem.emotions.affection = parseInt(document.getElementById('affection').value);
+            zero.emotionSystem.emotions.trust = parseInt(document.getElementById('trust').value);
+
+            // 只在手动操作时重置记忆（通过检查是否由复选框触发）
+            // 场景加载时的记忆会被保留
+            if (!window._loadingScenario) {
+                zero.memory = new MemorySystem();
+                if (document.getElementById('today-greeted').checked) {
+                    zero.memory.addMemory({type: 'greeted', description: '今天已问候', intensity: 0.5});
+                }
+            }
+
+            // 构建上下文
+            const context = buildContext();
+            const stateVector = StateVectorBuilder.build(zero, context);
+
+            // 渲染状态向量
+            const container = document.getElementById('vector-display');
+            const dimensions = StateVectorBuilder.getDimensionNames();
+            container.innerHTML = stateVector.map((value, i) => `
+                <div class="vector-item">
+                    <div class="label">[${i}] ${dimensions[i]}</div>
+                    <div class="value">${value.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        // 构建上下文对象
+        function buildContext() {
+            return {
+                player: {
+                    health: parseInt(document.getElementById('player-health').value),
+                    trauma: parseInt(document.getElementById('player-trauma').value),
+                    mood: parseInt(document.getElementById('player-mood').value)
+                },
+                distance: parseInt(document.getElementById('distance').value) / 100,
+                hasEnemy: document.getElementById('has-enemy').checked,
+                world: {
+                    weather: 'sunny',
+                    time: 'morning'
+                },
+                location: 'medical_center'
+            };
+        }
+
+        // 计算AI决策
+        function calculateDecision() {
+            const context = buildContext();
+            addLog('🎺 开始AI决策...');
+
+            const result = zero.utilityAI.decide(context);
+
+            // 显示详细计算过程（以"保护User"为例）
+            const stateVector = result.stateVector;
+            const protectWeights = zero.utilityAI.decisionMatrix["保护User"];
+            const dimensions = StateVectorBuilder.getDimensionNames();
+
+            let formula = '分数("保护User") = ';
+            let steps = [];
+            let sum = 0;
+
+            for (let i = 0; i < stateVector.length; i++) {
+                const value = stateVector[i];
+                const weight = protectWeights[i];
+                const product = value * weight;
+                sum += product;
+                steps.push(`${dimensions[i]}(${value.toFixed(2)}) × ${weight.toFixed(1)} = ${product.toFixed(3)}`);
+            }
+
+            document.getElementById('formula-display').innerHTML = steps.join('<br>') + `<br><br><strong>总和 = ${sum.toFixed(2)}</strong>`;
+            document.getElementById('calculation-detail').style.display = 'block';
+
+            // 显示所有行为分数
+            const scoresDiv = document.getElementById('score-bars');
+            const sortedActions = Object.entries(result.allScores).sort((a, b) => b[1] - a[1]);
+
+            scoresDiv.innerHTML = sortedActions.map(([action, score], index) => `
+                <div class="score-bar ${index === 0 ? 'winner' : ''}">
+                    <span class="action-name">${index === 0 ? '✅' : '　'} ${action}</span>
+                    <span class="score-value">${score.toFixed(2)} 分</span>
+                </div>
+            `).join('');
+
+            document.getElementById('decision-result').style.display = 'block';
+
+            addLog(`✅ 决策完成：${result.action}（${result.utility.toFixed(2)}分）`);
+        }
+
+        // 加载快速场景
+        function loadScenario(scenario) {
+            const scenarios = {
+                danger: {
+                    desc: '危险场景：User受伤+有敌人',
+                    health: 20,
+                    trauma: 60,
+                    mood: 30,
+                    distance: 10,
+                    zeroHealth: 90,
+                    zeroMood: 80,
+                    wolfControl: 70,
+                    guilt: 50,
+                    affection: 70,
+                    trust: 60,
+                    hasEnemy: true
+                },
+                love: {
+                    desc: '恋人场景：高好感+高迷恋',
+                    health: 90,
+                    trauma: 0,
+                    mood: 90,
+                    distance: 10,
+                    zeroHealth: 95,
+                    zeroMood: 90,
+                    wolfControl: 80,
+                    guilt: 30,
+                    affection: 90,
+                    trust: 80,
+                    hasEnemy: false
+                },
+                guilt: {
+                    desc: '愧疚场景：高负罪感+控制差',
+                    health: 70,
+                    trauma: 20,
+                    mood: 60,
+                    distance: 80,
+                    zeroHealth: 60,
+                    zeroMood: 40,
+                    wolfControl: 30,
+                    guilt: 90,
+                    affection: 60,
+                    trust: 40,
+                    hasEnemy: false
+                },
+                betrayed: {
+                    desc: '被欺骗：低信任+负面记忆',
+                    health: 80,
+                    trauma: 0,
+                    mood: 50,
+                    distance: 50,
+                    zeroHealth: 85,
+                    zeroMood: 50,
+                    wolfControl: 70,
+                    guilt: 20,
+                    affection: 30,
+                    trust: 10,
+                    hasEnemy: false,
+                    wasBetrayed: true  // ← 添加被欺骗记忆
+                },
+                stranger: {
+                    desc: '陌生人：全部低',
+                    health: 100,
+                    trauma: 0,
+                    mood: 70,
+                    distance: 70,
+                    zeroHealth: 100,
+                    zeroMood: 70,
+                    wolfControl: 100,
+                    guilt: 0,
+                    affection: 0,
+                    trust: 0,
+                    hasEnemy: false
+                },
+                wolf_outbreak: {
+                    desc: '狼魂失控：控制度0+有敌人',
+                    health: 40,
+                    trauma: 50,
+                    mood: 20,
+                    distance: 20,
+                    zeroHealth: 30,
+                    zeroMood: 10,
+                    wolfControl: 0,
+                    guilt: 80,
+                    affection: 70,
+                    trust: 50,
+                    hasEnemy: true
+                }
+            };
+
+            const data = scenarios[scenario];
+
+            // 设置标记，防止updateStateVector()重置记忆
+            window._loadingScenario = true;
+
+            document.getElementById('player-health').value = data.health;
+            document.getElementById('player-trauma').value = data.trauma;
+            document.getElementById('player-mood').value = data.mood;
+            document.getElementById('distance').value = data.distance;
+            document.getElementById('zero-health').value = data.zeroHealth;
+            document.getElementById('zero-mood').value = data.zeroMood;
+            document.getElementById('wolf-control').value = data.wolfControl;
+            document.getElementById('guilt').value = data.guilt;
+            document.getElementById('affection').value = data.affection;
+            document.getElementById('trust').value = data.trust;
+            document.getElementById('has-enemy').checked = data.hasEnemy;
+
+            // 设置记忆（直接操作NPC的记忆系统）
+            zero.memory = new MemorySystem();
+            if (data.todayGreeted) {
+                zero.memory.addMemory({type: 'greeted', description: '今天已问候', intensity: 0.5});
+            }
+            if (data.wasBetrayed) {
+                zero.memory.addMemory({type: 'betrayed', description: 'User欺骗过Zero', intensity: 0.9});
+            }
+            if (data.wasHurt) {
+                zero.memory.addMemory({type: 'hurt', description: 'User伤害过Zero', intensity: 0.8});
+            }
+
+            addLog(`⚡ 加载场景：${data.desc}`);
+            updateStateVector();
+
+            // 清除标记
+            window._loadingScenario = false;
+        }
+
+        // 初始化
+        renderMatrix();
+        updateStateVector();
+    </script>
+</body>
+</html>

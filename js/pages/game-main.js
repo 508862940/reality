@@ -138,6 +138,13 @@ async function initializeGame() {
         window.switchTab = switchTab;
         console.log('📝 小纸条：导出函数到window对象完成');
 
+        // 5.5. 🧠 恢复NPC记忆（如果有存档数据）
+        if (window.zero && window.MemoryIntegration && window.worldState?.state?.npcs?.Zero?.memory) {
+            console.log('🧠 检测到存档中的记忆数据，开始恢复...');
+            window.MemoryIntegration.restoreFromSave(window.worldState.state, 'Zero');
+            console.log('✅ NPC记忆已恢复');
+        }
+
         // 6. 开始游戏
         startGame();
 
@@ -1372,7 +1379,12 @@ function displayDefaultChoices() {
 // 前往地点（集成原有的goToLocation或创建新的）
 window.goToLocation = function(location) {
     // 更新游戏状态
+    const previousLocation = gameState.character.location;
     gameState.character.location = location;
+
+    if (window.reactiveSystem) {
+        window.reactiveSystem.notify('character.location', location, previousLocation);
+    }
 
     // 如果原有系统有这个函数，调用它
     if (typeof window.originalGoToLocation === 'function') {
@@ -2861,6 +2873,49 @@ function updateWeatherIcon() {
  * 生成天气特效粒子
  */
 function createWeatherEffects(weatherType, intensity = 0.5) {
+    // 优先处理需要weatherEffectController的特殊天气
+    if (window.weatherEffectController) {
+        // 🔥 所有特殊天气都由weatherEffectController处理
+        const specialWeathers = ['sakura', 'rainbow', 'meteor_shower', 'polluted'];
+
+        // 如果是特殊天气，使用weatherEffectController处理
+        if (specialWeathers.includes(weatherType)) {
+            console.log('🌈 使用weatherEffectController显示特效:', weatherType);
+
+            // 先移除之前的特殊效果（如果有）
+            if (window.weatherEffectController.currentEffect) {
+                window.weatherEffectController.removeEffect();
+            }
+
+            // 显示新的特殊效果
+            window.weatherEffectController.showEffect(weatherType, intensity);
+
+            // 清除基础天气效果
+            const rainEffect = document.getElementById('rainEffect');
+            const snowEffect = document.getElementById('snowEffect');
+            const sakuraEffect = document.getElementById('sakuraEffect');
+            if (rainEffect) {
+                rainEffect.classList.remove('active', 'stormy');
+                rainEffect.innerHTML = '';
+            }
+            if (snowEffect) {
+                snowEffect.classList.remove('active');
+                snowEffect.innerHTML = '';
+            }
+            if (sakuraEffect) {
+                sakuraEffect.classList.remove('active');
+                sakuraEffect.innerHTML = '';
+            }
+            return;
+        }
+
+        // 如果当前有特殊效果在显示，先移除（切换到普通天气时）
+        if (window.weatherEffectController.currentEffect) {
+            console.log('清除特殊天气效果:', window.weatherEffectController.currentEffect);
+            window.weatherEffectController.removeEffect();
+        }
+    }
+
     const rainEffect = document.getElementById('rainEffect');
     const snowEffect = document.getElementById('snowEffect');
     const sakuraEffect = document.getElementById('sakuraEffect');
@@ -2892,10 +2947,9 @@ function createWeatherEffects(weatherType, intensity = 0.5) {
             snowEffect.classList.add('active');
             break;
 
-        // 樱花效果（季节活动触发）
+        // 🔥 樱花效果已由weatherEffectController处理（line 2872）
         case 'sakura':
-            createSakuraPetals(sakuraEffect, 30);
-            sakuraEffect.classList.add('active');
+            // 不做任何操作，特效由weatherEffectController统一管理
             break;
     }
 }
@@ -2958,11 +3012,8 @@ function setupWeatherListeners() {
         // 更新图标
         updateWeatherIcon();
 
-        // 更新天气特效
-        if (window.weatherSystem) {
-            const weatherType = window.weatherSystem.currentWeather;
-            createWeatherEffects(weatherType);
-        }
+        // 🔥 特效已由weatherSystem.setWeather()统一管理，不需要重复调用
+        // weatherEffectController会自动处理特效创建
 
         // E区显示通知
         const weatherInfo = window.weatherSystem?.getCurrentWeatherInfo();

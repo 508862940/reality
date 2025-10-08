@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+
+    <!-- PWA配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Reality Wiki">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e3c72">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- SEO优化 -->
+    <meta name="description" content="Reality游戏百科 - 游戏系统说明与实用攻略">
+    <meta name="keywords" content="Reality,游戏百科,攻略,系统说明">
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="css/app.css" as="style">
+    <link rel="preload" href="css/wiki.css" as="style">
+    <link rel="preload" href="js/data/game-wiki.js" as="script">
+
+    <title>游戏百科 - Reality</title>
+
+    <!-- 样式表 -->
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/wiki.css">
+</head>
+<body>
+    <!-- 动态背景 -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <!-- 加载动画 -->
+    <div class="wiki-loading" id="wikiLoading">
+        <div class="loading-spinner"></div>
+        <p>加载百科中...</p>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="wiki-container pwa-safe-container" id="wikiContainer" style="display: none;">
+        <!-- 顶部导航栏 -->
+        <header class="wiki-header">
+            <button class="back-btn" id="backBtn" aria-label="返回主菜单">
+                <span class="back-icon">←</span>
+                <span class="back-text">返回</span>
+            </button>
+            <h1 class="wiki-title">📚 游戏百科</h1>
+            <div class="search-box">
+                <input type="search"
+                       id="searchInput"
+                       placeholder="搜索百科..."
+                       autocomplete="off"
+                       aria-label="搜索百科文章">
+                <button class="search-clear" id="searchClear" aria-label="清除搜索">×</button>
+            </div>
+        </header>
+
+        <!-- 主体区域：左侧分类 + 右侧内容 -->
+        <div class="wiki-main">
+            <!-- 左侧分类导航 -->
+            <aside class="wiki-sidebar" id="wikiSidebar">
+                <nav class="category-nav" aria-label="文章分类">
+                    <div class="category-list" id="categoryList" role="tablist">
+                        <!-- 动态生成分类按钮 -->
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- 右侧内容区 -->
+            <main class="wiki-content" id="wikiContent">
+                <!-- 文章列表视图 -->
+                <div class="article-list-view" id="articleListView">
+                    <div class="list-header">
+                        <h2 class="list-title" id="listTitle">全部文章</h2>
+                        <span class="article-count" id="articleCount">0 篇</span>
+                    </div>
+                    <div class="article-list" id="articleList" role="list">
+                        <!-- 动态生成文章卡片 -->
+                    </div>
+                </div>
+
+                <!-- 文章详情视图 -->
+                <article class="article-detail-view hidden" id="articleDetailView">
+                    <div class="detail-header">
+                        <button class="back-to-list-btn" id="backToListBtn" aria-label="返回列表">
+                            ← 返回列表
+                        </button>
+                        <button class="share-btn" id="shareBtn" aria-label="分享文章">
+                            📤 分享
+                        </button>
+                    </div>
+
+                    <h2 class="article-title" id="articleTitle"></h2>
+
+                    <div class="article-meta">
+                        <span class="article-category-badge" id="articleCategoryBadge"></span>
+                        <span class="article-date" id="articleDate"></span>
+                        <span class="article-read-time" id="articleReadTime"></span>
+                    </div>
+
+                    <div class="article-body" id="articleBody">
+                        <!-- 文章内容 -->
+                    </div>
+
+                    <div class="article-footer">
+                        <button class="next-article-btn" id="nextArticleBtn">
+                            下一篇 →
+                        </button>
+                    </div>
+                </article>
+
+                <!-- 空状态 -->
+                <div class="empty-state hidden" id="emptyState">
+                    <div class="empty-icon">📭</div>
+                    <p class="empty-text">暂无相关文章</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 脚本（按依赖顺序加载） -->
+    <script src="js/data/game-wiki.js"></script>
+    <script src="js/core/wiki-cache.js"></script>
+    <script src="js/pages/wiki.js"></script>
+
+    <!-- Service Worker 注册 -->
+    <script>
+        // 注册Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker 注册成功:', registration.scope);
+
+                        // 检查更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 发现新版本 Service Worker');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 有新版本可用
+                                    if (confirm('发现新版本！是否立即刷新页面？')) {
+                                        newWorker.postMessage({ action: 'skipWaiting' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Service Worker 注册失败:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

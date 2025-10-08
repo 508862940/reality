@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌈 彩虹自然消散效果测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 50%, #F0F8FF 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 模拟游戏深色界面 */
+        body.dark-mode {
+            background: #0a0a0a;
+        }
+
+        .controls {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .toggle-bg {
+            margin-top: 10px;
+        }
+
+        /* 彩虹容器 */
+        .rainbow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* 彩虹光束基础样式 */
+        .rainbow-beam {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            will-change: transform, opacity, filter;
+        }
+
+        /* 彩虹出现动画 */
+        @keyframes rainbow-fade-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(20px);
+                filter: blur(40px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                filter: blur(var(--blur-amount));
+            }
+        }
+
+        /* 自然消散动画 - 每个光束独立分散 */
+        @keyframes rainbow-disperse-1 {
+            0% {
+                opacity: var(--opacity);
+                transform: translate(0, 0) scale(1);
+                filter: blur(var(--blur-amount));
+            }
+            30% {
+                opacity: calc(var(--opacity) * 0.8);
+                transform: translate(-20px, -10px) scale(1.1);
+                filter: blur(calc(var(--blur-amount) * 1.2));
+            }
+            60% {
+                opacity: calc(var(--opacity) * 0.4);
+                transform: translate(-50px, -30px) scale(1.3) rotate(5deg);
+                filter: blur(calc(var(--blur-amount) * 1.8));
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-100px, -60px) scale(1.5) rotate(10deg);
+                filter: blur(calc(var(--blur-amount) * 3));
+            }
+        }
+
+        @keyframes rainbow-disperse-2 {
+            0% {
+                opacity: var(--opacity);
+                transform: translate(0, 0) scale(1);
+                filter: blur(var(--blur-amount));
+            }
+            35% {
+                opacity: calc(var(--opacity) * 0.7);
+                transform: translate(15px, -20px) scale(1.15);
+                filter: blur(calc(var(--blur-amount) * 1.3));
+            }
+            70% {
+                opacity: calc(var(--opacity) * 0.3);
+                transform: translate(40px, -50px) scale(1.4) rotate(-8deg);
+                filter: blur(calc(var(--blur-amount) * 2));
+            }
+            100% {
+                opacity: 0;
+                transform: translate(80px, -90px) scale(1.6) rotate(-15deg);
+                filter: blur(calc(var(--blur-amount) * 4));
+            }
+        }
+
+        @keyframes rainbow-disperse-3 {
+            0% {
+                opacity: var(--opacity);
+                transform: translate(0, 0) scale(1);
+                filter: blur(var(--blur-amount));
+            }
+            25% {
+                opacity: calc(var(--opacity) * 0.85);
+                transform: translate(10px, 15px) scale(1.05);
+                filter: blur(calc(var(--blur-amount) * 1.1));
+            }
+            50% {
+                opacity: calc(var(--opacity) * 0.5);
+                transform: translate(30px, 40px) scale(1.25) rotate(7deg);
+                filter: blur(calc(var(--blur-amount) * 1.6));
+            }
+            100% {
+                opacity: 0;
+                transform: translate(70px, 80px) scale(1.7) rotate(12deg);
+                filter: blur(calc(var(--blur-amount) * 3.5));
+            }
+        }
+
+        /* 风吹散效果 */
+        @keyframes rainbow-wind-scatter {
+            0% {
+                opacity: var(--opacity);
+                transform: translate(0, 0) scale(1) skewX(0);
+            }
+            40% {
+                opacity: calc(var(--opacity) * 0.6);
+                transform: translate(30px, -5px) scale(1.2) skewX(5deg);
+                filter: blur(calc(var(--blur-amount) * 1.5));
+            }
+            70% {
+                opacity: calc(var(--opacity) * 0.2);
+                transform: translate(80px, -10px) scale(1.5) skewX(10deg);
+                filter: blur(calc(var(--blur-amount) * 2.5));
+            }
+            100% {
+                opacity: 0;
+                transform: translate(150px, -20px) scale(2) skewX(15deg);
+                filter: blur(calc(var(--blur-amount) * 5));
+            }
+        }
+
+        /* 褪色消失动画 */
+        @keyframes rainbow-fade-dissolve {
+            0% {
+                opacity: var(--opacity);
+                filter: blur(var(--blur-amount)) saturate(1);
+            }
+            30% {
+                opacity: calc(var(--opacity) * 0.9);
+                filter: blur(calc(var(--blur-amount) * 1.2)) saturate(0.8);
+            }
+            60% {
+                opacity: calc(var(--opacity) * 0.5);
+                filter: blur(calc(var(--blur-amount) * 2)) saturate(0.5);
+            }
+            100% {
+                opacity: 0;
+                filter: blur(calc(var(--blur-amount) * 4)) saturate(0.2);
+            }
+        }
+
+        .info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            font-size: 14px;
+        }
+
+        .info h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>🌈 彩虹自然消散效果演示</h2>
+        <div>
+            <button onclick="showRainbow()">显示彩虹</button>
+            <button onclick="disperseRainbow()">自然消散</button>
+            <button onclick="windScatter()">风吹散</button>
+            <button onclick="fadeDissolve()">褪色消失</button>
+        </div>
+        <div class="toggle-bg">
+            <button onclick="toggleBackground()">切换背景（亮/暗）</button>
+        </div>
+    </div>
+
+    <div class="info">
+        <h3>消散效果说明：</h3>
+        <p><strong>自然消散</strong>：各色光束独立分散，模拟物理扩散</p>
+        <p><strong>风吹散</strong>：横向拉伸消失，像被风吹散</p>
+        <p><strong>褪色消失</strong>：饱和度降低，逐渐褪色</p>
+    </div>
+
+    <script>
+        let rainbowContainer = null;
+        let disperseTimer = null;
+
+        function createRainbowBeam(color1, color2, index, total) {
+            const beam = document.createElement('div');
+            beam.className = 'rainbow-beam';
+
+            // 计算位置（弧形排列）
+            const arcAngle = -30 + (index / total) * 60; // -30° 到 +30°
+            const radius = 40 + index * 3; // 渐进的半径
+
+            const centerX = 50;
+            const centerY = 30;
+            const x = centerX + radius * Math.cos(arcAngle * Math.PI / 180);
+            const y = centerY + radius * Math.sin(arcAngle * Math.PI / 180);
+
+            // 设置样式
+            const opacity = 0.6 - (index * 0.05);
+            const blur = 25 + index * 3;
+            const size = 40 - index * 3;
+
+            beam.style.cssText = `
+                left: ${x}%;
+                top: ${y}%;
+                width: ${size}%;
+                height: ${size}%;
+                --opacity: ${opacity};
+                --blur-amount: ${blur}px;
+                background: radial-gradient(
+                    ellipse at 50% 50%,
+                    rgba(${color1}, ${opacity}) 0%,
+                    rgba(${color2}, ${opacity * 0.7}) 30%,
+                    rgba(${color1}, ${opacity * 0.3}) 60%,
+                    transparent 80%
+                );
+                filter: blur(${blur}px);
+                animation: rainbow-fade-in 2s ease-out forwards;
+            `;
+
+            return beam;
+        }
+
+        function showRainbow() {
+            // 清除旧的
+            if (rainbowContainer) {
+                rainbowContainer.remove();
+            }
+            clearTimeout(disperseTimer);
+
+            // 创建容器
+            rainbowContainer = document.createElement('div');
+            rainbowContainer.className = 'rainbow-container';
+
+            // 彩虹7色
+            const colors = [
+                ['255, 100, 100', '255, 150, 50'],   // 红-橙
+                ['255, 200, 50', '255, 255, 100'],   // 橙-黄
+                ['200, 255, 100', '100, 255, 150'],  // 黄-绿
+                ['100, 255, 200', '100, 200, 255'],  // 绿-青
+                ['100, 150, 255', '120, 100, 255'],  // 青-蓝
+                ['150, 100, 255', '200, 100, 255'],  // 蓝-靛
+                ['255, 100, 200', '255, 150, 255']   // 靛-紫
+            ];
+
+            // 创建光束
+            colors.forEach((color, index) => {
+                const beam = createRainbowBeam(color[0], color[1], index, colors.length);
+                rainbowContainer.appendChild(beam);
+            });
+
+            document.body.appendChild(rainbowContainer);
+        }
+
+        function disperseRainbow() {
+            if (!rainbowContainer) {
+                showRainbow();
+                setTimeout(disperseRainbow, 2100);
+                return;
+            }
+
+            const beams = rainbowContainer.querySelectorAll('.rainbow-beam');
+
+            // 每个光束使用不同的消散动画
+            beams.forEach((beam, index) => {
+                const animations = [
+                    'rainbow-disperse-1',
+                    'rainbow-disperse-2',
+                    'rainbow-disperse-3'
+                ];
+                const animationName = animations[index % animations.length];
+                const duration = 3 + (index * 0.3); // 错开时间
+                const delay = index * 0.1; // 顺序延迟
+
+                beam.style.animation = `${animationName} ${duration}s ease-out ${delay}s forwards`;
+            });
+
+            // 清理
+            disperseTimer = setTimeout(() => {
+                if (rainbowContainer) {
+                    rainbowContainer.remove();
+                    rainbowContainer = null;
+                }
+            }, 5000);
+        }
+
+        function windScatter() {
+            if (!rainbowContainer) {
+                showRainbow();
+                setTimeout(windScatter, 2100);
+                return;
+            }
+
+            const beams = rainbowContainer.querySelectorAll('.rainbow-beam');
+
+            beams.forEach((beam, index) => {
+                const duration = 2.5 + (index * 0.2);
+                const delay = index * 0.05;
+                beam.style.animation = `rainbow-wind-scatter ${duration}s ease-in ${delay}s forwards`;
+            });
+
+            disperseTimer = setTimeout(() => {
+                if (rainbowContainer) {
+                    rainbowContainer.remove();
+                    rainbowContainer = null;
+                }
+            }, 4000);
+        }
+
+        function fadeDissolve() {
+            if (!rainbowContainer) {
+                showRainbow();
+                setTimeout(fadeDissolve, 2100);
+                return;
+            }
+
+            const beams = rainbowContainer.querySelectorAll('.rainbow-beam');
+
+            beams.forEach((beam, index) => {
+                const duration = 3 + (Math.random() * 1);
+                const delay = Math.random() * 0.5;
+                beam.style.animation = `rainbow-fade-dissolve ${duration}s ease-out ${delay}s forwards`;
+            });
+
+            disperseTimer = setTimeout(() => {
+                if (rainbowContainer) {
+                    rainbowContainer.remove();
+                    rainbowContainer = null;
+                }
+            }, 5000);
+        }
+
+        function toggleBackground() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        // 自动演示
+        window.addEventListener('load', () => {
+            setTimeout(showRainbow, 500);
+        });
+    </script>
+</body>
+</html>

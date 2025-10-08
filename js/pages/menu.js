@@ -74,6 +74,14 @@ function setupEventListeners() {
         settingsBtn.addEventListener('click', openSettings);
     }
 
+    // 游戏百科按钮
+    const wikiBtn = document.getElementById('wikiBtn');
+    if (wikiBtn) {
+        wikiBtn.addEventListener('click', () => {
+            window.location.href = 'wiki.html';
+        });
+    }
+
     // 设置面板按钮
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     if (closeSettingsBtn) {

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌂 雨伞遮挡效果测试</title>
+
+    <link rel="stylesheet" href="css/weather-effects.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .status {
+            background: #1a1a2e;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status.has-umbrella {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .status.pwa-mode {
+            background: linear-gradient(135deg, #8e44ad 0%, #3498db 100%);
+            border: 2px solid #f39c12;
+        }
+
+        .umbrella-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 100px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .umbrella-icon.active {
+            opacity: 1;
+        }
+
+        .guide-zone {
+            position: fixed;
+            left: 40%;
+            right: 40%;
+            top: 0;
+            bottom: 0;
+            border-left: 2px dashed rgba(255,255,255,0.3);
+            border-right: 2px dashed rgba(255,255,255,0.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .guide-zone.active {
+            opacity: 1;
+        }
+
+        .guide-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌂 雨伞遮挡效果测试</h1>
+        <p class="subtitle">测试雨伞对雨滴特效的遮挡效果</p>
+
+        <div class="control-panel">
+            <div class="info-box">
+                <h3>📝 功能说明</h3>
+                <p><strong>✅ 有伞时：</strong>雨滴只在屏幕两侧（0-40%和60-100%）出现，中央区域无雨</p>
+                <p><strong>❌ 无伞时：</strong>雨滴在整个屏幕（0-100%）随机出现</p>
+                <p><strong>🎮 四种方式触发：</strong></p>
+                <ul style="margin-left: 20px; color: #666;">
+                    <li>1. 背包中有雨伞道具</li>
+                    <li>2. 装备雨伞配饰</li>
+                    <li>3. NPC buff（NPC帮你打伞）</li>
+                    <li>4. 场景标记（NPC主动帮你打伞 + 跟随移动）</li>
+                </ul>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="testNoUmbrella()">❌ 无伞模式</button>
+                <button onclick="testInventoryUmbrella()">🎒 背包雨伞</button>
+                <button onclick="testEquippedUmbrella()">⚙️ 装备雨伞</button>
+                <button onclick="testNPCBuff()">👥 NPC帮打伞</button>
+                <button onclick="testNPCFollowing()">💞 NPC帮你打伞</button>
+                <button onclick="togglePWAMode()" id="pwaBtn">🎮 切换PWA模式</button>
+                <button onclick="toggleGuide()">📏 显示遮挡区域</button>
+            </div>
+
+            <div class="status" id="status">
+                当前状态：无伞（全屏下雨）
+            </div>
+        </div>
+    </div>
+
+    <!-- 雨伞图标（视觉提示） -->
+    <div class="umbrella-icon" id="umbrellaIcon">☂️</div>
+
+    <!-- 遮挡区域辅助线 -->
+    <div class="guide-zone" id="guideZone">
+        <div class="guide-label">🌂 伞的遮挡区域<br>（40%-60%）</div>
+    </div>
+
+    <!-- 引入核心系统 -->
+    <script src="js/core/weather-effect-controller.js"></script>
+
+    <script>
+        // 模拟worldState
+        window.worldState = {
+            state: {
+                character: {
+                    inventory: [],
+                    equipped: {},
+                    buffs: []
+                },
+                scene: {
+                    flags: {}
+                }
+            }
+        };
+
+        // 初始化天气特效控制器
+        window.weatherEffectController = new WeatherEffectController();
+
+        // 启动雨天
+        window.weatherEffectController.showEffect('rainy', 1.0);
+
+        let guideVisible = false;
+        let isPWASimulated = false;
+
+        function updateStatus() {
+            const hasUmbrella = window.weatherEffectController.checkUmbrella();
+            const isPWA = window.weatherEffectController.isPWAMode();
+            const status = document.getElementById('status');
+            const icon = document.getElementById('umbrellaIcon');
+            const pwaBtn = document.getElementById('pwaBtn');
+
+            // 更新PWA按钮状态
+            if (isPWASimulated) {
+                pwaBtn.classList.add('active');
+            } else {
+                pwaBtn.classList.remove('active');
+            }
+
+            if (hasUmbrella) {
+                if (isPWA || isPWASimulated) {
+                    status.textContent = '🎮 PWA模式 + 有伞（完全不下雨）';
+                    status.classList.add('has-umbrella', 'pwa-mode');
+                } else {
+                    status.textContent = '🌐 网页模式 + 有伞（中央无雨）';
+                    status.classList.add('has-umbrella');
+                    status.classList.remove('pwa-mode');
+                }
+                icon.classList.add('active');
+            } else {
+                if (isPWA || isPWASimulated) {
+                    status.textContent = '🎮 PWA模式 + 无伞（全屏下雨）';
+                    status.classList.add('pwa-mode');
+                    status.classList.remove('has-umbrella');
+                } else {
+                    status.textContent = '🌐 网页模式 + 无伞（全屏下雨）';
+                    status.classList.remove('has-umbrella', 'pwa-mode');
+                }
+                icon.classList.remove('active');
+            }
+
+            // 重新创建雨天特效以应用新的遮挡规则
+            window.weatherEffectController.showEffect('rainy', 1.0);
+        }
+
+        function togglePWAMode() {
+            isPWASimulated = !isPWASimulated;
+
+            // 模拟PWA模式（覆盖isPWAMode方法）
+            if (isPWASimulated) {
+                window.weatherEffectController.isPWAMode = () => true;
+                console.log('🎮 已切换到PWA模式（模拟）');
+            } else {
+                // 恢复原始检测
+                delete window.weatherEffectController.isPWAMode;
+                window.weatherEffectController.isPWAMode = WeatherEffectController.prototype.isPWAMode;
+                console.log('🌐 已切换回网页模式');
+            }
+
+            updateStatus();
+        }
+
+        function testNoUmbrella() {
+            window.worldState.state.character.inventory = [];
+            window.worldState.state.character.equipped = {};
+            window.worldState.state.character.buffs = [];
+            window.worldState.state.scene.flags = {};
+            updateStatus();
+            console.log('❌ 无伞模式');
+        }
+
+        function testInventoryUmbrella() {
+            window.worldState.state.character.inventory = [
+                { id: 'umbrella', name: '雨伞', type: 'umbrella' }
+            ];
+            updateStatus();
+            console.log('🎒 背包中有雨伞');
+        }
+
+        function testEquippedUmbrella() {
+            window.worldState.state.character.equipped.accessory = {
+                id: 'umbrella',
+                name: '装备的雨伞'
+            };
+            updateStatus();
+            console.log('⚙️ 装备了雨伞');
+        }
+
+        function testNPCBuff() {
+            window.worldState.state.character.buffs = [
+                { id: 'umbrella_protection', name: 'NPC帮忙打伞', duration: 100 }
+            ];
+            updateStatus();
+            console.log('👥 NPC帮你打伞');
+        }
+
+        function testNPCFollowing() {
+            window.worldState.state.scene.flags.npc_holding_umbrella = true;
+            updateStatus();
+            console.log('💞 场景标记：NPC主动帮你打伞（跟随移动中）');
+        }
+
+        function toggleGuide() {
+            guideVisible = !guideVisible;
+            document.getElementById('guideZone').classList.toggle('active', guideVisible);
+        }
+
+        // 初始状态：无伞
+        testNoUmbrella();
+    </script>
+</body>
+</html>

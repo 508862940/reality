@@ -67,10 +67,24 @@ class SceneManager {
 
     /**
      * 加载场景
-     * @param {Object} sceneData - 场景数据
+     * @param {Object|string} sceneData - 场景数据对象或场景ID字符串
      */
     loadScene(sceneData) {
         if (this.isTransitioning) return;
+
+        // 🔧 支持字符串ID：自动查找场景对象
+        if (typeof sceneData === 'string') {
+            const sceneId = sceneData;
+            // 优先查找 window.Scenes，然后查找 TestAIScenes
+            sceneData = window.Scenes?.[sceneId] || window.TestAIScenes?.[sceneId];
+
+            if (!sceneData) {
+                console.error(`❌ 场景不存在: ${sceneId}`);
+                console.log('💡 可用场景:', Object.keys(window.Scenes || {}).concat(Object.keys(window.TestAIScenes || {})));
+                return;
+            }
+            console.log(`✅ 通过ID "${sceneId}" 找到场景:`, sceneData.id);
+        }
 
         console.log('📝 loadScene被调用，场景ID:', sceneData?.id);
 
@@ -497,7 +511,7 @@ class SceneManager {
 
         // 清除插图预览
         if (window.illustrationManager) {
-            window.illustrationManager.clear();
+            window.illustrationManager.resetToDefault();
         }
 
         // 静默取消，保持沉浸感
@@ -625,7 +639,7 @@ class SceneManager {
             newState.status = 'ready';
 
             if (window.illustrationManager) {
-                window.illustrationManager.clear();
+                window.illustrationManager.resetToDefault();
             }
         }
 
@@ -728,7 +742,7 @@ class SceneManager {
 
         // 重置插图
         if (window.illustrationManager) {
-            window.illustrationManager.clear();
+            window.illustrationManager.resetToDefault();
         }
 
         // 清除预览状态
@@ -979,9 +993,11 @@ class SceneManager {
         this.canResetToLastStep = true;
         this.justResetted = false;
 
-        // 📝 小纸条：应用选择结果到游戏状态
+        // 📝 小纸条：应用选择结果到游戏状态（包含记忆记录）
         console.log('📝 小纸条：准备应用选择结果到游戏状态');
         this.applyChoiceResults(this.currentChoice, this.currentScene);
+
+        // 🧠 记忆系统已集成到 applyChoiceResults 内部，此处不再重复调用
 
         // 注意：移除这里的自动存档触发，因为此时还在旧场景
         // 自动存档会在新场景加载完成后触发（loadScene的fadeIn回调中）
@@ -1641,6 +1657,21 @@ class SceneManager {
             // 处理技能变化
             if (choice.skills) {
                 this.updateSkills(choice.skills);
+            }
+
+            // 🎬 处理特殊效果（Phase 2 测试用）
+            if (choice.specialEffect && !Array.isArray(choice)) {
+                this.handleSpecialEffect(choice.specialEffect);
+            }
+
+            // 🤖 处理AI行动（Phase 2 测试用）
+            if (choice.action && !Array.isArray(choice)) {
+                this.handleAIAction(choice.action, choice);
+            }
+
+            // 🧠 记录到NPC记忆（Phase 1.3）
+            if (window.MemoryIntegration && !Array.isArray(choice)) {
+                window.MemoryIntegration.recordPlayerChoice(choice, scene.id);
             }
 
             console.log('✅ 小纸条：选择结果应用完成');
@@ -2330,3 +2361,252 @@ window.sceneManager = new SceneManager();
 //         }, 500);
 //     }, 10);
 // }
+
+// ============================================
+// 🧪 Phase 2 测试辅助方法
+// ============================================
+
+/**
+ * 处理特殊效果（测试用）
+ * @param {string} effectName - 效果名称
+ */
+SceneManager.prototype.handleSpecialEffect = function(effectName) {
+    console.log(`🎬 触发特殊效果: ${effectName}`);
+
+    switch(effectName) {
+        case 'clearZeroMemory':
+            // 清空Zero的记忆（陌生人状态）
+            if (window.zero && window.zero.memory) {
+                window.zero.memory.shortTerm = [];
+                window.zero.memory.longTerm = [];
+                window.zero.memory.eventCounts = {};
+                console.log('🧠 Zero记忆已清空（陌生人状态）');
+            }
+            // 重置情感系统
+            if (window.zero && window.zero.emotionSystem) {
+                window.zero.emotionSystem.affection = 0;
+                window.zero.emotionSystem.trust = 0;
+                window.zero.emotionSystem.respect = 0;
+                window.zero.emotionSystem.intrigue = 0;
+                console.log('💔 Zero情感已重置（陌生人状态）');
+            }
+            break;
+
+        case 'injectFriendMemory':
+            // 注入老朋友记忆（模拟长期关系）
+            if (window.zero && window.zero.memory) {
+                // 清空现有记忆
+                window.zero.memory.shortTerm = [];
+                window.zero.memory.longTerm = [];
+                window.zero.memory.eventCounts = {
+                    'greeted': 50,      // 历史问候50次
+                    'gift': 5,          // 收到5次礼物
+                    'dialogue': 100,    // 深度对话100次
+                    'rejected': 0       // 无拒绝记录
+                };
+                console.log('🧠 Zero记忆已注入（老朋友状态）:', window.zero.memory.eventCounts);
+            }
+            // 设置老朋友情感值
+            if (window.zero && window.zero.emotionSystem) {
+                window.zero.emotionSystem.affection = 0.70;  // 好感度70
+                window.zero.emotionSystem.trust = 0.60;      // 信赖度60
+                window.zero.emotionSystem.respect = 0.50;    // 尊敬度50
+                window.zero.emotionSystem.intrigue = 0.40;   // 迷恋度40
+                console.log('💖 Zero情感已设置（老朋友状态）');
+            }
+            break;
+
+        case 'injectAcquaintanceMemory':
+            // 🆕 Phase 2.5 - 注入初识记忆
+            if (window.zero && window.zero.memory) {
+                window.zero.memory.shortTerm = [];
+                window.zero.memory.longTerm = [];
+                window.zero.memory.eventCounts = {
+                    'greeted': 5,
+                    'dialogue': 10,
+                    'rejected': 0,
+                    'gift': 0
+                };
+                console.log('🧠 Zero记忆已注入（初识状态）:', window.zero.memory.eventCounts);
+            }
+            if (window.zero && window.zero.emotionSystem) {
+                window.zero.emotionSystem.affection = 0.20;
+                window.zero.emotionSystem.trust = 0.10;
+                window.zero.emotionSystem.respect = 0.05;
+                window.zero.emotionSystem.intrigue = 0.15;
+                console.log('💖 Zero情感已设置（初识状态）');
+            }
+            break;
+
+        case 'injectNormalFriendMemory':
+            // 🆕 Phase 2.5 - 注入普通朋友记忆
+            if (window.zero && window.zero.memory) {
+                window.zero.memory.shortTerm = [];
+                window.zero.memory.longTerm = [];
+                window.zero.memory.eventCounts = {
+                    'greeted': 20,
+                    'gift': 2,
+                    'dialogue': 40,
+                    'rejected': 0
+                };
+                console.log('🧠 Zero记忆已注入（普通朋友状态）:', window.zero.memory.eventCounts);
+            }
+            if (window.zero && window.zero.emotionSystem) {
+                window.zero.emotionSystem.affection = 0.40;
+                window.zero.emotionSystem.trust = 0.35;
+                window.zero.emotionSystem.respect = 0.30;
+                window.zero.emotionSystem.intrigue = 0.25;
+                console.log('💖 Zero情感已设置（普通朋友状态）');
+            }
+            break;
+
+        case 'injectRejectedMemory':
+            // 🆕 Phase 2.5 - 注入被拒绝记忆
+            if (window.zero && window.zero.memory) {
+                window.zero.memory.shortTerm = [];
+                window.zero.memory.longTerm = [];
+                window.zero.memory.eventCounts = {
+                    'greeted': 20,
+                    'gift': 3,
+                    'dialogue': 30,
+                    'rejected': 10      // 重点：被拒绝10次！
+                };
+                console.log('🧠 Zero记忆已注入（被拒绝状态）:', window.zero.memory.eventCounts);
+            }
+            if (window.zero && window.zero.emotionSystem) {
+                window.zero.emotionSystem.affection = 0.30;  // 拒绝影响好感
+                window.zero.emotionSystem.trust = 0.20;      // 拒绝影响信赖
+                window.zero.emotionSystem.respect = 0.25;
+                window.zero.emotionSystem.intrigue = 0.10;
+                console.log('💖 Zero情感已设置（被拒绝状态）');
+            }
+            break;
+
+        default:
+            console.warn(`⚠️ 未知的特殊效果: ${effectName}`);
+    }
+};
+
+/**
+ * 处理AI行动（测试用）
+ * @param {string} actionName - 行动名称
+ * @param {Object} choice - 选择对象（包含context等信息）
+ */
+SceneManager.prototype.handleAIAction = function(actionName, choice) {
+    console.log(`🤖 触发AI行动: ${actionName}`);
+
+    switch(actionName) {
+        case 'triggerAIDecision':
+            // 触发Zero的AI决策系统
+            const npcName = choice.npc || 'zero';
+            const npc = window[npcName];
+
+            if (!npc || !npc.utilityAI) {
+                console.error(`❌ NPC ${npcName} 或其AI系统不存在`);
+                return;
+            }
+
+            // 构建决策上下文
+            const context = {
+                player: choice.context?.player || {
+                    health: window.worldState?.state?.player?.health || 100,
+                    trauma: window.worldState?.state?.player?.trauma || 0,
+                    mood: window.worldState?.state?.player?.mood || 100
+                },
+                distance: choice.context?.distance || 0.5,
+                hasEnemy: choice.context?.hasEnemy || false,
+                world: {
+                    weather: window.weatherSystem?.currentWeather || 'sunny',
+                    time: window.timeSystem?.isNight() ? 'night' : 'day'
+                }
+            };
+
+            console.log('📊 决策上下文:', context);
+
+            // 执行决策
+            const decision = npc.utilityAI.decide(context);
+
+            console.log('✅ AI决策结果:', decision);
+
+            // 显示决策结果到界面
+            this.showAIDecisionResult(npc, decision);
+            break;
+
+        case 'startAIDialogue':
+            // 启动AI对话（已有功能，这里只是占位）
+            console.log('💬 启动AI对话...');
+            break;
+
+        default:
+            console.warn(`⚠️ 未知的AI行动: ${actionName}`);
+    }
+};
+
+/**
+ * 显示AI决策结果到界面
+ * @param {Object} npc - NPC对象
+ * @param {Object} decision - 决策结果
+ */
+SceneManager.prototype.showAIDecisionResult = function(npc, decision) {
+    // 在剧情区显示决策结果
+    const storyText = document.getElementById('story-text');
+    if (storyText) {
+        const resultHTML = `
+            <div class="ai-decision-result" style="
+                background: #1a1a2e;
+                border: 2px solid #16213e;
+                border-radius: 10px;
+                padding: 20px;
+                margin: 10px 0;
+            ">
+                <h3 style="color: #f39c12; margin-bottom: 15px;">🤖 AI决策结果</h3>
+
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #3498db;">最终行为：</strong>
+                    <span style="color: #2ecc71; font-size: 18px; font-weight: bold;">${decision.action}</span>
+                    <span style="color: #95a5a6; margin-left: 10px;">(分数: ${decision.utility.toFixed(2)})</span>
+                </div>
+
+                <details style="margin-top: 15px;">
+                    <summary style="color: #e74c3c; cursor: pointer; user-select: none;">
+                        📊 查看所有行为评分
+                    </summary>
+                    <div style="margin-top: 10px; padding-left: 20px;">
+                        ${Object.entries(decision.allScores)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([action, score]) => `
+                                <div style="margin: 5px 0;">
+                                    <span style="color: ${action === decision.action ? '#2ecc71' : '#ecf0f1'};">
+                                        ${action}:
+                                    </span>
+                                    <span style="color: #3498db; font-weight: bold;">
+                                        ${score.toFixed(2)}
+                                    </span>
+                                </div>
+                            `).join('')}
+                    </div>
+                </details>
+
+                <details style="margin-top: 15px;">
+                    <summary style="color: #9b59b6; cursor: pointer; user-select: none;">
+                        🎼 查看状态向量（26维）
+                    </summary>
+                    <div style="margin-top: 10px; padding-left: 20px; font-size: 12px;">
+                        ${decision.stateVector.map((val, idx) => {
+                            const names = window.StateVectorBuilder.getDimensionNames();
+                            return `
+                                <div style="margin: 3px 0; display: flex; justify-content: space-between;">
+                                    <span style="color: #95a5a6;">[${idx}] ${names[idx]}:</span>
+                                    <span style="color: #f1c40f; font-family: monospace;">${val.toFixed(3)}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </details>
+            </div>
+        `;
+
+        storyText.innerHTML += resultHTML;
+        storyText.scrollTop = storyText.scrollHeight;
+    }
+};

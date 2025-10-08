@@ -648,19 +648,37 @@
         if (window.reactiveSystem) {
             window.reactiveSystem.watch('environment.weather', () => {
                 console.log('🔔 响应式：天气变化，更新UI');
-                updateWeatherDisplay();
+                // 检查DOM是否加载完成
+                if (document.querySelector('.weather-icon')) {
+                    updateWeatherDisplay();
+                }
             });
 
             window.reactiveSystem.watch('temperature.apparent', () => {
                 console.log('🔔 响应式：体感温度变化，更新UI');
-                updateTemperatureDisplay();
+                // 检查DOM是否加载完成
+                if (document.getElementById('envTemp')) {
+                    updateTemperatureDisplay();
+                }
             });
         }
 
         // ==================== 页面加载完成 ====================
-        window.addEventListener('load', () => {
-            console.log('📄 页面加载完成');
-            initSystems();
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 DOM加载完成');
+
+            // 延迟初始化，确保DOM完全准备好
+            setTimeout(() => {
+                initSystems();
+
+                // 再次延迟更新UI
+                setTimeout(() => {
+                    console.log('🎨 强制更新UI显示');
+                    updateSystemStatus();
+                    updateWeatherDisplay();
+                    updateTemperatureDisplay();
+                }, 100);
+            }, 50);
         });
     </script>
 </body>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏地图 - 环形城市</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            font-family: 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #mapContainer {
+            position: relative;
+            width: 900px;
+            height: 900px;
+            background: #2a2a2a;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            cursor: crosshair;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 250px;
+            z-index: 1000;
+        }
+
+        #legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+
+        .sector-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 2px solid #fff;
+            border-radius: 3px;
+        }
+
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            pointer-events: none;
+            display: none;
+            z-index: 2000;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <div id="mapContainer">
+        <div id="info">
+            <h3>环形城市地图</h3>
+            <p>点击地图上的节点查看详情</p>
+            <p style="color: #888; font-size: 12px;">
+                权限系统：越往内环，进入权限越高<br>
+                危险递增：越往外环，越危险
+            </p>
+        </div>
+
+        <div id="legend">
+            <h3>五大区域</h3>
+            <div class="sector-item">
+                <div class="color-box" style="background: #FF6B6B;"></div>
+                <span>天枢区（东）</span>
+            </div>
+            <div class="sector-item">
+                <div class="color-box" style="background: #4ECDC4;"></div>
+                <span>天衡区（北）</span>
+            </div>
+            <div class="sector-item">
+                <div class="color-box" style="background: #45B7D1;"></div>
+                <span>启明区（东部）</span>
+            </div>
+            <div class="sector-item">
+                <div class="color-box" style="background: #96CEB4;"></div>
+                <span>静安区（南）</span>
+            </div>
+            <div class="sector-item">
+                <div class="color-box" style="background: #FFEAA7;"></div>
+                <span>开拓区（西）</span>
+            </div>
+        </div>
+
+        <canvas id="gameMap" width="800" height="800"></canvas>
+        <div id="tooltip"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameMap');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        // 地点数据
+        const locations = {
+            center: { name: '中心广场', ring: 0, angle: 0, color: '#FFD700', description: '城市的核心，权力中心' },
+
+            // 第一环
+            ring1: [
+                { name: '警局', angle: 0, color: '#FF6B6B', sector: '天衡区', description: '维持秩序的执法中心' },
+                { name: '医疗区', angle: 45, color: '#45B7D1', sector: '启明区', description: '城市医疗中心' },
+                { name: '学院区', angle: 90, color: '#96CEB4', sector: '静安区', description: '真理区学院所在地' },
+                { name: '启明区', angle: 135, color: '#45B7D1', sector: '启明区', description: '文化与科技中心' },
+                { name: '居住区', angle: 180, color: '#96CEB4', sector: '静安区', description: '高档住宅区' },
+                { name: '商业区', angle: 225, color: '#FFEAA7', sector: '开拓区', description: '万象商业中心' },
+                { name: '公园', angle: 270, color: '#96CEB4', sector: '静安区', description: '静谧之园' },
+                { name: '政府区', angle: 315, color: '#4ECDC4', sector: '天衡区', description: '行政中心' }
+            ],
+
+            // 第二环
+            ring2: [
+                { name: '博物馆', angle: 20, color: '#45B7D1', sector: '启明区', description: '圣光历史区' },
+                { name: '媒体区', angle: 50, color: '#45B7D1', sector: '启明区', description: '电视台与新闻中心' },
+                { name: '图书馆', angle: 80, color: '#45B7D1', sector: '启明区', description: '文江区图书中心' },
+                { name: '工业区', angle: 110, color: '#FFEAA7', sector: '开拓区', description: '古铭工业区' },
+                { name: '招工区', angle: 140, color: '#FFEAA7', sector: '开拓区', description: '梧桐里招工中心' },
+                { name: '静江区', angle: 170, color: '#96CEB4', sector: '静安区', description: '居住区' },
+                { name: '记忆区', angle: 200, color: '#FF6B6B', sector: '天枢区', description: '神秘的记忆存储区' },
+                { name: '启江区', angle: 230, color: '#45B7D1', sector: '启明区', description: '科技研发区' },
+                { name: '商区', angle: 260, color: '#FFEAA7', sector: '开拓区', description: '商业扩展区' },
+                { name: '娱乐区', angle: 290, color: '#96CEB4', sector: '静安区', description: '休闲娱乐中心' },
+                { name: '物流区', angle: 320, color: '#FFEAA7', sector: '开拓区', description: '物流配送中心' },
+                { name: '研发区', angle: 350, color: '#45B7D1', sector: '启明区', description: '高新技术开发区' }
+            ],
+
+            // 第三环（外环）
+            ring3: [
+                { name: '森林', angle: 30, color: '#4A5F3A', sector: '边界', description: '边界森林，危险区域' },
+                { name: '福地', angle: 90, color: '#8B7355', sector: '边界', description: '神秘的福地' },
+                { name: '梯田', angle: 150, color: '#7B8B5A', sector: '边界', description: '农业区梯田' },
+                { name: '别墅区', angle: 210, color: '#96CEB4', sector: '静安区', description: '静海台别墅区' },
+                { name: '远风镇', angle: 270, color: '#FFEAA7', sector: '开拓区', description: '边缘小镇' },
+                { name: '郊区', angle: 330, color: '#8B8B7A', sector: '边界', description: '城市边缘地带' }
+            ]
+        };
+
+        // 绘制函数
+        function drawMap() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制背景渐变
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 350);
+            gradient.addColorStop(0, '#3a3a3a');
+            gradient.addColorStop(1, '#1a1a1a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制同心圆环
+            const rings = [100, 200, 300, 350];
+            rings.forEach(radius => {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+
+            // 绘制扇形区域分割线
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let angle = 0; angle < 360; angle += 72) {
+                const rad = (angle * Math.PI) / 180;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(rad) * 350,
+                    centerY + Math.sin(rad) * 350
+                );
+                ctx.stroke();
+            }
+
+            // 绘制中心广场
+            drawLocation(centerX, centerY, locations.center, 25);
+
+            // 绘制第一环
+            locations.ring1.forEach(loc => {
+                const rad = (loc.angle * Math.PI) / 180;
+                const x = centerX + Math.cos(rad) * 150;
+                const y = centerY + Math.sin(rad) * 150;
+                drawLocation(x, y, loc, 18);
+            });
+
+            // 绘制第二环
+            locations.ring2.forEach(loc => {
+                const rad = (loc.angle * Math.PI) / 180;
+                const x = centerX + Math.cos(rad) * 250;
+                const y = centerY + Math.sin(rad) * 250;
+                drawLocation(x, y, loc, 15);
+            });
+
+            // 绘制第三环
+            locations.ring3.forEach(loc => {
+                const rad = (loc.angle * Math.PI) / 180;
+                const x = centerX + Math.cos(rad) * 330;
+                const y = centerY + Math.sin(rad) * 330;
+                drawLocation(x, y, loc, 20);
+            });
+        }
+
+        // 绘制单个地点
+        function drawLocation(x, y, location, size) {
+            // 绘制光晕效果
+            const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+            glow.addColorStop(0, location.color + '40');
+            glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(x, y, size * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 绘制节点
+            ctx.fillStyle = location.color;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 绘制边框
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 绘制名称
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(location.name, x, y);
+        }
+
+        // 鼠标交互
+        const tooltip = document.getElementById('tooltip');
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // 检查是否悬停在某个地点上
+            let hoveredLocation = null;
+
+            // 检查中心
+            const centerDist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+            if (centerDist < 25) {
+                hoveredLocation = locations.center;
+            }
+
+            // 检查各环
+            if (!hoveredLocation) {
+                [
+                    { ring: locations.ring1, radius: 150, size: 18 },
+                    { ring: locations.ring2, radius: 250, size: 15 },
+                    { ring: locations.ring3, radius: 330, size: 20 }
+                ].forEach(({ ring, radius, size }) => {
+                    ring.forEach(loc => {
+                        const rad = (loc.angle * Math.PI) / 180;
+                        const locX = centerX + Math.cos(rad) * radius;
+                        const locY = centerY + Math.sin(rad) * radius;
+                        const dist = Math.sqrt(Math.pow(x - locX, 2) + Math.pow(y - locY, 2));
+                        if (dist < size) {
+                            hoveredLocation = loc;
+                        }
+                    });
+                });
+            }
+
+            if (hoveredLocation) {
+                tooltip.innerHTML = `
+                    <strong>${hoveredLocation.name}</strong><br>
+                    ${hoveredLocation.sector ? `区域: ${hoveredLocation.sector}<br>` : ''}
+                    ${hoveredLocation.description}
+                `;
+                tooltip.style.display = 'block';
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY - 30 + 'px';
+                canvas.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'crosshair';
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
+        // 初始化绘制
+        drawMap();
+
+        // 添加动画效果
+        let animationTime = 0;
+        function animate() {
+            animationTime += 0.01;
+
+            // 重绘地图
+            drawMap();
+
+            // 添加脉冲效果到中心
+            ctx.strokeStyle = `rgba(255, 215, 0, ${Math.sin(animationTime) * 0.3 + 0.3})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 30 + Math.sin(animationTime) * 5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            requestAnimationFrame(animate);
+        }
+
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>

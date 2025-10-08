@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩虹效果调试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a; /* 深色背景 */
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* 测试用的简单彩虹光漏效果 */
+        .test-rainbow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .test-leak {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(50px);
+            animation: float 5s ease-in-out infinite;
+        }
+
+        .test-leak-1 {
+            top: 10%;
+            left: 10%;
+            background: radial-gradient(circle, rgba(255, 100, 100, 0.5), transparent);
+        }
+
+        .test-leak-2 {
+            top: 10%;
+            right: 10%;
+            background: radial-gradient(circle, rgba(255, 255, 100, 0.5), transparent);
+        }
+
+        .test-leak-3 {
+            bottom: 10%;
+            right: 10%;
+            background: radial-gradient(circle, rgba(100, 100, 255, 0.5), transparent);
+        }
+
+        .test-leak-4 {
+            bottom: 10%;
+            left: 10%;
+            background: radial-gradient(circle, rgba(255, 100, 255, 0.5), transparent);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 20px); }
+        }
+
+        #log {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌈 彩虹效果调试页面</h1>
+
+    <div class="controls">
+        <button onclick="testSimpleRainbow()">测试简单彩虹</button>
+        <button onclick="testRealRainbow()">测试真实彩虹</button>
+        <button onclick="clearEffects()">清除效果</button>
+    </div>
+
+    <div id="log">控制台输出：</div>
+
+    <!-- 引入彩虹特效文件（添加时间戳防止缓存） -->
+    <link rel="stylesheet" href="css/weather-effects.css?v=3.0">
+    <script src="js/core/weather-effect-controller.js?v=3.0"></script>
+
+    <script>
+        function log(msg) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += msg + '<br>';
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(msg);
+        }
+
+        function testSimpleRainbow() {
+            log('创建简单测试彩虹...');
+            clearEffects();
+
+            const container = document.createElement('div');
+            container.className = 'test-rainbow-container';
+            container.id = 'test-rainbow';
+
+            // 创建4个简单的光漏
+            for (let i = 1; i <= 4; i++) {
+                const leak = document.createElement('div');
+                leak.className = `test-leak test-leak-${i}`;
+                container.appendChild(leak);
+            }
+
+            document.body.appendChild(container);
+            log('简单彩虹创建完成，应该看到4个彩色光漏');
+        }
+
+        function testRealRainbow() {
+            log('使用 WeatherEffectController 创建彩虹...');
+            clearEffects();
+
+            if (window.weatherEffectController) {
+                window.weatherEffectController.showEffect('rainbow', 1.0);
+                log('彩虹效果已触发');
+
+                // 检查DOM
+                setTimeout(() => {
+                    const rainbowContainer = document.querySelector('.weather-effect-rainbow');
+                    const leaks = document.querySelectorAll('.rainbow-leak');
+                    const bands = document.querySelectorAll('.alexander-dark-band');
+
+                    log(`找到容器: ${rainbowContainer ? '是' : '否'}`);
+                    log(`找到光漏: ${leaks.length}个`);
+                    log(`找到暗带: ${bands.length}个`);
+
+                    if (leaks.length > 0) {
+                        log('光漏详情:');
+                        leaks.forEach((leak, i) => {
+                            const style = window.getComputedStyle(leak);
+                            log(`  光漏${i+1}: opacity=${style.opacity}, display=${style.display}`);
+                        });
+                    }
+                }, 1000);
+            } else {
+                log('错误：WeatherEffectController 未找到');
+            }
+        }
+
+        function clearEffects() {
+            // 清除简单测试
+            const testRainbow = document.getElementById('test-rainbow');
+            if (testRainbow) {
+                testRainbow.remove();
+                log('清除简单测试彩虹');
+            }
+
+            // 清除真实效果
+            if (window.weatherEffectController) {
+                window.weatherEffectController.removeEffect();
+                log('清除真实彩虹效果');
+            }
+        }
+
+        // 页面加载完成后
+        window.addEventListener('DOMContentLoaded', () => {
+            log('页面加载完成');
+            log(`WeatherEffectController: ${window.weatherEffectController ? '已加载' : '未加载'}`);
+        });
+    </script>
+</body>
+</html>

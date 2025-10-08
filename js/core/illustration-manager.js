@@ -6,6 +6,7 @@
 class IllustrationManager {
     constructor() {
         this.currentIllustration = null;
+        this.defaultIllustration = null;
         this.isVisible = false;
         this.illustrationContainer = null;
         this.choiceIllustrations = new Map(); // 存储选项对应的插图
@@ -64,31 +65,39 @@ class IllustrationManager {
      * 设置场景插图数据
      * @param {Object} sceneData - 场景数据
      */
+
     setSceneIllustrations(sceneData) {
         this.choiceIllustrations.clear();
 
-        // 检查是否有插图数据
-        if (!sceneData.illustrations) {
+        const illustrations = sceneData.illustrations;
+
+        if (!illustrations) {
+            this.defaultIllustration = null;
+            this.currentIllustration = null;
             this.hideIndicator();
             return;
         }
 
-        // 场景默认插图
-        if (sceneData.illustrations.default) {
-            this.currentIllustration = sceneData.illustrations.default;
-            this.showIndicator();
+        this.defaultIllustration = illustrations.default || null;
+
+        if (this.defaultIllustration) {
+            this.currentIllustration = this.defaultIllustration;
+            this.showIndicator(this.defaultIllustration.caption || '');
+        } else {
+            this.currentIllustration = null;
+            this.hideIndicator();
         }
 
-        // 选项对应插图
-        if (sceneData.illustrations.choices) {
-            Object.keys(sceneData.illustrations.choices).forEach(choiceKey => {
+        if (illustrations.choices) {
+            Object.keys(illustrations.choices).forEach(choiceKey => {
                 this.choiceIllustrations.set(
                     choiceKey,
-                    sceneData.illustrations.choices[choiceKey]
+                    illustrations.choices[choiceKey]
                 );
             });
         }
     }
+
 
     /**
      * 根据选择更新插图
@@ -372,7 +381,6 @@ class IllustrationManager {
         if (window.f2Manager) {
             window.f2Manager.updateIllustrationIndicator(false);
         }
-        this.currentIllustration = null;
     }
 
     /**
@@ -380,6 +388,7 @@ class IllustrationManager {
      */
     clear() {
         this.currentIllustration = null;
+        this.defaultIllustration = null;
         this.isVisible = false;
         this.choiceIllustrations.clear();
 
@@ -388,6 +397,23 @@ class IllustrationManager {
         }
 
         this.hideIndicator();
+    }
+
+    resetToDefault() {
+        if (this.defaultIllustration) {
+            this.currentIllustration = this.defaultIllustration;
+            this.isVisible = false;
+
+            if (this.illustrationContainer) {
+                this.illustrationContainer.classList.remove('show');
+            }
+
+            this.updateDisplay();
+            this.showIndicator(this.defaultIllustration.caption || '');
+        } else {
+            this.currentIllustration = null;
+            this.hideIndicator();
+        }
     }
 
     /**

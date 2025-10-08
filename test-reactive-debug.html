@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>响应式系统调试</title>
+</head>
+<body>
+    <h1>响应式系统调试</h1>
+    <button onclick="testReactive()">测试响应式</button>
+    <button onclick="testProxy()">测试Proxy</button>
+    <pre id="log"></pre>
+
+    <script>
+        function log(msg) {
+            const pre = document.getElementById('log');
+            pre.textContent += msg + '\n';
+            console.log(msg);
+        }
+
+        function testReactive() {
+            log('\n=== 测试响应式系统 ===');
+
+            // 1. 检查系统是否存在
+            log('1️⃣ 检查系统:');
+            log('  reactiveSystem: ' + !!window.reactiveSystem);
+            log('  worldState: ' + !!window.worldState);
+
+            // 2. 添加监听器
+            log('\n2️⃣ 添加测试监听器:');
+            let callCount = 0;
+            window.reactiveSystem.watch('test.value', (newValue) => {
+                callCount++;
+                log(`  ✅ 监听器被调用！第${callCount}次，新值: ${newValue}`);
+            });
+            log('  监听器已添加');
+
+            // 3. 触发通知
+            log('\n3️⃣ 触发通知:');
+            window.reactiveSystem.notify('test.value', 'hello');
+            log('  notify已调用');
+
+            // 4. 检查结果
+            log('\n4️⃣ 结果:');
+            log('  监听器被调用次数: ' + callCount);
+            if (callCount > 0) {
+                log('  ✅ 响应式系统正常工作！');
+            } else {
+                log('  ❌ 响应式系统失败！');
+            }
+        }
+
+        function testProxy() {
+            log('\n=== 测试character Proxy ===');
+
+            // 1. 检查Proxy是否存在
+            log('1️⃣ 检查Proxy:');
+            const char = window.worldState?.state?.character;
+            log('  character对象: ' + !!char);
+            log('  当前location: ' + char?.location);
+
+            // 2. 添加监听器
+            log('\n2️⃣ 添加位置监听器:');
+            let locationChangeCount = 0;
+            window.reactiveSystem.watch('character.location', (newLoc) => {
+                locationChangeCount++;
+                log(`  ✅ 位置监听器触发！第${locationChangeCount}次，新位置: ${newLoc}`);
+            });
+
+            // 3. 修改location
+            log('\n3️⃣ 修改location:');
+            log('  原位置: ' + char.location);
+            window.worldState.state.character.location = 'test_park';
+            log('  新位置: ' + window.worldState.state.character.location);
+
+            // 4. 检查结果
+            log('\n4️⃣ 结果:');
+            log('  位置监听器触发次数: ' + locationChangeCount);
+            if (locationChangeCount > 0) {
+                log('  ✅ Proxy + 响应式正常工作！');
+            } else {
+                log('  ❌ Proxy没有触发响应式！');
+            }
+
+            // 5. 检查player.position是否同步
+            log('\n5️⃣ 检查player.position同步:');
+            const playerLoc = window.worldState?.state?.player?.position?.location;
+            log('  player.position.location: ' + playerLoc);
+            if (playerLoc === 'test_park') {
+                log('  ✅ player数据已同步！');
+            } else {
+                log('  ❌ player数据未同步！');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+/**
+ * Reality游戏 - 天气特效样式库 v2.0
+ * 包含6种天气的视觉特效
+ * 日期：2025-10-04
+ *
+ * 特效列表：
+ * 1. 🌸 樱花飘落 (sakura) - 粉色+白色花瓣
+ * 2. 🌈 雨后彩虹 (rainbow) - 发光透明渐变
+ * 3. 🌠 流星雨 (meteor_shower) - 弧形轨迹
+ * 4. ☢️ 污染雾霾 (polluted) - 灰尘粒子+雾气
+ * 5. 🌧️ 雨天 (rainy) - 雨滴下落
+ * 6. ❄️ 雪天 (snowy) - 雪花飘落
+ */
+
+/* ========================================
+   🌸 樱花飘落特效 v2.0
+   ======================================== */
+
+.weather-effect-sakura {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+/* 樱花花瓣 - 粉色（主要） */
+.sakura-petal {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle, #ffb7d5 0%, #ffc0cb 40%, #ff69b4 100%);
+    border-radius: 50% 0 50% 0;
+    opacity: 0.85;
+    animation: sakura-fall linear infinite;
+    transform-origin: center;
+}
+
+/* 樱花花瓣 - 白色（偶尔出现，约15%概率） */
+.sakura-petal.white {
+    background: radial-gradient(circle, #ffffff 0%, #fff5f7 50%, #ffe4ea 100%);
+    opacity: 0.95;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+/* 樱花飘落动画 */
+@keyframes sakura-fall {
+    0% {
+        transform: translateY(-10vh) translateX(0) rotate(0deg) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.9;
+    }
+    90% {
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(110vh) translateX(var(--drift-x, 50px)) rotate(720deg) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* 樱花花瓣大小变体 */
+.sakura-petal.small {
+    width: 6px;
+    height: 6px;
+}
+
+.sakura-petal.medium {
+    width: 10px;
+    height: 10px;
+}
+
+.sakura-petal.large {
+    width: 14px;
+    height: 14px;
+}
+
+
+/* ========================================
+   🌈 雨后彩虹特效 v3.0 - 双彩虹物理模拟
+   基于物理规律：主虹（外红内紫）+ 副虹（外紫内红）+ 亚历山大暗带
+   ======================================== */
+
+.weather-effect-rainbow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    overflow: hidden;
+}
+
+/* 彩虹容器 v5.2 */
+.rainbow-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* 彩虹光漏基础样式 */
+.rainbow-light-leak {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+/* 渐现动画 - 快速柔和 */
+@keyframes rainbow-fade-in {
+    0% {
+        opacity: 0;
+        filter: blur(calc(var(--blur, 20px) * 1.5));
+    }
+    100% {
+        opacity: 1;
+        filter: blur(var(--blur, 20px));
+    }
+}
+
+/* 梦幻漂浮动画 */
+@keyframes rainbow-dream-float {
+    0%, 100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    25% {
+        transform: translate(15px, -10px) scale(1.05) rotate(2deg);
+    }
+    50% {
+        transform: translate(-10px, 15px) scale(0.98) rotate(-2deg);
+    }
+    75% {
+        transform: translate(20px, 5px) scale(1.02) rotate(1deg);
+    }
+}
+
+/* 自然消散动画1 - 从测试文件复制 */
+@keyframes rainbow-disperse-natural-1 {
+    0% {
+        opacity: var(--base-opacity);
+        transform: translate(0, 0) scale(1);
+        filter: blur(var(--blur));
+    }
+    30% {
+        opacity: calc(var(--base-opacity) * 0.8);
+        transform: translate(-20px, -10px) scale(1.1);
+        filter: blur(calc(var(--blur) * 1.2));
+    }
+    60% {
+        opacity: calc(var(--base-opacity) * 0.4);
+        transform: translate(-50px, -30px) scale(1.3) rotate(5deg);
+        filter: blur(calc(var(--blur) * 1.8));
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-100px, -60px) scale(1.5) rotate(10deg);
+        filter: blur(calc(var(--blur) * 3));
+    }
+}
+
+/* 自然消散动画2 */
+@keyframes rainbow-disperse-natural-2 {
+    0% {
+        opacity: var(--base-opacity);
+        transform: translate(0, 0) scale(1);
+        filter: blur(var(--blur));
+    }
+    35% {
+        opacity: calc(var(--base-opacity) * 0.7);
+        transform: translate(15px, -20px) scale(1.15);
+        filter: blur(calc(var(--blur) * 1.3));
+    }
+    70% {
+        opacity: calc(var(--base-opacity) * 0.3);
+        transform: translate(40px, -50px) scale(1.4) rotate(-8deg);
+        filter: blur(calc(var(--blur) * 2));
+    }
+    100% {
+        opacity: 0;
+        transform: translate(80px, -90px) scale(1.6) rotate(-15deg);
+        filter: blur(calc(var(--blur) * 4));
+    }
+}
+
+/* 自然消散动画3 */
+@keyframes rainbow-disperse-natural-3 {
+    0% {
+        opacity: var(--base-opacity);
+        transform: translate(0, 0) scale(1);
+        filter: blur(var(--blur));
+    }
+    25% {
+        opacity: calc(var(--base-opacity) * 0.85);
+        transform: translate(10px, 15px) scale(1.05);
+        filter: blur(calc(var(--blur) * 1.1));
+    }
+    50% {
+        opacity: calc(var(--base-opacity) * 0.5);
+        transform: translate(30px, 40px) scale(1.25) rotate(7deg);
+        filter: blur(calc(var(--blur) * 1.6));
+    }
+    100% {
+        opacity: 0;
+        transform: translate(70px, 80px) scale(1.7) rotate(12deg);
+        filter: blur(calc(var(--blur) * 3.5));
+    }
+}
+
+
+/* ========================================
+   🌠 流星雨特效 v2.0 - 弧形轨迹
+   ======================================== */
+
+.weather-effect-meteor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    overflow: hidden;
+}
+
+/* 星空背景 */
+.meteor-stars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* 闪烁星星 */
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    animation: star-twinkle 3s ease-in-out infinite;
+}
+
+@keyframes star-twinkle {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.5);
+    }
+}
+
+/* 流星 - v3.0 支持动态颜色（基于真实物理规律）*/
+.meteor {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--meteor-color, #fff);
+    border-radius: 50%;
+    box-shadow:
+        0 0 10px 2px var(--meteor-glow, rgba(255, 255, 255, 0.9)),
+        0 0 20px 4px rgba(135, 206, 250, 0.3);
+    animation: meteor-fall-curve var(--duration, 1.5s) linear forwards;
+    opacity: 0;
+}
+
+/* 流星尾迹 */
+.meteor::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        var(--meteor-trail, rgba(255, 255, 255, 0.8)) 30%,
+        rgba(135, 206, 250, 0.3) 70%,
+        transparent 100%
+    );
+    transform: translateY(-50%);
+    animation: meteor-trail var(--duration, 1.5s) linear forwards;
+}
+
+/* 流星弧形下落动画（更自然的抛物线轨迹） */
+@keyframes meteor-fall-curve {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) rotate(-45deg);
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform:
+            translate(var(--meteor-x, 400px), var(--meteor-y, 400px))
+            rotate(-45deg);
+    }
+}
+
+/* 尾迹伸长动画 */
+@keyframes meteor-trail {
+    0% {
+        width: 0;
+    }
+    30% {
+        width: 100px;
+    }
+    70% {
+        width: 120px;
+    }
+    100% {
+        width: 0;
+        opacity: 0;
+    }
+}
+
+
+/* ========================================
+   ☢️ 污染雾霾特效 v2.0
+   参考污染天演示.html的设计
+   ======================================== */
+
+.weather-effect-polluted {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+/* 污染雾气层（多层叠加） */
+.polluted-fog {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        ellipse at 30% 40%,
+        rgba(139, 69, 19, 0.12) 0%,
+        transparent 50%
+    ),
+    radial-gradient(
+        ellipse at 70% 60%,
+        rgba(107, 114, 128, 0.08) 0%,
+        transparent 50%
+    ),
+    radial-gradient(
+        ellipse at 50% 80%,
+        rgba(75, 85, 99, 0.15) 0%,
+        transparent 60%
+    );
+    animation: fog-drift 30s ease-in-out infinite;
+}
+
+@keyframes fog-drift {
+    0%, 100% {
+        transform: translateX(0) translateY(0);
+    }
+    33% {
+        transform: translateX(-20px) translateY(10px);
+    }
+    66% {
+        transform: translateX(20px) translateY(-10px);
+    }
+}
+
+/* 灰尘粒子 */
+.dust-particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(120, 100, 80, 0.4);
+    border-radius: 50%;
+    filter: blur(1px);
+    animation: dust-float linear infinite;
+}
+
+@keyframes dust-float {
+    0% {
+        transform: translateY(110vh) translateX(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateY(-10vh) translateX(var(--drift-x, 30px));
+        opacity: 0;
+    }
+}
+
+/* 全局暗化滤镜 */
+.polluted-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        180deg,
+        rgba(80, 70, 60, 0.3) 0%,
+        rgba(100, 90, 80, 0.4) 50%,
+        rgba(80, 70, 60, 0.3) 100%
+    );
+    backdrop-filter: blur(2px) brightness(0.85) saturate(0.7);
+    -webkit-backdrop-filter: blur(2px) brightness(0.85) saturate(0.7);
+}
+
+
+/* ========================================
+   🌧️ 雨天特效 (Rainy & Stormy)
+   ======================================== */
+
+.weather-effect-rainy,
+.weather-effect-stormy {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+/* 雨滴 */
+.rain-drop {
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(
+        to bottom,
+        rgba(174, 194, 224, 0.1),
+        rgba(174, 194, 224, 0.8)
+    );
+    border-radius: 50%;
+    animation: rain-fall linear infinite;
+    opacity: 0.8;
+}
+
+@keyframes rain-fall {
+    0% {
+        transform: translateY(-10vh);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(110vh);
+        opacity: 0;
+    }
+}
+
+/* 雨滴大小变体 */
+.rain-drop.light {
+    height: 15px;
+    opacity: 0.6;
+}
+
+.rain-drop.heavy {
+    width: 3px;
+    height: 25px;
+    opacity: 1;
+}
+
+/* 暴风雨雨滴 v3.0 */
+.rain-drop.storm {
+    width: 3px;
+    height: 30px;
+    background: linear-gradient(
+        to bottom,
+        rgba(120, 140, 170, 0.2),
+        rgba(120, 140, 170, 0.95)
+    );
+    opacity: 0.95;
+    transform: skewX(-5deg);  /* 倾斜效果，模拟强风 */
+}
+
+/* 雨滴水花（落地效果） */
+.rain-splash {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(174, 194, 224, 0.6);
+    border-radius: 50%;
+    animation: rain-splash-effect 0.5s ease-out;
+}
+
+@keyframes rain-splash-effect {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+
+/* ========================================
+   ⚡ 闪电特效 v3.0 (Lightning for Stormy)
+   混合方案：全屏闪光 + 简化纹理
+   ======================================== */
+
+/* 全屏闪光层 */
+.lightning-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        ellipse at 50% 30%,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(200, 220, 255, 0.6) 20%,
+        rgba(150, 180, 255, 0.3) 40%,
+        transparent 70%
+    );
+    pointer-events: none;
+    z-index: 1001;
+    animation: lightning-flash-anim 0.3s ease-out;
+}
+
+@keyframes lightning-flash-anim {
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    30% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* 闪电纹理（简化渐变版） */
+.lightning-bolt {
+    position: absolute;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(200, 220, 255, 1) 5%,
+        rgba(180, 210, 255, 0.95) 15%,
+        rgba(160, 200, 255, 0.9) 25%,
+        rgba(140, 190, 255, 0.85) 35%,
+        rgba(120, 180, 255, 0.8) 45%,
+        rgba(100, 170, 255, 0.7) 55%,
+        rgba(80, 160, 255, 0.6) 65%,
+        rgba(60, 150, 255, 0.4) 80%,
+        rgba(40, 140, 255, 0.2) 95%,
+        transparent 100%
+    );
+    filter: blur(1px);
+    box-shadow:
+        0 0 8px rgba(200, 220, 255, 0.8),
+        0 0 16px rgba(150, 180, 255, 0.6),
+        0 0 24px rgba(100, 140, 255, 0.4);
+    pointer-events: none;
+    z-index: 1002;
+    animation: lightning-bolt-anim 0.3s ease-out;
+}
+
+@keyframes lightning-bolt-anim {
+    0% {
+        opacity: 0;
+        transform: scaleY(0);
+        transform-origin: top;
+    }
+    20% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scaleY(1);
+    }
+}
+
+
+/* ========================================
+   ❄️ 雪天特效 (Snowy)
+   ======================================== */
+
+.weather-effect-snowy {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+/* 雪花 */
+.snow-flake {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(
+        circle,
+        #ffffff 0%,
+        #f0f8ff 50%,
+        rgba(240, 248, 255, 0.8) 100%
+    );
+    border-radius: 50%;
+    opacity: 0.9;
+    animation: snow-fall linear infinite;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+/* 雪花飘落动画（左右摇摆） */
+@keyframes snow-fall {
+    0% {
+        transform: translateY(-10vh) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.9;
+    }
+    25% {
+        transform: translateY(25vh) translateX(20px) rotate(90deg);
+    }
+    50% {
+        transform: translateY(50vh) translateX(0) rotate(180deg);
+    }
+    75% {
+        transform: translateY(75vh) translateX(-20px) rotate(270deg);
+    }
+    90% {
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(110vh) translateX(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* 雪花大小变体 */
+.snow-flake.small {
+    width: 5px;
+    height: 5px;
+}
+
+.snow-flake.medium {
+    width: 8px;
+    height: 8px;
+}
+
+.snow-flake.large {
+    width: 12px;
+    height: 12px;
+}
+
+
+/* ========================================
+   通用工具类
+   ======================================== */
+
+/* 隐藏特效 */
+.weather-effect-hidden {
+    display: none !important;
+}
+
+/* 淡入淡出过渡 */
+.weather-effect-fade-in {
+    animation: weather-fade-in 1s ease-in-out;
+}
+
+.weather-effect-fade-out {
+    animation: weather-fade-out 1s ease-in-out;
+}
+
+@keyframes weather-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes weather-fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* 性能优化：减少重绘 */
+.weather-effect-sakura,
+.weather-effect-rainbow,
+.weather-effect-meteor,
+.weather-effect-polluted,
+.weather-effect-rainy,
+.weather-effect-stormy,
+.weather-effect-snowy {
+    will-change: transform, opacity;
+}
+
+/* GPU加速 */
+.sakura-petal,
+.rainbow-arc,
+.meteor,
+.dust-particle,
+.rain-drop,
+.snow-flake {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}

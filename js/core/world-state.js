@@ -227,8 +227,17 @@ class WorldState {
             }
         };
 
+        // 🔥 创建 character 别名指向 player（兼容性）
+        // 很多系统（如响应式、测试工具）使用 state.character
+        // 但实际数据存储在 state.player 中
+        // 使用Proxy实现双向同步
+        this.createCharacterProxy();
+
         // 创建响应式代理（可选）
         this.createProxy();
+
+        // 初始化引擎系统
+        this.initializeEngineSystems();
     }
 
     /**
@@ -237,6 +246,64 @@ class WorldState {
     createProxy() {
         // 如果需要响应式，可以在这里添加Proxy
         // 现在先保持简单
+    }
+
+    /**
+     * 创建character Proxy（映射到player）
+     * 🔥 重要：在loadFullState后需要调用此方法重新建立Proxy连接
+     * 因为deepMerge会替换state对象，导致旧Proxy失效
+     */
+    createCharacterProxy() {
+        this.state.character = new Proxy({}, {
+            get: (target, prop) => {
+                // 映射属性到player
+                const mapping = {
+                    'name': () => this.state.player.name,
+                    'location': () => this.state.player.position.location,
+                    'health': () => this.state.player.stats.health,
+                    'mood': () => this.state.player.stats.mood,
+                    'money': () => this.state.player.stats.money,
+                    'energy': () => this.state.player.stats.energy,
+                    'spirit': () => this.state.player.stats.spirit,
+                    'inventory': () => this.state.player.inventory.items,
+                    'equipped': () => this.state.player.inventory.equipment,
+                    'buffs': () => this.state.player.buffs || []
+                };
+
+                if (mapping[prop]) {
+                    return mapping[prop]();
+                }
+                // 其他属性直接从stats获取
+                return this.state.player.stats[prop];
+            },
+            set: (target, prop, value) => {
+                // 映射属性写入到player
+                if (prop === 'location') {
+                    const oldLocation = this.state.player.position.location;
+                    this.state.player.position.location = value;
+
+                    // 🔥 重要：触发位置变化回调（加载对应场景）
+                    if (oldLocation !== value) {
+                        this.onPositionChange();
+
+                        // 同时通知响应式系统（其他系统监听）
+                        if (window.reactiveSystem) {
+                            window.reactiveSystem.notify('character.location', value);
+                        }
+                    }
+                } else if (prop === 'name') {
+                    this.state.player.name = value;
+                } else if (prop === 'equipped') {
+                    this.state.player.inventory.equipment = value;
+                } else if (prop === 'buffs') {
+                    this.state.player.buffs = value;
+                } else if (['health', 'mood', 'money', 'energy', 'spirit'].includes(prop)) {
+                    this.state.player.stats[prop] = value;
+                }
+                return true;
+            }
+        });
+        console.log('✅ character Proxy已创建/重建');
     }
 
     /**
@@ -577,6 +644,10 @@ class WorldState {
         // 调试：检查合并后的外观数据
         console.log('🎨 合并后的appearance:', this.state.player.appearance);
 
+        // 🔥 重要：deepMerge会替换state对象，导致character Proxy失效
+        // 需要重新创建character Proxy，使其指向新的player对象
+        this.createCharacterProxy();
+
         // 🌟 重新连接响应式系统
         this.reconnectReactiveSystems();
 
@@ -795,6 +866,25 @@ class WorldState {
             console.log('🌤️ 天气系统已创建');
         }
 
+        // 天气特效控制器（由weather-effect-init.js负责创建和初始化）
+        // 这里只检查是否存在，不重复创建
+        if (window.weatherEffectController) {
+            console.log('🌈 天气特效控制器已存在（已由weather-effect-init.js初始化）');
+        } else if (window.WeatherEffectController) {
+            console.warn('⚠️ weatherEffectController不存在，创建备用实例');
+            window.weatherEffectController = new WeatherEffectController();
+            if (window.weatherEffectController.setupReactiveListeners) {
+                window.weatherEffectController.setupReactiveListeners();
+            }
+        }
+
+        // 温度系统V2（响应式优化版）
+        if (!window.temperatureSystem && window.TemperatureSystemV2) {
+            window.temperatureSystem = new TemperatureSystemV2();
+            window.temperatureSystem.init();  // 初始化计算属性
+            console.log('🌡️ 温度系统V2已创建并初始化（响应式优化版）');
+        }
+
         // 经济系统
         if (!window.economySystem && window.EconomySystem) {
             window.economySystem = new EconomySystem();
@@ -927,6 +1017,20 @@ class WorldState {
 
 // 创建全局实例
 window.worldState = new WorldState();
+
+// 页面加载完成后，再次尝试初始化引擎系统（确保所有脚本都已加载）
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🔄 页面加载完成，重新初始化引擎系统...');
+        window.worldState.initializeEngineSystems();
+    });
+} else {
+    // 页面已经加载完成
+    setTimeout(() => {
+        console.log('🔄 延迟初始化引擎系统...');
+        window.worldState.initializeEngineSystems();
+    }, 100);
+}
 
 // 导出
 if (typeof module !== 'undefined' && module.exports) {

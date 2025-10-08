@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>调试版 - 直接测试DOM移除</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #00ff00;
+            padding: 20px;
+        }
+        button {
+            background: #16c79a;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #19e3b4;
+        }
+        .log {
+            background: #0f3460;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #testArea {
+            position: relative;
+            background: #87ceeb;
+            height: 300px;
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .sakura-petal {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ff69b4;
+            border-radius: 50% 0 50% 0;
+            animation: fall 5s linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-20px) rotate(0deg); }
+            100% { transform: translateY(320px) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 调试版 - 直接测试DOM移除</h1>
+
+    <button onclick="createPetals()">1️⃣ 创建樱花（添加DOM）</button>
+    <button onclick="removePetalsDOM()">2️⃣ 移除樱花（删除DOM）</button>
+    <button onclick="checkDOM()">3️⃣ 检查DOM状态</button>
+    <button onclick="clearLog()">🗑️ 清空日志</button>
+
+    <div id="testArea"></div>
+    <div class="log" id="log"></div>
+
+    <script>
+        let container = null;
+
+        function log(msg) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function createPetals() {
+            const testArea = document.getElementById('testArea');
+
+            // 创建容器
+            container = document.createElement('div');
+            container.id = 'petalContainer';
+            container.style.position = 'absolute';
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.pointerEvents = 'none';
+
+            // 创建10个樱花
+            for (let i = 0; i < 10; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'sakura-petal';
+                petal.style.left = `${Math.random() * 100}%`;
+                petal.style.animationDelay = `${Math.random() * 3}s`;
+                container.appendChild(petal);
+            }
+
+            testArea.appendChild(container);
+
+            log('✅ 创建了10个樱花粒子');
+            log(`   - 容器ID: ${container.id}`);
+            log(`   - 子元素数量: ${container.children.length}`);
+            log(`   - DOM树: body > #testArea > #petalContainer > .sakura-petal (×10)`);
+        }
+
+        function removePetalsDOM() {
+            if (!container) {
+                log('❌ 容器不存在，无法移除');
+                return;
+            }
+
+            log('🔄 开始移除DOM...');
+            log(`   - 移除前，容器存在: ${container !== null}`);
+            log(`   - 移除前，父节点: ${container.parentNode ? container.parentNode.tagName : 'null'}`);
+
+            // 方法1：从父节点移除
+            if (container.parentNode) {
+                container.parentNode.removeChild(container);
+                log('✅ 方法1成功：container.parentNode.removeChild(container)');
+            }
+
+            // 清空引用
+            const wasNull = container;
+            container = null;
+            log(`✅ 容器引用已清空: container = null`);
+            log(`   - 移除后，容器变量: ${container}`);
+
+            // 延迟检查DOM
+            setTimeout(() => {
+                const stillExists = document.getElementById('petalContainer');
+                if (stillExists) {
+                    log('❌ 警告：DOM仍然存在！（移除失败）');
+                } else {
+                    log('✅ 验证成功：DOM已完全从页面移除');
+                }
+            }, 100);
+        }
+
+        function checkDOM() {
+            log('\n📊 DOM状态检查：');
+            log(`   - 容器变量: ${container}`);
+
+            const domContainer = document.getElementById('petalContainer');
+            log(`   - DOM查询结果: ${domContainer ? 'EXISTS' : 'null'}`);
+
+            if (domContainer) {
+                log(`   - 子元素数量: ${domContainer.children.length}`);
+                log(`   - 第一个子元素className: ${domContainer.children[0]?.className}`);
+                log('   ⚠️ 樱花仍在页面中！');
+            } else {
+                log('   ✅ 页面中没有樱花容器');
+            }
+
+            const allPetals = document.querySelectorAll('.sakura-petal');
+            log(`   - 页面中所有.sakura-petal数量: ${allPetals.length}`);
+
+            if (allPetals.length > 0) {
+                log('   ❌ 发现残留粒子！');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // 初始化
+        log('🚀 调试工具已就绪');
+        log('📌 步骤：');
+        log('   1. 点击"创建樱花"');
+        log('   2. 点击"移除樱花"');
+        log('   3. 点击"检查DOM状态"');
+        log('   4. 观察樱花是否真的消失了\n');
+    </script>
+</body>
+</html>

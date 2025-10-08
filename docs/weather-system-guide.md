@@ -640,6 +640,531 @@ window.reactiveSystem.watch('environment.weather', (newWeather, oldWeather) => {
 
 ---
 
-**天气系统核心功能已完成，UI已完善，可正常使用！** 🎉
+## 🌸 特殊天气系统 (v1.3新增)
+
+### 概述
+特殊天气是基于条件触发的稀有天气类型，需要满足特定条件才会出现。
+
+### 特殊天气类型
+
+| 天气ID | 名称 | 图标 | 触发条件 | 特殊效果 |
+|--------|------|------|----------|----------|
+| `sakura` | 樱花飘落 | 🌸 | 春季 + 樱花周活动 | 心情+5, 精神+3, 浪漫值+10 |
+| `rainbow` | 雨后彩虹 | 🌈 | 前一天是雨天 | 心情+15, 精神+10, 幸运值+20, 持续2小时 |
+| `meteor_shower` | 流星雨 | 🌠 | 夜晚(20-4点) + 流星雨事件 | 心情+10, 精神+15, 幸运值+15, 解锁观星 |
+| `polluted` | 污染雾霾 | ☢️ | 污染区域 或 污染危机事件 | 心情-5, 精神-10, 健康-3, 建议口罩 |
+
+### 条件系统集成
+
+特殊天气使用 `ConditionEngine` 进行条件检查：
+
+```javascript
+// 樱花天气定义示例
+sakura: {
+    id: 'sakura',
+    name: '樱花飘落',
+    icon: '🌸',
+    isSpecial: true,  // 标记为特殊天气
+    conditions: {     // 触发条件
+        time: { season: 'spring' },
+        climate: { event: 'SAKURA_WEEK' }
+    },
+    effects: {
+        mood: 5,
+        spirit: 3,
+        romantic: 10
+    }
+}
+```
+
+### 如何触发特殊天气
+
+#### 方法1: 手动触发（测试用）
+```javascript
+// 直接强制设置特殊天气
+window.weatherSystem.forceWeather('sakura', 4);  // 樱花天持续4小时
+```
+
+#### 方法2: 气候事件触发（推荐）
+```javascript
+// 触发樱花周活动
+window.climateManager.currentState.seasonActivity = 'SAKURA_WEEK';
+
+// 重新生成天气，有概率出现樱花天
+window.weatherSystem.generateWeather();
+```
+
+#### 方法3: 自动触发（游戏内）
+- **樱花天** - 春季第X周自动触发樱花周
+- **彩虹** - 雨天转晴时5%概率出现
+- **流星雨** - 特定日期夜晚出现
+- **污染天** - 进入污染区域时出现
+
+### 条件检查机制
+
+天气系统在 `generateWeather()` 中自动检查条件：
+
+```javascript
+// 检查特殊天气条件
+checkSpecialWeatherConditions(weatherType) {
+    const weather = this.weatherTypes[weatherType];
+
+    if (!weather.isSpecial || !weather.conditions) {
+        return true;  // 普通天气无条件限制
+    }
+
+    // 使用ConditionEngine检查
+    const context = {
+        weather: this.currentWeather,
+        previousWeather: this.previousWeather,
+        season: this.currentSeason,
+        time: window.timeSystem?.currentTime,
+        climate: window.climateManager?.currentState
+    };
+
+    return window.ConditionEngine.check(weather.conditions, context);
+}
+```
+
+### 支持的条件类型
+
+#### 1. 时间条件
+```javascript
+conditions: {
+    time: {
+        season: 'spring',              // 季节
+        hour: { min: 20, max: 4 }      // 时间段
+    }
+}
+```
+
+#### 2. 气候条件
+```javascript
+conditions: {
+    climate: {
+        event: 'SAKURA_WEEK'           // 气候事件
+    }
+}
+```
+
+#### 3. 天气条件（上一次天气）
+```javascript
+conditions: {
+    weather: {
+        previous: ['rainy', 'stormy']  // 前一天是雨天或暴雨
+    }
+}
+```
+
+#### 4. 位置条件
+```javascript
+conditions: {
+    OR: [
+        { location: { zone: 'pollution_area' } },
+        { climate: { event: 'POLLUTION_CRISIS' } }
+    ]
+}
+```
+
+---
+
+## 🌡️ 温度系统 (v1.3新增)
+
+### 系统概述
+
+温度系统独立于天气系统，负责将**环境温度**转换为**体感温度**，并根据舒适度影响角色心情。
+
+**系统架构**：
+```
+WeatherSystem（天气系统）
+    ↓ 生成环境温度
+TemperatureSystem（温度系统） ← 你在这里
+    ↓ 计算体感温度 = 环境温度 + 衣服修正 + 食物buff
+ComfortSystem（舒适度判定）
+    ↓ 输出心情影响
+```
+
+### 核心文件
+- 📍 `js/core/temperature-system.js` - 温度系统核心
+- 🔗 集成到响应式系统，监听 `environment.temperature`
+
+### 温度等级与舒适度
+
+| 等级 | 体感温度 | 名称 | 图标 | 心情影响 |
+|------|----------|------|------|----------|
+| `freezing` | ≤-10°C | 严寒 | 🥶 | -15 |
+| `cold` | -10~10°C | 寒冷 | 🧊 | -10 |
+| `cool` | 10~18°C | 偏凉 | 😌 | -3 |
+| `comfortable` | 18~26°C | 舒适 | 😊 | 0 |
+| `warm` | 26~32°C | 偏热 | 😓 | -3 |
+| `hot` | 32~40°C | 炎热 | 🥵 | -10 |
+| `scorching` | ≥40°C | 酷热 | 🔥 | -15 |
+
+### 基础使用
+
+#### 初始化
+```javascript
+// 在game-main.html中加载
+<script src="js/core/temperature-system.js"></script>
+
+// 初始化（连接响应式监听）
+window.temperatureSystem.init();
+```
+
+#### 获取当前状态
+```javascript
+const state = window.temperatureSystem.getState();
+
+console.log(state);
+// {
+//     environment: 20,        // 环境温度
+//     apparent: 25,           // 体感温度（穿冬装+喝热汤）
+//     comfort: {              // 舒适度信息
+//         level: 'warm',
+//         name: '偏热',
+//         icon: '😓',
+//         temperature: 25,
+//         moodModifier: -3,
+//         suggestion: '建议穿着夏装'
+//     },
+//     modifiers: {
+//         clothing: 10,        // 衣服修正
+//         food: -5,            // 食物修正
+//         total: 5
+//     },
+//     foodBuffs: [...]
+// }
+```
+
+### 衣服系统（基础版）
+
+#### 设置衣服保暖值
+```javascript
+// 夏装：降温-10°C
+window.temperatureSystem.setClothingModifier(-10);
+
+// 普通服装：无影响
+window.temperatureSystem.setClothingModifier(0);
+
+// 冬装：保暖+10°C
+window.temperatureSystem.setClothingModifier(10);
+```
+
+#### 衣服建议（自动生成）
+```javascript
+const suggestion = window.temperatureSystem.getSuggestion();
+// 返回："建议穿着秋冬装（外套、长袖）"
+```
+
+### 食物buff系统
+
+#### 添加食物温度buff
+```javascript
+// 冰淇淋：降温-5°C，持续0.5天
+window.temperatureSystem.addFoodBuff('ice_cream', -5, 0.5);
+
+// 热汤：保暖+5°C，持续0.5天
+window.temperatureSystem.addFoodBuff('hot_soup', 5, 0.5);
+```
+
+#### 食物buff设计理念
+由于时间系统是**行动推进制**（类似DoL），食物buff持续时间使用**游戏天数**而非分钟：
+- ✅ 0.5天 = 半天有效
+- ✅ 1天 = 全天有效
+- ❌ 不使用30分钟（时间不会自动流逝）
+
+#### buff自动清理
+```javascript
+// 每次计算体感温度时自动清理过期buff
+getFoodBuffModifier() {
+    const currentDay = window.timeSystem?.currentTime?.day || 0;
+
+    // 清理过期buff
+    this.currentState.foodBuffs = this.currentState.foodBuffs.filter(buff => {
+        return buff.expireDay > currentDay;
+    });
+
+    // 计算总修正
+    let totalMod = 0;
+    this.currentState.foodBuffs.forEach(buff => {
+        totalMod += buff.tempModifier;
+    });
+    return totalMod;
+}
+```
+
+### 响应式集成
+
+#### 自动监听天气温度变化
+```javascript
+// 温度系统自动监听环境温度
+init() {
+    if (window.reactiveSystem) {
+        // 监听天气变化 → 更新环境温度
+        window.reactiveSystem.watch('environment.weather', () => {
+            this.updateEnvironmentTemp();
+        });
+
+        // 监听温度变化 → 重新计算体感温度
+        window.reactiveSystem.watch('environment.temperature', (newTemp) => {
+            this.currentState.environmentTemp = newTemp;
+            this.calculateApparentTemp();
+        });
+    }
+}
+```
+
+#### 完整响应链
+```
+天气变化 → environment.temperature notify
+    ↓
+温度系统监听 → 更新环境温度
+    ↓
+计算体感温度 → temperature.apparent notify
+    ↓
+UI自动更新 → 显示新温度和舒适度
+```
+
+### 场景中使用
+
+#### 检查是否需要更换衣服
+```javascript
+// 在场景选项中检查
+{
+    text: '外出探索',
+    showConditions: {
+        // 如果温度不适，隐藏此选项
+        NOT: [
+            { needClothingChange: true }
+        ]
+    },
+    next: 'explore'
+}
+```
+
+#### 应用温度影响
+```javascript
+// 每小时检查温度影响
+function hourlyTemperatureCheck() {
+    const effect = window.temperatureSystem.applyTemperatureEffects();
+
+    if (effect) {
+        // 应用心情影响
+        window.gameState.character.mood += effect.mood;
+
+        // 显示提示
+        console.log(`${effect.reason}: 心情${effect.mood > 0 ? '+' : ''}${effect.mood}`);
+    }
+}
+```
+
+### 世界快照集成
+
+#### 自动同步到worldState
+```javascript
+syncToWorldState() {
+    if (window.worldState) {
+        window.worldState.updateState({
+            temperature: {
+                environment: this.currentState.environmentTemp,
+                apparent: this.currentState.apparentTemp,
+                comfortLevel: this.currentState.comfortLevel,
+                clothingModifier: this.currentState.clothingModifier,
+                foodBuffs: this.currentState.foodBuffs
+            }
+        });
+    }
+}
+```
+
+#### 从存档加载
+```javascript
+loadFromWorldState() {
+    if (window.worldState?.state?.temperature) {
+        const data = window.worldState.state.temperature;
+        this.currentState.environmentTemp = data.environment || 20;
+        this.currentState.apparentTemp = data.apparent || 20;
+        this.currentState.comfortLevel = data.comfortLevel || 'comfortable';
+        this.currentState.clothingModifier = data.clothingModifier || 0;
+        this.currentState.foodBuffs = data.foodBuffs || [];
+    }
+}
+```
+
+---
+
+## 🔗 ConditionEngine扩展 (v1.3新增)
+
+### 新增条件类型
+
+#### 1. 气候条件检查
+```javascript
+// 检查气候事件
+conditions: {
+    climate: {
+        event: 'SAKURA_WEEK'  // 单个事件
+    }
+}
+
+conditions: {
+    climate: {
+        event: ['SAKURA_WEEK', 'SUMMER_FESTIVAL']  // 多个事件（任一符合）
+    }
+}
+
+// 检查动荡等级
+conditions: {
+    climate: {
+        turbulence: { min: 1 }  // 动荡年（≥1）
+    }
+}
+
+// 检查年份类型
+conditions: {
+    climate: {
+        yearType: 'turbulent_2'  // 二级动荡年
+    }
+}
+```
+
+#### 2. 上一次天气检查
+```javascript
+// 检查前一天天气
+conditions: {
+    weather: {
+        previous: 'rainy'  // 前一天是雨天
+    }
+}
+
+conditions: {
+    weather: {
+        previous: ['rainy', 'stormy']  // 前一天是雨天或暴雨
+    }
+}
+```
+
+### 实现方法
+
+#### checkClimate() - 气候条件检查
+```javascript
+static checkClimate(climateCondition, context) {
+    const climateState = context?.climate || window.climateManager?.currentState;
+
+    // 检查气候事件
+    if (climateCondition.event) {
+        const targetEvents = Array.isArray(climateCondition.event) ?
+                            climateCondition.event : [climateCondition.event];
+
+        // 检查季节活动
+        if (climateState.seasonActivity &&
+            targetEvents.includes(climateState.seasonActivity)) {
+            return true;
+        }
+
+        // 检查极端天气事件
+        if (climateState.extremeWeather &&
+            targetEvents.includes(climateState.extremeWeather)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // 检查动荡等级
+    if (climateCondition.turbulence) {
+        const turbulence = climateState.turbulenceLevel || 0;
+        const check = climateCondition.turbulence;
+
+        if (check.min !== undefined && turbulence < check.min) return false;
+        if (check.max !== undefined && turbulence > check.max) return false;
+    }
+
+    return true;
+}
+```
+
+#### checkWeather() - 扩展上一次天气
+```javascript
+static checkWeather(weatherCondition, context) {
+    const currentWeather = this.getCurrentWeather(context);
+
+    // 支持数组格式（任一天气符合）
+    if (Array.isArray(weatherCondition)) {
+        return weatherCondition.includes(currentWeather);
+    }
+
+    if (typeof weatherCondition === 'string') {
+        return currentWeather === weatherCondition;
+    }
+
+    // 🌸 新增：检查上一个天气
+    if (weatherCondition.previous) {
+        const previousWeather = context?.previousWeather || '';
+        const targets = Array.isArray(weatherCondition.previous) ?
+                        weatherCondition.previous : [weatherCondition.previous];
+        return targets.includes(previousWeather);
+    }
+
+    return true;
+}
+```
+
+---
+
+## 📊 更新日志
+
+### 2025-10-03 - v1.3 天气扩展系统 ⭐重大更新
+- ✅ **新增TemperatureSystem（温度系统）**
+  - 环境温度 → 体感温度转换
+  - 衣服保暖值系统（-10°C ~ +10°C）
+  - 食物温度buff系统（持续"游戏天数"）
+  - 7级舒适度判定（严寒→酷热）
+  - 完整响应式集成
+  - 世界快照同步
+
+- ✅ **新增4种特殊天气**
+  - 🌸 樱花飘落 - 春季樱花周活动触发
+  - 🌈 雨后彩虹 - 雨天转晴5%概率
+  - 🌠 流星雨 - 夜晚天文事件
+  - ☢️ 污染雾霾 - 污染区域/危机事件
+
+- ✅ **ConditionEngine扩展**
+  - 新增 `checkClimate()` - 气候事件/动荡年份检查
+  - 扩展 `checkWeather()` - 支持 `previous` 上一次天气检查
+  - 天气规则引擎集成 - 特殊天气条件驱动生成
+
+- ✅ **WeatherSystem增强**
+  - `checkSpecialWeatherConditions()` - 特殊天气条件检查
+  - `forceWeather()` 修复 - 强制天气时自动生成对应温度
+  - `generateWeather()` 增强 - 温度生成后通知响应式系统
+  - 支持 `previousWeather` 记录 - 用于彩虹等条件判断
+
+- ✅ **测试验证**
+  - 创建综合测试页面 `测试-天气扩展系统.html`
+  - 所有系统状态监控（7个系统）
+  - 天气/温度实时响应测试
+  - 衣服/食物buff测试
+  - 气候事件触发测试
+
+- ✅ **修复bug**
+  - 修复 `getCurrentDay()` 不存在 → 改用 `timeSystem.currentTime.day`
+  - 修复温度响应式通知缺失
+  - 修复DOM加载顺序问题
+
+### 2025-10-03 - v1.2
+- ✅ **Stage 4-5完成**：天气系统RandomEngine集成
+- ✅ **修复重要bug**：ClimateManager降水修正（平和年无雨）
+- ✅ **修复BGM响应式**：DailyBGM系统改用reactiveSystem.watch监听天气
+- ✅ **测试验证**：8项单元测试全部通过，性能优秀（10000次调用5.20ms）
+
+### 2025-10-01 - v1.1
+- ✅ **UI完善**：天气浮层UI完整重构
+
+### 2025-10-01 - v1.0
+- ✅ 初始版本发布
+
+---
+
+**天气扩展系统已完成，温度系统已集成，特殊天气已实现！** 🎉
 
 如有问题或建议，请在开发文档中记录。

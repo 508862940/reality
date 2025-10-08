@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雨天室内/室外测试</title>
+    <link rel="stylesheet" href="css/weather-effects.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(to bottom, #2c3e50, #34495e);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.3);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>🌧️ 雨天室内/室外测试</h2>
+
+        <div>
+            <h3>天气控制</h3>
+            <button onclick="startRain()">开始下雨</button>
+            <button onclick="startStorm()">开始暴雨</button>
+            <button onclick="stopRain()">停止下雨</button>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <h3>环境控制</h3>
+            <button onclick="goOutdoor()">🌳 去室外</button>
+            <button onclick="goIndoor()">🏠 进室内</button>
+            <button onclick="toggleUmbrella()">☂️ 切换雨伞</button>
+        </div>
+
+        <div class="status" id="status">
+            位置: 室外<br>
+            雨伞: 未打开<br>
+            天气特效: 未激活
+        </div>
+    </div>
+
+    <script src="js/core/weather-effect-controller.js"></script>
+
+    <script>
+        let isIndoor = false;
+        let hasUmbrella = false;
+        let controller;
+
+        function updateStatus() {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                位置: ${isIndoor ? '🏠 室内' : '🌳 室外'}<br>
+                雨伞: ${hasUmbrella ? '☂️ 已打开' : '未打开'}<br>
+                天气特效: ${controller?.currentEffect || '未激活'}
+            `;
+        }
+
+        function startRain() {
+            if (!controller) {
+                controller = new WeatherEffectController();
+            }
+            controller.showEffect('rainy', 0.8);
+            controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            updateStatus();
+        }
+
+        function startStorm() {
+            if (!controller) {
+                controller = new WeatherEffectController();
+            }
+            controller.showEffect('stormy', 1.0);
+            controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            updateStatus();
+        }
+
+        function stopRain() {
+            if (controller) {
+                controller.removeEffect();
+            }
+            updateStatus();
+        }
+
+        function goOutdoor() {
+            isIndoor = false;
+            if (controller) {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+            updateStatus();
+        }
+
+        function goIndoor() {
+            isIndoor = true;
+            if (controller) {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+            updateStatus();
+        }
+
+        function toggleUmbrella() {
+            hasUmbrella = !hasUmbrella;
+            if (controller) {
+                controller.setWeatherVisibility(isIndoor, hasUmbrella);
+            }
+            updateStatus();
+        }
+
+        updateStatus();
+    </script>
+</body>
+</html>

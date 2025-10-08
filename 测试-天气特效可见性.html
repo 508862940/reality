@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气特效可见性控制测试</title>
+
+    <!-- 🆕 引入官方天气特效CSS -->
+    <link rel="stylesheet" href="css/weather-effects.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .control-group select,
+        .control-group button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .weather-preview {
+            position: relative;
+            background: #87ceeb;
+            border-radius: 10px;
+            height: 400px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .status-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .status-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-item strong {
+            color: #667eea;
+        }
+
+        #weatherEffectZone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* 🆕 官方CSS已引入，不需要重复定义特效样式 */
+
+        .log-panel {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ 天气特效可见性控制测试</h1>
+
+        <div class="control-panel">
+            <h2>控制面板</h2>
+
+            <div class="control-group">
+                <label>选择天气：</label>
+                <select id="weatherSelect">
+                    <option value="sakura">🌸 樱花飘落</option>
+                    <option value="rainbow">🌈 雨后彩虹</option>
+                    <option value="meteor_shower">🌠 流星雨</option>
+                    <option value="polluted">☢️ 污染雾霾</option>
+                    <option value="rainy">🌧️ 雨天</option>
+                    <option value="snowy">❄️ 雪天</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>选择位置：</label>
+                <select id="locationSelect">
+                    <optgroup label="户外（樱花增强区）">
+                        <option value="park">🌳 公园（樱花增强）</option>
+                        <option value="school_yard">🏫 学校操场（樱花增强）</option>
+                        <option value="cherry_blossom_avenue">🌸 樱花大道（樱花增强）</option>
+                    </optgroup>
+                    <optgroup label="户外（视野开阔）">
+                        <option value="rooftop">🏢 天台（彩虹/流星雨增强）</option>
+                        <option value="hilltop">⛰️ 山顶（彩虹/流星雨增强）</option>
+                        <option value="waterfront">🌊 海滨（彩虹/流星雨增强）</option>
+                    </optgroup>
+                    <optgroup label="普通户外">
+                        <option value="street">🛣️ 街道</option>
+                        <option value="square">🏛️ 广场</option>
+                    </optgroup>
+                    <optgroup label="污染区域">
+                        <option value="pollution_core">☢️ 污染核心区（污染增强）</option>
+                        <option value="factory_district">🏭 工厂区（污染增强）</option>
+                        <option value="pollution_area">🌫️ 污染扩散区</option>
+                    </optgroup>
+                    <optgroup label="室内/遮挡">
+                        <option value="indoor_room">🏠 室内房间（不可见）</option>
+                        <option value="underground">🚇 地下通道（不可见）</option>
+                        <option value="tunnel">🚇 隧道（不可见）</option>
+                        <option value="building_interior">🏢 建筑内部（不可见）</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>选择时间：</label>
+                <select id="timeSelect">
+                    <option value="6">早晨 6:00</option>
+                    <option value="12">中午 12:00</option>
+                    <option value="18">傍晚 18:00</option>
+                    <option value="20">夜晚 20:00（流星雨可见）</option>
+                    <option value="0">深夜 0:00（流星雨可见）</option>
+                    <option value="4">凌晨 4:00</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button onclick="updateTest()">🎨 应用设置</button>
+            </div>
+        </div>
+
+        <div class="weather-preview">
+            <div id="weatherEffectZone"></div>
+        </div>
+
+        <div class="status-panel">
+            <h2>当前状态</h2>
+            <div class="status-item">
+                <strong>天气类型：</strong> <span id="statusWeather">-</span>
+            </div>
+            <div class="status-item">
+                <strong>当前位置：</strong> <span id="statusLocation">-</span>
+            </div>
+            <div class="status-item">
+                <strong>当前时间：</strong> <span id="statusTime">-</span>
+            </div>
+            <div class="status-item">
+                <strong>特效可见性：</strong> <span id="statusVisibility">-</span>
+            </div>
+            <div class="status-item">
+                <strong>特效强度：</strong> <span id="statusIntensity">-</span>
+            </div>
+            <div class="status-item">
+                <strong>室内/户外：</strong> <span id="statusIndoor">-</span>
+            </div>
+            <div class="status-item">
+                <strong>天空可见：</strong> <span id="statusSkyVisible">-</span>
+            </div>
+        </div>
+
+        <div class="log-panel" id="logPanel">
+            <div class="log-entry">📝 系统日志：</div>
+        </div>
+    </div>
+
+    <!-- 引入核心系统 -->
+    <script src="js/core/condition-engine.js?v=2"></script>
+    <script src="js/core/reactive-system.js?v=2"></script>
+    <script src="js/core/weather-system.js?v=2"></script>
+    <script src="js/core/weather-effect-controller.js?v=2"></script>
+
+    <script>
+        // 模拟世界状态
+        window.worldState = {
+            state: {
+                character: {
+                    location: 'street'
+                },
+                gameTime: {
+                    hour: 12
+                },
+                environment: {
+                    weather: 'sakura'
+                }
+            }
+        };
+
+        // 初始化系统
+        console.log('🔧 开始初始化系统...');
+
+        // 确保按顺序初始化
+        if (typeof ReactiveSystem === 'undefined') {
+            console.error('❌ ReactiveSystem 未加载');
+        } else {
+            window.reactiveSystem = new ReactiveSystem();
+            console.log('✅ ReactiveSystem 初始化成功');
+        }
+
+        if (typeof WeatherSystem === 'undefined') {
+            console.error('❌ WeatherSystem 未加载');
+        } else {
+            window.weatherSystem = new WeatherSystem();
+            console.log('✅ WeatherSystem 初始化成功');
+        }
+
+        if (typeof WeatherEffectController === 'undefined') {
+            console.error('❌ WeatherEffectController 未加载');
+        } else {
+            window.weatherEffectController = new WeatherEffectController();
+            console.log('✅ WeatherEffectController 初始化成功');
+
+            // 检查方法是否存在
+            if (typeof window.weatherEffectController.setupReactiveListeners === 'function') {
+                window.weatherEffectController.setupReactiveListeners();
+                console.log('✅ setupReactiveListeners() 调用成功');
+            } else {
+                console.error('❌ setupReactiveListeners 方法不存在');
+            }
+        }
+
+        // 添加日志函数
+        function addLog(message) {
+            const logPanel = document.getElementById('logPanel');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // 覆盖console.log来捕获日志
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '));
+        };
+
+        // 🆕 记录上一次的状态
+        let lastWeather = null;
+        let lastLocation = null;
+        let lastHour = null;
+
+        // 更新测试
+        function updateTest() {
+            const weather = document.getElementById('weatherSelect').value;
+            const location = document.getElementById('locationSelect').value;
+            const hour = parseInt(document.getElementById('timeSelect').value);
+
+            addLog(`\n========== 测试开始 ==========`);
+            addLog(`当前设置: ${weather} / ${location} / ${hour}:00`);
+
+            // 🔥 关键修复：只在天气改变时调用 showEffect()
+            if (weather !== lastWeather) {
+                addLog(`🌤️ 天气改变: ${lastWeather} → ${weather}`);
+
+                // 更新状态
+                window.worldState.state.environment.weather = weather;
+                lastWeather = weather;
+
+                addLog(`调用 showEffect(${weather})...`);
+                window.weatherEffectController.showEffect(weather, 1.0);
+
+                // 通知响应式系统（但不会触发updateVisibility，因为监听器已移除）
+                window.reactiveSystem.notify('environment.weather', weather);
+            } else {
+                addLog(`天气未变化，跳过 showEffect()`);
+            }
+
+            // 🆕 通过响应式系统通知位置/时间变化
+            if (location !== lastLocation) {
+                addLog(`📍 位置改变: ${lastLocation} → ${location}`);
+                window.worldState.state.character.location = location;
+                window.reactiveSystem.notify('character.location', location);
+                lastLocation = location;
+            }
+
+            if (hour !== lastHour) {
+                addLog(`🕐 时间改变: ${lastHour} → ${hour}`);
+                window.worldState.state.gameTime.hour = hour;
+                window.reactiveSystem.notify('gameTime.hour', hour);
+                lastHour = hour;
+            }
+
+            // 延迟更新状态显示（等待DOM操作完成）
+            setTimeout(() => {
+                updateStatusDisplay(weather, location, hour);
+            }, 100);
+        }
+
+        // 更新状态显示
+        function updateStatusDisplay(weather, location, hour) {
+            const weatherConfig = window.weatherSystem.weatherTypes[weather];
+            const controller = window.weatherEffectController;
+
+            document.getElementById('statusWeather').textContent = `${weatherConfig.icon} ${weatherConfig.name}`;
+            document.getElementById('statusLocation').textContent = location;
+            document.getElementById('statusTime').textContent = `${hour}:00`;
+
+            // 检查可见性
+            const container = controller.effectContainer;
+            const opacity = container ? container.style.opacity : '0';
+            const isVisible = parseFloat(opacity) > 0;
+
+            document.getElementById('statusVisibility').textContent = isVisible ? '✅ 可见' : '❌ 不可见';
+            document.getElementById('statusIntensity').textContent = opacity;
+
+            // 检查位置元数据
+            const meta = controller.getLocationMetadata(location);
+            document.getElementById('statusIndoor').textContent = meta.isIndoor ? '🏠 室内' : '🌳 户外';
+            document.getElementById('statusSkyVisible').textContent = meta.skyVisible ? '👁️ 可见天空' : '🏢 天空被遮挡';
+
+            addLog(`\n✅ 测试完成！特效${isVisible ? '可见' : '不可见'}，透明度: ${opacity}`);
+        }
+
+        // 初始化
+        window.onload = () => {
+            addLog('✅ 系统初始化完成');
+            addLog('📌 选择天气、位置、时间，点击"应用设置"测试可见性控制');
+            updateTest();
+        };
+    </script>
+</body>
+</html>

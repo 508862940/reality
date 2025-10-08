@@ -114,100 +114,213 @@ class GameBootstrap {
      */
     async loadGameState() {
         try {
-            let saveData = null;
-
-            // 优先从自动存档加载
+            // 1. 优先尝试IndexedDB中的自动存档
             if (this.autoSaveId && window.saveSystem) {
                 try {
                     const result = await window.saveSystem.loadSave(this.autoSaveId);
-                    if (result && result.success) {
-                        console.log('📂 从自动存档恢复游戏...');
-                        // SaveSystem已经处理了恢复，直接返回成功
-                        return true;
+                    if (result && result.gameData) {
+                        console.log('✅ 读取IndexedDB自动存档成功，准备恢复', result.id);
+                        const normalized = this.normalizeSavePayload(result.gameData);
+                        if (normalized && await this.applySavePayload(normalized, {
+                            source: 'saveSystem:auto',
+                            meta: {
+                                id: result.id,
+                                type: result.type,
+                                timestamp: result.timestamp
+                            }
+                        })) {
+                            console.log('🎮 已从IndexedDB自动存档恢复');
+                            return true;
+                        }
+                        console.warn('⚠️ 自动存档存在但结构无效或恢复失败，继续尝试其他来源');
                     }
-                } catch (e) {
-                    console.log('加载自动存档失败，尝试localStorage:', e);
+                } catch (error) {
+                    console.warn('⚠️ 加载IndexedDB自动存档失败，继续尝试localStorage', error);
                 }
             }
 
-            // 降级到localStorage
+            // 2. 回退到localStorage
             const savedStr = localStorage.getItem(this.STORAGE_KEY);
-            if (!savedStr) return false;
-
-            saveData = JSON.parse(savedStr);
-            console.log('📂 从localStorage恢复游戏状态...');
-
-            // 1. 先恢复gameState
-            if (!window.gameState) {
-                window.gameState = {};
-            }
-            if (saveData.character) {
-                window.gameState.character = saveData.character;
-                console.log('✅ 角色数据已恢复');
-            }
-            if (saveData.gameTime) {
-                window.gameState.gameTime = saveData.gameTime;
-                console.log('✅ 游戏时间已恢复');
+            if (!savedStr) {
+                return false;
             }
 
-            // 2. 恢复世界状态
-            if (saveData.worldData && window.worldState) {
-                window.worldState.loadFullState(saveData.worldData);
-                console.log('✅ 世界状态已恢复');
+            const localData = JSON.parse(savedStr);
+            const normalized = this.normalizeSavePayload(localData);
+            if (!normalized) {
+                console.warn('⚠️ localStorage存档结构无效，无法恢复');
+                return false;
             }
 
-            // 3. 恢复场景（这是最关键的！）
-            if (saveData.scene) {
-                // 等待sceneManager初始化
-                await this.waitForSceneManager();
-
-                // 设置恢复标记，避免触发自动存档
-                window.sceneManager.isRestoring = true;
-
-                // 直接设置场景数据
-                window.sceneManager.currentScene = saveData.scene;
-                window.sceneManager.currentTextIndex = saveData.sceneTextIndex || 0;
-
-                console.log('✅ 场景数据已恢复:', saveData.scene.id);
-                console.log('📄 恢复的场景对象:', saveData.scene);
-
-                // 恢复F1区域内容
-                const storyArea = document.getElementById('storyArea');
-                if (storyArea && saveData.f1HTML) {
-                    storyArea.innerHTML = saveData.f1HTML;
-                    console.log('✅ F1区域内容已恢复');
-
-                    // 重新绑定选项事件
-                    this.rebindChoiceEvents();
-                }
-
-                // 清除恢复标记
-                setTimeout(() => {
-                    window.sceneManager.isRestoring = false;
-
-                    // 调试：检查场景是否还在
-                    console.log('🔍 500ms后检查场景:', window.sceneManager.currentScene?.id);
-                    const storyText = document.getElementById('storyText');
-                    if (storyText) {
-                        console.log('🔍 F1区域内容:', storyText.textContent?.substring(0, 50));
-                    }
-                }, 500);
+            const restored = await this.applySavePayload(normalized, { source: 'localStorage' });
+            if (restored) {
+                console.log('🎮 已从localStorage存档恢复');
             }
-
-            // 4. 更新UI - 使用完整的世界UI恢复
-            if (window.restoreWorldUI) {
-                window.restoreWorldUI();  // 恢复所有区域的UI
-            } else if (window.updateGameUI) {
-                window.updateGameUI();  // 降级到旧方法
-            }
-
-            console.log('🎮 游戏状态恢复完成！');
-            return true;
-
+            return restored;
         } catch (error) {
             console.error('❌ 恢复游戏状态失败:', error);
             return false;
         }
+    }
+
+    /**
+     * 将不同来源的存档数据整理成统一格式
+     */
+    normalizeSavePayload(rawData) {
+        if (!rawData || typeof rawData !== 'object') {
+            return null;
+        }
+
+        let cloned;
+        try {
+            cloned = JSON.parse(JSON.stringify(rawData));
+        } catch (error) {
+            console.error('⚠️ 无法克隆存档数据:', error);
+            return null;
+        }
+
+        const hasWorldData = cloned.worldData && typeof cloned.worldData === 'object';
+        const sceneFromWorld = hasWorldData && cloned.worldData.currentSceneData ? cloned.worldData.currentSceneData.scene : null;
+        const sceneIndexFromWorld = hasWorldData && cloned.worldData.currentSceneData && cloned.worldData.currentSceneData.currentTextIndex !== undefined
+            ? cloned.worldData.currentSceneData.currentTextIndex
+            : 0;
+        const f1FromWorld = hasWorldData && cloned.worldData.f1Content && cloned.worldData.f1Content.html !== undefined
+            ? cloned.worldData.f1Content.html
+            : '';
+
+        const normalized = {
+            character: cloned.character || null,
+            gameTime: cloned.gameTime || null,
+            worldData: hasWorldData ? cloned.worldData : null,
+            scene: cloned.scene || sceneFromWorld || null,
+            sceneTextIndex: cloned.sceneTextIndex !== undefined ? cloned.sceneTextIndex : sceneIndexFromWorld,
+            f1HTML: cloned.f1HTML !== undefined ? cloned.f1HTML : f1FromWorld,
+            extras: {}
+        };
+
+        if (cloned.currentSceneId !== undefined) {
+            normalized.extras.currentSceneId = cloned.currentSceneId;
+        }
+
+        if (cloned.sceneHistory) {
+            normalized.extras.sceneHistory = cloned.sceneHistory;
+        }
+
+        return normalized;
+    }
+
+    /**
+     * 根据整理后的存档数据恢复游戏状态
+     */
+    async applySavePayload(saveData, context = {}) {
+        if (!saveData) {
+            return false;
+        }
+
+        if (!window.gameState) {
+            window.gameState = {};
+        }
+
+        if (saveData.character) {
+            window.gameState.character = saveData.character;
+        }
+
+        if (saveData.gameTime) {
+            window.gameState.gameTime = saveData.gameTime;
+        }
+
+        if (saveData.extras && saveData.extras.currentSceneId !== undefined) {
+            window.gameState.currentSceneId = saveData.extras.currentSceneId;
+        }
+
+        if (saveData.extras && saveData.extras.sceneHistory) {
+            window.gameState.sceneHistory = saveData.extras.sceneHistory;
+        }
+
+        if (context.source) {
+            window.gameState._restoreSource = context.source;
+        }
+
+        if (context.meta && context.meta.id) {
+            window.gameState._restoreSaveId = context.meta.id;
+        }
+
+        if (context.meta && context.meta.timestamp) {
+            window.gameState._restoreTimestamp = context.meta.timestamp;
+        }
+
+        window.gameState.restored = true;
+
+        if (saveData.worldData) {
+            if (window.worldState && typeof window.worldState.loadFullState === 'function') {
+                window.worldState.loadFullState(saveData.worldData);
+
+                // 🧠 暂存记忆数据，等 Zero 初始化后再恢复
+                // （不在这里直接恢复，因为 window.zero 可能还没创建）
+                window.gameState._pendingWorldData = saveData.worldData;
+                console.log('💾 已暂存记忆数据，等待 Zero 初始化后恢复');
+
+                // 🧠 如果 Zero 已经存在，立即恢复记忆
+                if (window.zero && window.MemoryIntegration) {
+                    console.log('🧠 检测到 Zero 已初始化，立即恢复记忆...');
+                    window.MemoryIntegration.restoreFromSave(saveData.worldData, 'Zero');
+                }
+            } else {
+                window.gameState._pendingWorldData = saveData.worldData;
+                console.log('⏳ worldState尚未初始化，已暂存worldData等待后续恢复');
+            }
+        }
+
+        if (saveData.scene) {
+            try {
+                await this.waitForSceneManager();
+                if (window.sceneManager) {
+                    window.sceneManager.isRestoring = true;
+                    window.sceneManager.currentScene = saveData.scene;
+                    window.sceneManager.currentTextIndex = saveData.sceneTextIndex || 0;
+                    window.sceneManager.isInChoice = false;
+                    window.sceneManager.currentChoice = null;
+                    window.sceneManager.previewChoice = null;
+                    window.sceneManager.isPreviewMode = false;
+                }
+
+                const storyArea = document.getElementById('storyArea');
+                if (storyArea && saveData.f1HTML !== undefined) {
+                    storyArea.innerHTML = saveData.f1HTML;
+                    this.rebindChoiceEvents();
+                }
+            } catch (error) {
+                console.error('⚠️ 恢复场景时出现问题:', error);
+            } finally {
+                if (window.sceneManager) {
+                    window.sceneManager.isRestoring = false;
+                }
+            }
+
+            setTimeout(() => {
+                if (window.sceneManager) {
+                    console.log('🔁 恢复完成后的场景检查:', window.sceneManager.currentScene?.id);
+                }
+                const storyText = document.getElementById('storyText');
+                if (storyText) {
+                    console.log('📝 F1区域内容预览:', storyText.textContent?.substring(0, 50));
+                }
+            }, 500);
+        } else if (saveData.f1HTML !== undefined) {
+            const storyArea = document.getElementById('storyArea');
+            if (storyArea) {
+                storyArea.innerHTML = saveData.f1HTML;
+                this.rebindChoiceEvents();
+            }
+        }
+
+        if (window.restoreWorldUI) {
+            window.restoreWorldUI();
+        } else if (window.updateGameUI) {
+            window.updateGameUI();
+        }
+
+        return true;
     }
 
     /**
@@ -573,3 +686,126 @@ console.log('命令：');
 console.log('  continueGame() - 继续游戏');
 console.log('  newGame()      - 新游戏');
 console.log('  saveGame()     - 手动保存');
+
+// ============================================
+// 🤖 NPC AI系统初始化
+// ============================================
+
+/**
+ * 初始化Zero的AI实例
+ */
+function initializeZeroAI() {
+    if (!window.EmotionSystem || !window.MemorySystem || !window.UtilityAI) {
+        console.warn('⚠️ NPC AI系统未加载，跳过Zero初始化');
+        return null;
+    }
+
+    // 创建Zero的NPC实例
+    const zero = {
+        id: 'Zero',
+        name: '凌',
+
+        // 基础状态（从worldState同步或使用默认值）
+        health: 100,
+        mood: 70,
+        wolfControl: 70,  // 狼魂控制度
+        medication: 80,   // 药物剩余
+        guilt: 30,        // 负罪感
+
+        // 集成AI系统
+        emotionSystem: new EmotionSystem(),
+        memory: new MemorySystem(),
+        utilityAI: null
+    };
+
+    // 初始化情感状态（根据游戏进度）
+    zero.emotionSystem.emotions.affection = 0;   // 陌生人状态
+    zero.emotionSystem.emotions.trust = 0;
+    zero.emotionSystem.emotions.respect = 0;
+    zero.emotionSystem.emotions.intrigue = 0;
+
+    // 创建AI决策引擎
+    zero.utilityAI = new UtilityAI(zero);
+
+    console.log('🤖 Zero的AI系统已初始化');
+    console.log('   - 情感系统：', zero.emotionSystem.emotions);
+    console.log('   - 记忆系统：', zero.memory);
+    console.log('   - 决策引擎：', zero.utilityAI);
+
+    return zero;
+}
+
+/**
+ * 让Zero根据当前情况做出AI决策
+ * @returns {Object} - {action: 行为名, utility: 分数, allScores: 所有分数}
+ */
+window.getZeroAIDecision = function() {
+    if (!window.zero || !window.zero.utilityAI) {
+        console.error('❌ Zero的AI未初始化');
+        return null;
+    }
+
+    // 构建上下文（从游戏状态获取）
+    const context = {
+        player: {
+            health: window.worldState?.state?.character?.health || 100,
+            trauma: window.worldState?.state?.character?.trauma || 0,
+            mood: window.worldState?.state?.character?.mood || 100
+        },
+        distance: 0.3,  // 默认近距离（可以从场景数据获取）
+        hasEnemy: window.worldState?.state?.inCombat || false,
+        world: {
+            weather: window.worldState?.state?.environment?.weather || 'sunny',
+            time: window.worldState?.state?.time?.period || 'morning'
+        },
+        location: window.worldState?.state?.character?.location || 'unknown'
+    };
+
+    // AI决策
+    const decision = window.zero.utilityAI.decide(context);
+    console.log('🤖 Zero的AI决策:', decision.action, '(分数:', decision.utility.toFixed(2), ')');
+
+    return decision;
+};
+
+// 初始化Zero并恢复记忆的函数
+function initZeroAndRestoreMemory() {
+    // 如果 Zero 已存在，跳过初始化
+    if (window.zero) {
+        console.log('ℹ️ Zero已经初始化过，跳过重复初始化');
+        return;
+    }
+
+    window.zero = initializeZeroAI();
+
+    if (window.zero) {
+        console.log('✅ Zero已准备就绪！');
+        console.log('💡 使用 getZeroAIDecision() 来获取Zero的行为决策');
+
+        // 🧠 恢复记忆（双重检查机制）
+        // 方式1: 从 _pendingWorldData 恢复（存档加载在 Zero 初始化之前）
+        if (window.gameState?._pendingWorldData?.npcs?.Zero?.memory && window.MemoryIntegration) {
+            console.log('🧠 从 _pendingWorldData 恢复记忆...');
+            window.MemoryIntegration.restoreFromSave(window.gameState._pendingWorldData, 'Zero');
+        }
+        // 方式2: 从 WorldState 恢复（存档加载在 Zero 初始化之后）
+        else if (window.worldState?.state?.npcs?.Zero?.memory && window.MemoryIntegration) {
+            console.log('🧠 从 WorldState 恢复记忆...');
+            window.MemoryIntegration.restoreFromSave(window.worldState.state, 'Zero');
+        } else {
+            console.log('ℹ️ 没有待恢复的记忆数据（可能是新游戏）');
+        }
+    }
+}
+
+// 在页面加载完成后初始化Zero（兼容已加载和未加载两种情况）
+if (document.readyState === 'loading') {
+    // 如果文档还在加载，监听 DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', initZeroAndRestoreMemory);
+} else {
+    // 如果文档已经加载完成，立即执行
+    initZeroAndRestoreMemory();
+}
+
+console.log('🤖 NPC AI初始化脚本已加载');
+

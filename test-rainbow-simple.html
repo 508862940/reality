@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩虹简化版测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB, #98D8E8);
+            font-family: Arial, sans-serif;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>彩虹效果测试（简化版）</h2>
+        <button onclick="showRainbow()">显示彩虹</button>
+        <button onclick="hideRainbow()">隐藏彩虹</button>
+        <button onclick="testWithWeatherSystem()">通过天气系统测试</button>
+        <div id="status">准备就绪</div>
+    </div>
+
+    <script>
+        const status = document.getElementById('status');
+
+        // 记录加载状态
+        console.log('开始加载脚本...');
+    </script>
+
+    <!-- 加载简化版 -->
+    <script src="js/core/weather-effect-controller-simple.js"></script>
+
+    <script>
+        // 检查加载结果
+        if (window.WeatherEffectController) {
+            status.innerHTML = '✅ WeatherEffectController类已加载';
+            console.log('✅ WeatherEffectController类已加载');
+
+            // 创建实例
+            window.weatherEffectController = new WeatherEffectController();
+            status.innerHTML += '<br>✅ weatherEffectController实例已创建';
+            console.log('✅ weatherEffectController实例已创建');
+        } else {
+            status.innerHTML = '❌ WeatherEffectController类未加载';
+            console.log('❌ WeatherEffectController类未加载');
+        }
+
+        function showRainbow() {
+            if (window.weatherEffectController) {
+                window.weatherEffectController.showEffect('rainbow', 0.8);
+                status.innerHTML += '<br>🌈 彩虹已显示';
+            } else {
+                status.innerHTML += '<br>❌ 控制器不存在';
+            }
+        }
+
+        function hideRainbow() {
+            if (window.weatherEffectController) {
+                window.weatherEffectController.removeEffect();
+                status.innerHTML += '<br>彩虹已隐藏';
+            } else {
+                status.innerHTML += '<br>❌ 控制器不存在';
+            }
+        }
+
+        function testWithWeatherSystem() {
+            // 模拟天气系统调用
+            if (window.weatherEffectController) {
+                console.log('模拟天气系统强制彩虹天气');
+                window.weatherEffectController.showEffect('rainbow', 0.7);
+                status.innerHTML += '<br>通过天气系统触发彩虹';
+
+                // 15秒后自动消失
+                setTimeout(() => {
+                    window.weatherEffectController.removeEffect();
+                    status.innerHTML += '<br>彩虹自动消失';
+                }, 15000);
+            }
+        }
+    </script>
+</body>
+</html>

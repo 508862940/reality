@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新京市地图-最终版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei'; background: #1a1a1a; color: #fff; overflow: hidden; }
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2a2a2a; border-bottom: 1px solid #444; display: flex; align-items: center; padding: 0 20px; z-index: 1000; gap: 15px; }
+        .toolbar h1 { color: #4ECDC4; font-size: 20px; margin-right: auto; }
+        .toolbar button { padding: 8px 16px; background: #4a4a4a; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+        .toolbar button:hover { background: #5a5a5a; }
+        .toolbar button.active { background: #4ECDC4; color: #000; }
+        #canvas-container { position: fixed; top: 60px; left: 0; right: 300px; bottom: 0; background: #2a2a2a; }
+        #map-canvas { cursor: grab; }
+        .info-panel { position: fixed; top: 60px; right: 0; bottom: 0; width: 300px; background: #252525; padding: 20px; overflow-y: auto; }
+        .info-panel h3 { color: #4ECDC4; margin-bottom: 15px; }
+        .info-item { margin: 10px 0; padding: 10px; background: #333; border-radius: 5px; }
+        .info-item label { color: #aaa; font-size: 12px; display: block; margin-bottom: 5px; }
+        .tips { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 5px; font-size: 12px; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>🗺️ 新京市地图（最终版）</h1>
+        <button onclick="zoom*=1.2;render()">放大</button>
+        <button onclick="zoom/=1.2;render()">缩小</button>
+        <button id="btnRings" class="active" onclick="showRings=!showRings;this.classList.toggle('active');render()">环线</button>
+        <button onclick="zoom=1;offset={x:0,y:0};render()">重置</button>
+    </div>
+    <div id="canvas-container"><canvas id="map-canvas"></canvas></div>
+    <div class="info-panel">
+        <h3>地图信息</h3>
+        <div class="info-item"><label>节点总数</label><div>25个</div></div>
+        <div class="info-item"><label>结构</label><div>中心+4环+环海</div></div>
+        <div id="nodeInfo" style="display:none">
+            <h3>节点详情</h3>
+            <div class="info-item"><label>名称</label><div id="infoName">-</div></div>
+            <div class="info-item"><label>类型</label><div id="infoType">-</div></div>
+            <div class="info-item"><label>描述</label><div id="infoDesc">-</div></div>
+        </div>
+    </div>
+    <div class="tips">💡 滚轮缩放 | 拖拽移动 | 点击查看详情</div>
+    <script>
+const data={"nodes":[{"id":"R0","name":"中心广场","x":400,"y":400,"color":"#DC143C","size":30,"type":"政务区","desc":"城市核心"},{"id":"R1-N","name":"警局","x":400,"y":280,"color":"#DC143C","size":20,"type":"政务区","desc":"执法机构"},{"id":"R1-E","name":"医疗区","x":520,"y":400,"color":"#4ECDC4","size":20,"type":"生活区","desc":"医疗服务"},{"id":"R1-S","name":"学院区","x":400,"y":520,"color":"#4169E1","size":20,"type":"学院区","desc":"真理学院"},{"id":"R1-W","name":"居住区","x":280,"y":400,"color":"#4ECDC4","size":20,"type":"生活区","desc":"高级社区"},{"id":"R2-N","name":"警局","x":400,"y":200,"color":"#DC143C","size":18,"type":"政务区","desc":"行政分局"},{"id":"R2-NE","name":"电视台","x":541.4,"y":258.6,"color":"#FFD700","size":18,"type":"功能区","desc":"媒体中心"},{"id":"R2-E","name":"博物馆","x":600,"y":400,"color":"#FFD700","size":18,"type":"功能区","desc":"历史博物馆"},{"id":"R2-SL","name":"居住区","x":300,"y":573.2,"color":"#4ECDC4","size":18,"type":"生活区","desc":"居民社区"},{"id":"R2-SM","name":"公园","x":400,"y":600,"color":"#4ECDC4","size":18,"type":"生活区","desc":"静谧之园"},{"id":"R2-SR","name":"商业区","x":500,"y":573.2,"color":"#DDA0DD","size":18,"type":"商业区","desc":"购物中心"},{"id":"R2-SW","name":"教堂","x":258.6,"y":541.4,"color":"#FFD700","size":18,"type":"功能区","desc":"圣光教堂"},{"id":"R2-W1","name":"居住区","x":212.1,"y":468.4,"color":"#4ECDC4","size":18,"type":"生活区","desc":"西部社区"},{"id":"R2-W2","name":"商业区","x":212.1,"y":331.6,"color":"#DDA0DD","size":18,"type":"商业区","desc":"商业街"},{"id":"R3-N","name":"警局","x":400,"y":120,"color":"#DC143C","size":16,"type":"政务区","desc":"派出所"},{"id":"R3-NE1","name":"娱乐区","x":540,"y":157.4,"color":"#4ECDC4","size":16,"type":"生活区","desc":"幻梦乐园"},{"id":"R3-NE2","name":"居住区","x":642.6,"y":260,"color":"#4ECDC4","size":16,"type":"生活区","desc":"密集居住区"},{"id":"R3-SE","name":"图书馆","x":642.6,"y":540,"color":"#FFD700","size":16,"type":"功能区","desc":"文汇图书馆"},{"id":"R3-S","name":"居住区","x":400,"y":680,"color":"#4ECDC4","size":16,"type":"生活区","desc":"晨曦里"},{"id":"R3-SW","name":"招工区","x":157.4,"y":540,"color":"#8B4513","size":16,"type":"工业区","desc":"梧桐里"},{"id":"R3-W","name":"工业区","x":120,"y":400,"color":"#8B4513","size":16,"type":"工业区","desc":"齿轮工业区"},{"id":"R4-NW2","name":"森林","x":220,"y":88.4,"color":"#2F4F4F","size":14,"type":"秘区","desc":"边界森林"},{"id":"R4-NW1","name":"轻工业","x":145.5,"y":145.5,"color":"#8B4513","size":14,"type":"工业区","desc":"轻工业区"},{"id":"R4-SW","name":"郊外","x":145.5,"y":654.5,"color":"#2F4F4F","size":14,"type":"秘区","desc":"远风镇"},{"id":"R4-S","name":"别墅区","x":400,"y":760,"color":"#4ECDC4","size":14,"type":"生活区","desc":"静海台"}]};
+const c=document.getElementById('map-canvas'),ctx=c.getContext('2d'),cont=document.getElementById('canvas-container');
+let offset={x:0,y:0},hover=null,sel=null,showRings=true,zoom=1,drag=false,last={x:0,y:0};
+function resize(){c.width=cont.clientWidth;c.height=cont.clientHeight;offset.x=c.width/2-400*zoom;offset.y=c.height/2-400*zoom;render();}
+window.addEventListener('resize',resize);resize();
+function render(){ctx.fillStyle='#2a2a2a';ctx.fillRect(0,0,c.width,c.height);if(showRings){const cx=400*zoom+offset.x,cy=400*zoom+offset.y;[120,200,280,360].forEach(r=>{ctx.strokeStyle='rgba(255,215,0,0.2)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,r*zoom,0,Math.PI*2);ctx.stroke();});}data.nodes.forEach(n=>{const x=n.x*zoom+offset.x,y=n.y*zoom+offset.y,s=n.size*zoom;if(n===hover||n===sel){const g=ctx.createRadialGradient(x,y,0,x,y,s*2);g.addColorStop(0,n.color+'40');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,s*2,0,Math.PI*2);ctx.fill();}ctx.fillStyle=n.color;ctx.beginPath();ctx.arc(x,y,s,0,Math.PI*2);ctx.fill();ctx.strokeStyle=n===sel?'#fff':'rgba(255,255,255,0.3)';ctx.lineWidth=n===sel?3:2;ctx.beginPath();ctx.arc(x,y,s,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#fff';ctx.font=Math.max(10,11*zoom)+'px Microsoft YaHei';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.name,x,y);});}
+function getNode(x,y){for(let i=data.nodes.length-1;i>=0;i--){const n=data.nodes[i],nx=n.x*zoom+offset.x,ny=n.y*zoom+offset.y;if(Math.sqrt((x-nx)**2+(y-ny)**2)<=n.size*zoom)return n;}return null;}
+c.addEventListener('mousedown',e=>{const n=getNode(e.offsetX,e.offsetY);if(!n){drag=true;last={x:e.offsetX,y:e.offsetY};}});
+c.addEventListener('mousemove',e=>{if(drag){offset.x+=e.offsetX-last.x;offset.y+=e.offsetY-last.y;last={x:e.offsetX,y:e.offsetY};render();}else{const n=getNode(e.offsetX,e.offsetY);if(n!==hover){hover=n;c.style.cursor=n?'pointer':'grab';render();}}});
+c.addEventListener('mouseup',()=>drag=false);
+c.addEventListener('click',e=>{if(!drag){const n=getNode(e.offsetX,e.offsetY);if(n){sel=n;document.getElementById('nodeInfo').style.display='block';document.getElementById('infoName').textContent=n.name;document.getElementById('infoType').textContent=n.type;document.getElementById('infoDesc').textContent=n.desc;render();}else{sel=null;document.getElementById('nodeInfo').style.display='none';render();}}});
+c.addEventListener('wheel',e=>{e.preventDefault();const d=e.deltaY>0?0.9:1.1,oz=zoom;zoom=Math.max(0.3,Math.min(3,zoom*d));offset.x=e.offsetX-(e.offsetX-offset.x)*(zoom/oz);offset.y=e.offsetY-(e.offsetY-offset.y)*(zoom/oz);render();});
+    </script>
+</body>
+</html>

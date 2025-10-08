@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新京市地图预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+            gap: 15px;
+        }
+
+        .toolbar h1 {
+            color: #4ECDC4;
+            font-size: 20px;
+            margin-right: auto;
+        }
+
+        .toolbar button {
+            padding: 8px 16px;
+            background: #4a4a4a;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .toolbar button:hover {
+            background: #5a5a5a;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 300px;
+            bottom: 0;
+            overflow: hidden;
+            background: #2a2a2a;
+        }
+
+        #map-canvas {
+            cursor: grab;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 60px;
+            right: 0;
+            bottom: 0;
+            width: 300px;
+            background: #252525;
+            border-left: 1px solid #444;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .info-panel h3 {
+            color: #4ECDC4;
+            margin-bottom: 15px;
+        }
+
+        .node-info {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .node-info.show {
+            display: block;
+        }
+
+        .info-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+        }
+
+        .info-item label {
+            color: #aaa;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .legend {
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>🗺️ 新京市表层世界地图</h1>
+        <button onclick="toggleRings()">⭕ 环形辅助线</button>
+        <button onclick="resetView()">🔄 重置视图</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="map-canvas"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>地图信息</h3>
+        <div class="info-item">
+            <label>总节点数</label>
+            <div class="value" id="node-count">25</div>
+        </div>
+        <div class="info-item">
+            <label>环层数</label>
+            <div class="value">4环 + 中心</div>
+        </div>
+
+        <div class="node-info" id="node-info">
+            <h3>节点详情</h3>
+            <div class="info-item">
+                <label>名称</label>
+                <div class="value" id="info-name">-</div>
+            </div>
+            <div class="info-item">
+                <label>类型</label>
+                <div class="value" id="info-type">-</div>
+            </div>
+            <div class="info-item">
+                <label>环层</label>
+                <div class="value" id="info-ring">-</div>
+            </div>
+            <div class="info-item">
+                <label>方位</label>
+                <div class="value" id="info-sector">-</div>
+            </div>
+            <div class="info-item">
+                <label>设施</label>
+                <div class="value" id="info-facilities">-</div>
+            </div>
+            <div class="info-item">
+                <label>描述</label>
+                <div class="value" id="info-desc">-</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>图例</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #DC143C;"></div>
+                <span>🔴 政务区（4个）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4ECDC4;"></div>
+                <span>🟢 生活区（11个）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFD700;"></div>
+                <span>🟡 功能区（5个）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4169E1;"></div>
+                <span>🔵 学院区（1个）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #DDA0DD;"></div>
+                <span>🟣 商业区（3个）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #8B4513;"></div>
+                <span>🟤 工业区（4个）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2F4F4F;"></div>
+                <span>⚫ 秘区（3个）</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 地图数据
+        const mapData = {
+  "nodes": [
+    {"id": "R0-CENTER", "name": "天枢中心", "ring": 0, "sector": "中", "x": 400, "y": 400, "color": "#DC143C", "size": 30, "type": "政务区", "facilities": ["中心广场", "政务大楼"], "description": "城市绝对核心，权力中心"},
+    {"id": "R1-N", "name": "第一环-北部", "ring": 1, "sector": "北", "x": 400, "y": 280, "color": "#DC143C", "size": 20, "type": "政务区", "facilities": ["警察总局", "法院"], "description": "执法核心区域"},
+    {"id": "R1-E", "name": "第一环-东部", "ring": 1, "sector": "东", "x": 520, "y": 400, "color": "#4ECDC4", "size": 20, "type": "生活区", "facilities": ["高级住宅", "中央公园"], "description": "核心生活区"},
+    {"id": "R1-W", "name": "第一环-西部", "ring": 1, "sector": "西", "x": 280, "y": 400, "color": "#4ECDC4", "size": 20, "type": "生活区", "facilities": ["高级社区"], "description": "核心居住区"},
+    {"id": "R1-S", "name": "第一环-南部（学院）", "ring": 1, "sector": "南", "x": 400, "y": 520, "color": "#4169E1", "size": 20, "type": "学院区", "facilities": ["真理学院"], "description": "最高学府"},
+    {"id": "R2-N", "name": "第二环-北部", "ring": 2, "sector": "北", "x": 400, "y": 200, "color": "#DC143C", "size": 18, "type": "政务区", "facilities": ["行政分局"], "description": "行政管理"},
+    {"id": "R2-NE", "name": "第二环-东北部", "ring": 2, "sector": "东北", "x": 500, "y": 250, "color": "#FFD700", "size": 18, "type": "功能区", "facilities": ["电视台", "媒体中心"], "description": "信息传播中心"},
+    {"id": "R2-E", "name": "第二环-东部", "ring": 2, "sector": "东", "x": 600, "y": 400, "color": "#FFD700", "size": 18, "type": "功能区", "facilities": ["医疗中心", "博物馆"], "description": "医疗与文化"},
+    {"id": "R2-S-L", "name": "第二环-南部左", "ring": 2, "sector": "南", "x": 320, "y": 580, "color": "#4ECDC4", "size": 18, "type": "生活区", "facilities": ["居住区"], "description": "居民社区"},
+    {"id": "R2-S-M", "name": "第二环-南部中（最南端）", "ring": 2, "sector": "南", "x": 400, "y": 620, "color": "#4ECDC4", "size": 18, "type": "生活区", "facilities": ["静谧之园", "娱乐区"], "description": "主要公园和休憩区"},
+    {"id": "R2-S-R", "name": "第二环-南部右", "ring": 2, "sector": "南", "x": 480, "y": 580, "color": "#DDA0DD", "size": 18, "type": "商业区", "facilities": ["购物中心"], "description": "商业中心"},
+    {"id": "R2-SW", "name": "第二环-西南部", "ring": 2, "sector": "西南", "x": 280, "y": 520, "color": "#FFD700", "size": 18, "type": "功能区", "facilities": ["教堂", "文化中心"], "description": "文化与信仰"},
+    {"id": "R2-W-1", "name": "第二环-西部下", "ring": 2, "sector": "西", "x": 220, "y": 450, "color": "#4ECDC4", "size": 18, "type": "生活区", "facilities": ["居住区"], "description": "西部社区"},
+    {"id": "R2-W-2", "name": "第二环-西部上", "ring": 2, "sector": "西", "x": 220, "y": 350, "color": "#DDA0DD", "size": 18, "type": "商业区", "facilities": ["商业街"], "description": "繁华商业区"},
+    {"id": "R3-N", "name": "第三环-北部", "ring": 3, "sector": "北", "x": 400, "y": 130, "color": "#DC143C", "size": 16, "type": "政务区", "facilities": ["派出所", "社区管理"], "description": "基层管理"},
+    {"id": "R3-NE-1", "name": "第三环-东北部1", "ring": 3, "sector": "东北", "x": 550, "y": 180, "color": "#4ECDC4", "size": 16, "type": "生活区", "facilities": ["大型居住区"], "description": "密集居住区"},
+    {"id": "R3-NE-2", "name": "第三环-东北部2", "ring": 3, "sector": "东北", "x": 600, "y": 250, "color": "#4ECDC4", "size": 16, "type": "生活区", "facilities": ["社区公园"], "description": "居民活动区"},
+    {"id": "R3-SE", "name": "第三环-东南部", "ring": 3, "sector": "东南", "x": 650, "y": 500, "color": "#FFD700", "size": 16, "type": "功能区", "facilities": ["社区医疗", "图书馆"], "description": "社区服务中心"},
+    {"id": "R3-S", "name": "第三环-南部", "ring": 3, "sector": "南", "x": 400, "y": 680, "color": "#4ECDC4", "size": 16, "type": "生活区", "facilities": ["别墅区", "高档社区"], "description": "富人区"},
+    {"id": "R3-SW", "name": "第三环-西南部", "ring": 3, "sector": "西南", "x": 250, "y": 600, "color": "#8B4513", "size": 16, "type": "工业区", "facilities": ["轻工业区", "招工中心"], "description": "工业与劳务"},
+    {"id": "R3-W", "name": "第三环-西部", "ring": 3, "sector": "西", "x": 150, "y": 400, "color": "#8B4513", "size": 16, "type": "工业区", "facilities": ["齿轮工业区"], "description": "主要工业区"},
+    {"id": "R4-S", "name": "第四环-南部", "ring": 4, "sector": "南", "x": 400, "y": 750, "color": "#4ECDC4", "size": 14, "type": "生活区", "facilities": ["远郊社区", "公交总站"], "description": "外环居住区，公交枢纽"},
+    {"id": "R4-SW", "name": "第四环-西南部", "ring": 4, "sector": "西南", "x": 180, "y": 680, "color": "#2F4F4F", "size": 14, "type": "秘区", "facilities": ["废弃设施", "隐藏入口"], "description": "神秘区域"},
+    {"id": "R4-NW-1", "name": "第四环-西北部1", "ring": 4, "sector": "西北", "x": 120, "y": 250, "color": "#8B4513", "size": 14, "type": "工业区", "facilities": ["重工业区"], "description": "重工业生产"},
+    {"id": "R4-NW-2", "name": "第四环-西北部2", "ring": 4, "sector": "西北", "x": 180, "y": 150, "color": "#2F4F4F", "size": 14, "type": "秘区", "facilities": ["边界检查站", "森林入口"], "description": "边界过渡区"}
+  ]
+};
+
+        const canvas = document.getElementById('map-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        let canvasOffset = { x: 0, y: 0 };
+        let hoveredNode = null;
+        let selectedNode = null;
+        let showRings = true;
+        let zoom = 1;
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            canvasOffset.x = canvas.width / 2 - 400;
+            canvasOffset.y = canvas.height / 2 - 400;
+            render();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function render() {
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (showRings) {
+                drawRings();
+            }
+
+            mapData.nodes.forEach(node => drawNode(node));
+        }
+
+        function drawRings() {
+            const centerX = 400 * zoom + canvasOffset.x;
+            const centerY = 400 * zoom + canvasOffset.y;
+            const rings = [120, 200, 280, 360, 440].map(r => r * zoom);
+
+            ctx.strokeStyle = 'rgba(255, 215, 0, 0.15)';
+            ctx.lineWidth = 1;
+
+            rings.forEach(radius => {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+        }
+
+        function drawNode(node) {
+            const x = node.x * zoom + canvasOffset.x;
+            const y = node.y * zoom + canvasOffset.y;
+            const size = node.size * zoom;
+
+            if (node === hoveredNode || node === selectedNode) {
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+                gradient.addColorStop(0, node.color + '40');
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, size * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = node.color;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = node === selectedNode ? '#fff' : 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = node === selectedNode ? 3 : 2;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${11 * zoom}px Microsoft YaHei`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const displayName = node.name.replace('第', '').replace('环-', '');
+            ctx.fillText(displayName, x, y);
+        }
+
+        function getNodeAt(x, y) {
+            for (let i = mapData.nodes.length - 1; i >= 0; i--) {
+                const node = mapData.nodes[i];
+                const nodeX = node.x * zoom + canvasOffset.x;
+                const nodeY = node.y * zoom + canvasOffset.y;
+                const dist = Math.sqrt(Math.pow(x - nodeX, 2) + Math.pow(y - nodeY, 2));
+                if (dist <= node.size * zoom) {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        function showNodeInfo(node) {
+            selectedNode = node;
+            const panel = document.getElementById('node-info');
+            panel.classList.add('show');
+
+            document.getElementById('info-name').textContent = node.name;
+            document.getElementById('info-type').textContent = node.type;
+            document.getElementById('info-ring').textContent = `第${node.ring}环`;
+            document.getElementById('info-sector').textContent = node.sector;
+            document.getElementById('info-facilities').textContent = node.facilities.join('、');
+            document.getElementById('info-desc').textContent = node.description;
+
+            render();
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const node = getNodeAt(e.offsetX, e.offsetY);
+            if (node) {
+                showNodeInfo(node);
+            } else {
+                selectedNode = null;
+                document.getElementById('node-info').classList.remove('show');
+                render();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const node = getNodeAt(e.offsetX, e.offsetY);
+            if (node !== hoveredNode) {
+                hoveredNode = node;
+                canvas.style.cursor = node ? 'pointer' : 'default';
+                render();
+            }
+        });
+
+        function toggleRings() {
+            showRings = !showRings;
+            render();
+        }
+
+        function resetView() {
+            canvasOffset.x = canvas.width / 2 - 400;
+            canvasOffset.y = canvas.height / 2 - 400;
+            zoom = 1;
+            render();
+        }
+    </script>
+</body>
+</html>

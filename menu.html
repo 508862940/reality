@@ -43,6 +43,9 @@
             <button class="menu-btn" id="loadGameBtn">
                 💾 载入存档
             </button>
+            <button class="menu-btn" id="wikiBtn">
+                📚 游戏百科
+            </button>
             <button class="menu-btn" id="settingsBtn">
                 ⚙️ 游戏设置
             </button>
@@ -317,6 +320,21 @@
         window.addEventListener('DOMContentLoaded', function() {
             updatePresetInfo();
         });
+    </script>
+
+    <!-- Service Worker 注册 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker 注册成功:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Service Worker 注册失败:', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>

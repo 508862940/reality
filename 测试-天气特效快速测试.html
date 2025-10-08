@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气特效快速测试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .test-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .weather-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .location-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .danger-btn {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .log-area {
+            background: #1a1a2e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-area p {
+            margin: 5px 0;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-panel">
+        <h1>🌤️ 天气特效快速测试工具</h1>
+        <p class="subtitle">直接在主游戏页面的控制台使用，无需场景</p>
+
+        <!-- 1. 天气测试 -->
+        <div class="section">
+            <h2>1️⃣ 天气特效测试</h2>
+            <div class="button-group">
+                <button class="weather-btn" onclick="testWeather('sunny')">☀️ 晴天</button>
+                <button class="weather-btn" onclick="testWeather('rainy')">🌧️ 雨天</button>
+                <button class="weather-btn" onclick="testWeather('stormy')">⛈️ 暴雨</button>
+                <button class="weather-btn" onclick="testWeather('snowy')">❄️ 雪天</button>
+                <button class="weather-btn" onclick="testWeather('sakura')">🌸 樱花</button>
+                <button class="weather-btn" onclick="testWeather('rainbow')">🌈 彩虹</button>
+                <button class="weather-btn" onclick="testWeather('meteor_shower')">🌠 流星雨</button>
+                <button class="weather-btn" onclick="testWeather('polluted')">☢️ 污染</button>
+            </div>
+        </div>
+
+        <!-- 2. 位置测试 -->
+        <div class="section">
+            <h2>2️⃣ 室内外切换测试</h2>
+            <div class="button-group">
+                <button class="location-btn" onclick="testLocation('outdoor')">🏞️ 室外</button>
+                <button class="location-btn" onclick="testLocation('park')">🌳 公园</button>
+                <button class="location-btn" onclick="testLocation('indoor')">🏠 室内</button>
+                <button class="location-btn" onclick="testLocation('underground')">🚇 地下</button>
+            </div>
+            <div class="info-box">
+                💡 室内/地下时天气特效应该隐藏，室外时应该显示
+            </div>
+        </div>
+
+        <!-- 3. 温度系统测试 -->
+        <div class="section">
+            <h2>3️⃣ 温度系统测试</h2>
+            <div class="button-group">
+                <button class="control-btn" onclick="testTemperature(-10)">🥶 严寒(-10°C)</button>
+                <button class="control-btn" onclick="testTemperature(5)">🧊 寒冷(5°C)</button>
+                <button class="control-btn" onclick="testTemperature(22)">😊 舒适(22°C)</button>
+                <button class="control-btn" onclick="testTemperature(35)">🥵 炎热(35°C)</button>
+            </div>
+        </div>
+
+        <!-- 4. 雨伞测试 -->
+        <div class="section">
+            <h2>4️⃣ 雨伞遮挡测试</h2>
+            <div class="button-group">
+                <button class="control-btn" onclick="toggleUmbrella(true)">🌂 打开雨伞</button>
+                <button class="control-btn" onclick="toggleUmbrella(false)">❌ 收起雨伞</button>
+            </div>
+            <div class="info-box">
+                💡 打开雨伞后，雨滴应该避开屏幕中央或完全消失（PWA模式）
+            </div>
+        </div>
+
+        <!-- 5. 控制功能 -->
+        <div class="section">
+            <h2>5️⃣ 控制功能</h2>
+            <div class="button-group">
+                <button class="danger-btn" onclick="clearEffects()">🧹 清除所有特效</button>
+                <button class="danger-btn" onclick="checkStatus()">📊 检查系统状态</button>
+            </div>
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="log-area" id="logArea">
+            <p>🚀 测试工具已准备就绪...</p>
+            <p>💡 提示：在主游戏页面（game-main.html）的控制台执行这些命令</p>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const time = new Date().toLocaleTimeString();
+            const icons = {
+                info: 'ℹ️',
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            logArea.innerHTML += `<p>[${time}] ${icons[type]} ${message}</p>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // 1. 测试天气
+        function testWeather(weather) {
+            log(`切换天气为: ${weather}`, 'info');
+            const command = `window.weatherSystem.forceWeather('${weather}', 4)`;
+            log(`控制台命令: ${command}`, 'info');
+            log('复制此命令到主游戏控制台执行 ↓', 'warning');
+            navigator.clipboard.writeText(command).then(() => {
+                log('✅ 命令已复制到剪贴板！', 'success');
+            });
+        }
+
+        // 2. 测试位置
+        function testLocation(location) {
+            log(`切换位置为: ${location}`, 'info');
+            const commands = [
+                `window.worldState.state.character.location = '${location}'`,
+                `window.reactiveSystem.notify('character.location', '${location}')`
+            ];
+            const fullCommand = commands.join('; ');
+            log(`控制台命令: ${fullCommand}`, 'info');
+            navigator.clipboard.writeText(fullCommand).then(() => {
+                log('✅ 命令已复制到剪贴板！', 'success');
+            });
+        }
+
+        // 3. 测试温度
+        function testTemperature(temp) {
+            log(`设置温度为: ${temp}°C`, 'info');
+            const command = `window.temperatureSystem.updateTemperature(${temp})`;
+            log(`控制台命令: ${command}`, 'info');
+            navigator.clipboard.writeText(command).then(() => {
+                log('✅ 命令已复制到剪贴板！', 'success');
+            });
+        }
+
+        // 4. 雨伞开关
+        function toggleUmbrella(enable) {
+            log(enable ? '打开雨伞' : '收起雨伞', 'info');
+            let command;
+            if (enable) {
+                command = `window.worldState.state.character.equipped = window.worldState.state.character.equipped || {}; window.worldState.state.character.equipped.accessory = {id: 'umbrella'}`;
+            } else {
+                command = `if (window.worldState.state.character.equipped) window.worldState.state.character.equipped.accessory = null`;
+            }
+            log(`控制台命令: ${command}`, 'info');
+            navigator.clipboard.writeText(command).then(() => {
+                log('✅ 命令已复制到剪贴板！', 'success');
+            });
+        }
+
+        // 5. 清除特效
+        function clearEffects() {
+            log('清除所有天气特效', 'warning');
+            const command = `window.weatherEffectController.removeEffect(true)`;
+            log(`控制台命令: ${command}`, 'info');
+            navigator.clipboard.writeText(command).then(() => {
+                log('✅ 命令已复制到剪贴板！', 'success');
+            });
+        }
+
+        // 6. 检查状态
+        function checkStatus() {
+            log('检查系统状态', 'info');
+            const commands = [
+                `console.log('天气系统:', window.weatherSystem)`,
+                `console.log('温度系统:', window.temperatureSystem)`,
+                `console.log('特效控制器:', window.weatherEffectController)`,
+                `console.log('当前位置:', window.worldState?.state?.character?.location)`,
+                `console.log('当前天气:', window.worldState?.state?.environment?.weather)`
+            ];
+            const fullCommand = commands.join('; ');
+            log(`控制台命令: ${fullCommand}`, 'info');
+            navigator.clipboard.writeText(fullCommand).then(() => {
+                log('✅ 命令已复制到剪贴板！', 'success');
+            });
+        }
+    </script>
+</body>
+</html>

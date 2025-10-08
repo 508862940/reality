@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>响应式性能对比测试</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .test-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .test-panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-item label {
+            display: block;
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+
+        .status-item .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button.secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        button.secondary:hover {
+            background: #38a169;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .result-table th,
+        .result-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .result-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .result-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .winner {
+            color: #48bb78;
+            font-weight: bold;
+        }
+
+        .loser {
+            color: #f56565;
+        }
+
+        .log-area {
+            background: #1a202c;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        .log-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-area::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+
+        .log-area::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ 响应式性能对比测试</h1>
+
+        <!-- 系统状态 -->
+        <div class="test-panel">
+            <h2>📊 系统状态</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <label>旧系统（v1）</label>
+                    <div class="value" id="v1Status">❌ 未加载</div>
+                </div>
+                <div class="status-item">
+                    <label>新系统（v2）</label>
+                    <div class="value" id="v2Status">❌ 未加载</div>
+                </div>
+                <div class="status-item">
+                    <label>ComputedValue</label>
+                    <div class="value" id="computedStatus">❌ 未加载</div>
+                </div>
+                <div class="status-item">
+                    <label>DependencyGraph</label>
+                    <div class="value" id="graphStatus">❌ 未加载</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试控制 -->
+        <div class="test-panel">
+            <h2>🎮 测试控制</h2>
+            <p style="color: #718096; margin-bottom: 15px;">
+                模拟场景：玩家在同一帧内换衣服、吃东西、天气变化（3个输入变化）
+            </p>
+            <div class="control-panel">
+                <button class="primary" onclick="runTest(100)">🚀 测试 100 轮</button>
+                <button class="primary" onclick="runTest(1000)">🚀 测试 1000 轮</button>
+                <button class="primary" onclick="runTest(10000)">🚀 测试 10000 轮</button>
+                <button class="secondary" onclick="clearLog()">🗑️ 清空日志</button>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 测试结果 -->
+        <div class="test-panel">
+            <h2>📈 测试结果</h2>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>指标</th>
+                        <th>旧系统（v1）</th>
+                        <th>新系统（v2）</th>
+                        <th>性能提升</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTable">
+                    <tr>
+                        <td>总计算次数</td>
+                        <td id="v1Count">-</td>
+                        <td id="v2Count">-</td>
+                        <td id="countImprove">-</td>
+                    </tr>
+                    <tr>
+                        <td>总耗时 (ms)</td>
+                        <td id="v1Time">-</td>
+                        <td id="v2Time">-</td>
+                        <td id="timeImprove">-</td>
+                    </tr>
+                    <tr>
+                        <td>平均耗时 (ms/次)</td>
+                        <td id="v1Avg">-</td>
+                        <td id="v2Avg">-</td>
+                        <td id="avgImprove">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 日志 -->
+        <div class="test-panel">
+            <h2>📝 测试日志</h2>
+            <div class="log-area" id="logArea"></div>
+        </div>
+    </div>
+
+    <!-- 引入核心文件 -->
+    <script src="js/core/computed-value.js"></script>
+    <script src="js/core/dependency-graph.js"></script>
+    <script src="js/core/reactive-system.js"></script>
+    <script src="js/core/time-system.js"></script>
+    <script src="js/core/temperature-system.js"></script>
+    <script src="js/core/temperature-system-v2.js"></script>
+
+    <script>
+        // 日志系统
+        const originalConsoleLog = console.log;
+        let logBuffer = [];
+        let suppressConsoleLogs = false; // 控制是否压制重复日志
+
+        console.log = function(...args) {
+            const message = args.join(' ');
+            logBuffer.push(message);
+
+            const logArea = document.getElementById('logArea');
+            if (logArea && !suppressConsoleLogs) {
+                // 检查是否是HTML标签，如果是则直接插入
+                if (message.includes('<span')) {
+                    logArea.innerHTML += message + '\n';
+                } else {
+                    // 普通文本，转义后插入
+                    const div = document.createElement('div');
+                    div.textContent = message;
+                    logArea.appendChild(div);
+                }
+                logArea.scrollTop = logArea.scrollHeight;
+            }
+
+            originalConsoleLog.apply(console, args);
+        };
+
+        function clearLog() {
+            logBuffer = [];
+            document.getElementById('logArea').innerHTML = '';
+        }
+
+        function addLog(message, color = '#48bb78') {
+            const logArea = document.getElementById('logArea');
+            if (logArea) {
+                const span = document.createElement('span');
+                span.style.color = color;
+                span.textContent = message;
+                logArea.appendChild(span);
+                logArea.appendChild(document.createTextNode('\n'));
+                logArea.scrollTop = logArea.scrollHeight;
+            }
+            originalConsoleLog(message);
+        }
+
+        // 检查系统状态
+        function checkSystems() {
+            document.getElementById('computedStatus').textContent =
+                typeof ComputedValue !== 'undefined' ? '✅ 已加载' : '❌ 未加载';
+
+            document.getElementById('graphStatus').textContent =
+                typeof DependencyGraph !== 'undefined' ? '✅ 已加载' : '❌ 未加载';
+
+            document.getElementById('v1Status').textContent =
+                typeof TemperatureSystem !== 'undefined' ? '✅ 已加载' : '❌ 未加载';
+
+            document.getElementById('v2Status').textContent =
+                typeof TemperatureSystemV2 !== 'undefined' ? '✅ 已加载' : '❌ 未加载';
+        }
+
+        // 初始化真实的时间系统
+        if (!window.timeSystem && typeof TimeSystem !== 'undefined') {
+            window.timeSystem = new TimeSystem();
+            window.timeSystem.init();
+        }
+
+        // 模拟天气系统
+        if (!window.weatherSystem) {
+            window.weatherSystem = {
+                currentTemperature: 20,
+                currentWeather: 'sunny'
+            };
+        }
+
+        // 测试旧系统（v1）
+        function testV1(rounds) {
+            // 暂时压制初始化日志
+            suppressConsoleLogs = true;
+            const tempSystem = new TemperatureSystem();
+            tempSystem.init();
+            suppressConsoleLogs = false;
+
+            let computeCount = 0;
+
+            // 劫持计算函数统计次数
+            const originalCalculate = tempSystem.calculateApparentTemp.bind(tempSystem);
+            tempSystem.calculateApparentTemp = function() {
+                computeCount++;
+                return originalCalculate();
+            };
+
+            // 🔧 添加兼容方法（v1没有updateTemperature，手动实现）
+            tempSystem.updateTemperature = function(temp) {
+                window.weatherSystem.currentTemperature = temp;
+                this.currentState.environmentTemp = temp;
+                this.calculateApparentTemp();
+            };
+
+            const startTime = performance.now();
+
+            // 压制测试循环中的日志
+            suppressConsoleLogs = true;
+            for (let i = 0; i < rounds; i++) {
+                // 模拟同一帧内3个变化
+                tempSystem.setClothingModifier(8);         // 换衣服
+                tempSystem.addFoodBuff('test', 3, 0.5);   // 吃东西
+                tempSystem.updateTemperature(25);          // 天气变化
+            }
+            suppressConsoleLogs = false;
+
+            const endTime = performance.now();
+            const totalTime = endTime - startTime;
+
+            return {
+                computeCount,
+                totalTime,
+                avgTime: totalTime / computeCount
+            };
+        }
+
+        // 测试新系统（v2）- 修复版：每轮等待计算完成
+        async function testV2(rounds) {
+            // 暂时压制初始化日志
+            suppressConsoleLogs = true;
+            const tempSystem = new TemperatureSystemV2();
+            tempSystem.init();
+            suppressConsoleLogs = false;
+
+            let computeCount = 0;
+
+            // 劫持所有计算节点统计次数
+            Object.values(tempSystem.computed).forEach(computed => {
+                if (computed) {
+                    const originalCompute = computed.compute.bind(computed);
+                    computed.compute = function() {
+                        computeCount++;
+                        return originalCompute();
+                    };
+                }
+            });
+
+            const startTime = performance.now();
+
+            // 压制测试循环中的日志
+            suppressConsoleLogs = true;
+            // 每轮等待计算完成，模拟真实使用场景
+            for (let i = 0; i < rounds; i++) {
+                // 模拟同一帧内3个变化
+                tempSystem.setClothingModifier(8);         // 换衣服
+                tempSystem.addFoodBuff('test', 3, 0.5);   // 吃东西
+                tempSystem.updateTemperature(25);          // 天气变化
+
+                // 等待这一轮的计算完成
+                await new Promise(resolve => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(resolve);
+                    });
+                });
+            }
+            suppressConsoleLogs = false;
+
+            const endTime = performance.now();
+            const totalTime = endTime - startTime;
+
+            return {
+                computeCount,
+                totalTime,
+                avgTime: computeCount > 0 ? totalTime / computeCount : 0
+            };
+        }
+
+        // 运行测试
+        async function runTest(rounds) {
+            addLog(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#fbbf24');
+            addLog(`🧪 开始测试：${rounds} 轮`, '#fbbf24');
+            addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`, '#fbbf24');
+
+            // 更新进度
+            document.getElementById('progressBar').style.width = '30%';
+
+            // 测试v1
+            addLog('📊 测试旧系统（v1）...', '#60a5fa');
+            const v1Result = testV1(rounds);
+            addLog(`✅ v1完成: 计算${v1Result.computeCount}次, 耗时${v1Result.totalTime.toFixed(2)}ms\n`, '#48bb78');
+
+            document.getElementById('progressBar').style.width = '60%';
+
+            // 测试v2
+            addLog('📊 测试新系统（v2）...', '#60a5fa');
+            const v2Result = await testV2(rounds);
+            addLog(`✅ v2完成: 计算${v2Result.computeCount}次, 耗时${v2Result.totalTime.toFixed(2)}ms\n`, '#48bb78');
+
+            document.getElementById('progressBar').style.width = '100%';
+
+            // 计算性能提升
+            const countReduce = ((v1Result.computeCount - v2Result.computeCount) / v1Result.computeCount * 100).toFixed(1);
+            const timeReduce = ((v1Result.totalTime - v2Result.totalTime) / v1Result.totalTime * 100).toFixed(1);
+
+            // 更新结果表格
+            document.getElementById('v1Count').textContent = v1Result.computeCount;
+            document.getElementById('v2Count').textContent = v2Result.computeCount;
+            document.getElementById('countImprove').innerHTML = `<span class="winner">↓ ${countReduce}%</span>`;
+
+            document.getElementById('v1Time').textContent = v1Result.totalTime.toFixed(2);
+            document.getElementById('v2Time').textContent = v2Result.totalTime.toFixed(2);
+            document.getElementById('timeImprove').innerHTML = `<span class="winner">↓ ${timeReduce}%</span>`;
+
+            document.getElementById('v1Avg').textContent = v1Result.avgTime.toFixed(4);
+            document.getElementById('v2Avg').textContent = v2Result.avgTime.toFixed(4);
+            const avgReduce = ((v1Result.avgTime - v2Result.avgTime) / v1Result.avgTime * 100).toFixed(1);
+            document.getElementById('avgImprove').innerHTML = `<span class="winner">↓ ${avgReduce}%</span>`;
+
+            // 结论
+            addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#fbbf24');
+            addLog(`📈 性能对比结果（${rounds}轮）:`, '#fbbf24');
+            addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#fbbf24');
+            addLog(`计算次数减少: ${countReduce}%`, '#48bb78');
+            addLog(`总耗时减少: ${timeReduce}%`, '#48bb78');
+            addLog(`平均耗时减少: ${avgReduce}%`, '#48bb78');
+            addLog(`\n✨ 结论: v2系统性能提升约 ${countReduce}%！\n`, '#fbbf24');
+
+            // 重置进度条
+            setTimeout(() => {
+                document.getElementById('progressBar').style.width = '0%';
+            }, 1000);
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            checkSystems();
+            addLog('✨ 响应式性能对比测试系统已就绪', '#48bb78');
+            addLog('💡 点击按钮开始测试\n', '#60a5fa');
+        });
+    </script>
+</body>
+</html>

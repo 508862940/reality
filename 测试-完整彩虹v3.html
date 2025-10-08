@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整彩虹v3.0测试</title>
+    <link rel="stylesheet" href="css/weather-effects.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+        h1 { text-align: center; }
+        .controls { text-align: center; margin-bottom: 20px; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>🌈 完整彩虹v3.0测试（内联代码版）</h1>
+    <div class="controls">
+        <button onclick="showNewRainbow()">显示新彩虹v3.0</button>
+        <button onclick="clearRainbow()">清除效果</button>
+    </div>
+
+    <script>
+        // 直接复制v3.0的代码，避免缓存
+        class WeatherEffectControllerV3 {
+            constructor() {
+                this.effectContainer = null;
+                this.performanceLevel = 'high';
+                this.particleCounts = {
+                    high: { sakura: 50, rainbow: 1, meteor: 10, stars: 100 }
+                };
+            }
+
+            showEffect(effectType, intensity = 1.0) {
+                this.removeEffect();
+
+                this.currentEffect = effectType;
+                this.createEffectContainer(effectType);
+
+                if (effectType === 'rainbow') {
+                    this.createRainbowEffectV3(intensity);
+                }
+
+                this.effectContainer.classList.add('weather-effect-fade-in');
+            }
+
+            createEffectContainer(effectType) {
+                this.effectContainer = document.createElement('div');
+                this.effectContainer.className = `weather-effect-${effectType.replace('_', '-')}`;
+                this.effectContainer.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(this.effectContainer);
+            }
+
+            createRainbowEffectV3(intensity) {
+                console.log('🌈 开始创建彩虹v3.0...');
+
+                const container = document.createElement('div');
+                container.className = 'rainbow-container';
+
+                // 1. 创建主虹光漏（4个 - 亮色）
+                this.createPrimaryRainbowV3(container, intensity);
+
+                // 2. 创建副虹光漏（4个 - 浅色，颜色反向）
+                this.createSecondaryRainbowV3(container, intensity * 0.6);
+
+                // 3. 创建亚历山大暗带
+                this.createDarkBandV3(container, intensity * 0.5);
+
+                // 4. 整体淡入动画
+                container.style.animation = 'rainbow-appear 3s ease-out forwards';
+
+                this.effectContainer.appendChild(container);
+
+                // 检查创建结果
+                const leakCount = container.querySelectorAll('.rainbow-leak').length;
+                const bandCount = container.querySelectorAll('.alexander-dark-band').length;
+                console.log(`🌈 彩虹v3.0创建完成：${leakCount}个光漏 + ${bandCount}个暗带`);
+            }
+
+            createPrimaryRainbowV3(parent, intensity) {
+                console.log('创建主虹，intensity:', intensity);
+
+                const leaks = [
+                    {
+                        top: -10, left: -10, width: 40, height: 50,
+                        colorStart: '255, 120, 120', colorEnd: '255, 180, 60',
+                        blur: 35, opacity: 0.65, duration: 8
+                    },
+                    {
+                        top: -5, right: -10, width: 45, height: 55,
+                        colorStart: '255, 235, 120', colorEnd: '120, 255, 180',
+                        blur: 40, opacity: 0.6, duration: 10
+                    },
+                    {
+                        bottom: -10, right: -5, width: 50, height: 60,
+                        colorStart: '120, 220, 255', colorEnd: '100, 130, 255',
+                        blur: 50, opacity: 0.55, duration: 12
+                    },
+                    {
+                        bottom: -15, left: -8, width: 42, height: 48,
+                        colorStart: '180, 130, 255', colorEnd: '255, 180, 220',
+                        blur: 45, opacity: 0.5, duration: 14
+                    }
+                ];
+
+                leaks.forEach((config, index) => {
+                    const leak = document.createElement('div');
+                    leak.className = `rainbow-leak rainbow-primary-${index + 1}`;
+
+                    let posStyle = '';
+                    if (config.top !== undefined) posStyle += `top: ${config.top}%;`;
+                    if (config.bottom !== undefined) posStyle += `bottom: ${config.bottom}%;`;
+                    if (config.left !== undefined) posStyle += `left: ${config.left}%;`;
+                    if (config.right !== undefined) posStyle += `right: ${config.right}%;`;
+
+                    leak.style.cssText = `
+                        position: absolute;
+                        ${posStyle}
+                        width: ${config.width}%;
+                        height: ${config.height}%;
+                        background: radial-gradient(
+                            ellipse at ${30 + index * 10}% ${30 + index * 10}%,
+                            rgba(${config.colorStart}, ${config.opacity * intensity}) 0%,
+                            rgba(${config.colorEnd}, ${config.opacity * intensity * 0.6}) 40%,
+                            transparent 70%
+                        );
+                        filter: blur(${config.blur}px);
+                        animation: rainbow-primary-drift ${config.duration}s ease-in-out infinite;
+                    `;
+
+                    parent.appendChild(leak);
+                    console.log(`主虹光漏 ${index + 1} 已添加`);
+                });
+            }
+
+            createSecondaryRainbowV3(parent, intensity) {
+                console.log('创建副虹，intensity:', intensity);
+
+                const leaks = [
+                    {
+                        top: -15, left: -15, width: 35, height: 40,
+                        colorStart: '180, 130, 255', colorEnd: '120, 220, 255',
+                        blur: 50, opacity: 0.35, duration: 10
+                    },
+                    {
+                        top: -8, right: -15, width: 38, height: 45,
+                        colorStart: '120, 255, 180', colorEnd: '255, 235, 120',
+                        blur: 55, opacity: 0.3, duration: 12
+                    },
+                    {
+                        top: 10, right: -10, width: 40, height: 50,
+                        colorStart: '255, 180, 60', colorEnd: '255, 120, 120',
+                        blur: 60, opacity: 0.28, duration: 14
+                    },
+                    {
+                        top: -5, left: 30, width: 30, height: 35,
+                        colorStart: '200, 230, 255', colorEnd: '230, 200, 255',
+                        blur: 58, opacity: 0.25, duration: 16
+                    }
+                ];
+
+                leaks.forEach((config, index) => {
+                    const leak = document.createElement('div');
+                    leak.className = `rainbow-leak rainbow-secondary-${index + 1}`;
+
+                    let posStyle = '';
+                    if (config.top !== undefined) posStyle += `top: ${config.top}%;`;
+                    if (config.left !== undefined) posStyle += `left: ${config.left}%;`;
+                    if (config.right !== undefined) posStyle += `right: ${config.right}%;`;
+
+                    leak.style.cssText = `
+                        position: absolute;
+                        ${posStyle}
+                        width: ${config.width}%;
+                        height: ${config.height}%;
+                        background: radial-gradient(
+                            ellipse at ${40 + index * 15}% ${25 + index * 10}%,
+                            rgba(${config.colorStart}, ${config.opacity * intensity}) 0%,
+                            rgba(${config.colorEnd}, ${config.opacity * intensity * 0.5}) 35%,
+                            transparent 65%
+                        );
+                        filter: blur(${config.blur}px);
+                        animation: rainbow-secondary-drift ${config.duration}s ease-in-out infinite;
+                    `;
+
+                    parent.appendChild(leak);
+                    console.log(`副虹光漏 ${index + 1} 已添加`);
+                });
+            }
+
+            createDarkBandV3(parent, intensity) {
+                console.log('创建亚历山大暗带');
+
+                const band = document.createElement('div');
+                band.className = 'alexander-dark-band';
+                band.style.cssText = `
+                    position: absolute;
+                    top: 15%;
+                    left: 0;
+                    width: 100%;
+                    height: 25%;
+                    background: rgba(255, 255, 255, ${0.02 * intensity});
+                    backdrop-filter: brightness(1.05) saturate(0.9);
+                    -webkit-backdrop-filter: brightness(1.05) saturate(0.9);
+                    animation: dark-band-pulse 6s ease-in-out infinite;
+                    pointer-events: none;
+                `;
+                parent.appendChild(band);
+                console.log('暗带已添加');
+            }
+
+            removeEffect() {
+                if (this.effectContainer) {
+                    this.effectContainer.remove();
+                    this.effectContainer = null;
+                }
+            }
+        }
+
+        // 创建新的控制器
+        const weatherControllerV3 = new WeatherEffectControllerV3();
+
+        function showNewRainbow() {
+            console.log('调用showNewRainbow...');
+            weatherControllerV3.showEffect('rainbow', 1.0);
+        }
+
+        function clearRainbow() {
+            console.log('清除彩虹...');
+            weatherControllerV3.removeEffect();
+        }
+    </script>
+</body>
+</html>
